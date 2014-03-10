@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>src/port-moduleinternal.js - freedom</title>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/3.9.1/build/cssgrids/cssgrids-min.css">
+    <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
+    <link rel="stylesheet" href="../assets/css/main.css" id="site_styles">
+    <link rel="shortcut icon" type="image/png" href="../assets/favicon.png">
+    <script src="http://yui.yahooapis.com/combo?3.9.1/build/yui/yui-min.js"></script>
+</head>
+<body class="yui3-skin-sam">
+
+<div id="doc">
+    <div id="hd" class="yui3-g header">
+        <div class="yui3-u-3-4">
+            
+                <h1><img src="../assets/css/logo.png" title="freedom"></h1>
+            
+        </div>
+        <div class="yui3-u-1-4 version">
+            <em>API Docs for: 0.3.3</em>
+        </div>
+    </div>
+    <div id="bd" class="yui3-g">
+
+        <div class="yui3-u-1-4">
+            <div id="docs-sidebar" class="sidebar apidocs">
+                <div id="api-list">
+    <h2 class="off-left">APIs</h2>
+    <div id="api-tabview" class="tabview">
+        <ul class="tabs">
+            <li><a href="#api-classes">Classes</a></li>
+            <li><a href="#api-modules">Modules</a></li>
+        </ul>
+
+        <div id="api-tabview-filter">
+            <input type="search" id="api-filter" placeholder="Type to filter APIs">
+        </div>
+
+        <div id="api-tabview-panel">
+            <ul id="api-classes" class="apis classes">
+            
+                <li><a href="../classes/API.html">API</a></li>
+            
+                <li><a href="../classes/handleEvents.html">handleEvents</a></li>
+            
+                <li><a href="../classes/Hub.html">Hub</a></li>
+            
+                <li><a href="../classes/Link.html">Link</a></li>
+            
+                <li><a href="../classes/Link.Direct.html">Link.Direct</a></li>
+            
+                <li><a href="../classes/link.Frame.html">link.Frame</a></li>
+            
+                <li><a href="../classes/Manager.html">Manager</a></li>
+            
+                <li><a href="../classes/Module.html">Module</a></li>
+            
+                <li><a href="../classes/ModuleInternal.html">ModuleInternal</a></li>
+            
+                <li><a href="../classes/Provider.html">Provider</a></li>
+            
+                <li><a href="../classes/Proxy.html">Proxy</a></li>
+            
+                <li><a href="../classes/Resource.html">Resource</a></li>
+            
+                <li><a href="../classes/Runtime.html">Runtime</a></li>
+            
+                <li><a href="../classes/Runtime.Runtime.html">Runtime.Runtime</a></li>
+            
+                <li><a href="../classes/util.html">util</a></li>
+            
+                <li><a href="../classes/Worker.html">Worker</a></li>
+            
+            </ul>
+
+            <ul id="api-modules" class="apis modules">
+            
+                <li><a href="../modules/freedom.html">freedom</a></li>
+            
+            </ul>
+        </div>
+    </div>
+</div>
+
+            </div>
+        </div>
+        <div class="yui3-u-3-4">
+                <div id="api-options">
+        Show:
+        <label for="api-show-inherited">
+            <input type="checkbox" id="api-show-inherited" checked>
+            Inherited
+        </label>
+
+        <label for="api-show-protected">
+            <input type="checkbox" id="api-show-protected">
+            Protected
+        </label>
+
+        <label for="api-show-private">
+            <input type="checkbox" id="api-show-private">
+            Private
+        </label>
+        <label for="api-show-deprecated">
+            <input type="checkbox" id="api-show-deprecated">
+            Deprecated
+        </label>
+
+    </div>
+
+
+            <div class="apidocs">
+                <div id="docs-main">
+                    <div class="content">
+                        <h1 class="file-heading">File: src/port-moduleinternal.js</h1>
+
+<div class="file">
+    <pre class="code prettyprint linenums">
+/*globals fdom:true, Promise */
+/*jslint indent:2,white:true,node:true,sloppy:true */
+if (typeof fdom === &#x27;undefined&#x27;) {
+  fdom = {};
+}
+fdom.port = fdom.port || {};
+
+/**
+ * The internal logic for module setup, which makes sure the public
+ * facing exports have appropriate properties, and load user scripts.
+ * @class ModuleInternal
+ * @extends Port
+ * @param {Port} manager The manager in this module to use for routing setup.
+ * @constructor
+ */
+fdom.port.ModuleInternal = function(manager) {
+  this.config = {};
+  this.manager = manager;
+  this.manifests = {};
+  
+  this.id = &#x27;ModuleInternal-&#x27; + Math.random();
+  this.pendingPorts = 0;
+  this.requests = {};
+
+  fdom.util.handleEvents(this);
+};
+
+/**
+ * Message handler for this port.
+ * This port only handles two messages:
+ * The first is its setup from the manager, which it uses for configuration.
+ * The second is from the module controller (fdom.port.Module), which provides
+ * the manifest info for the module.
+ * @method onMessage
+ * @param {String} flow The detination of the message.
+ * @param {Object} message The message.
+ */
+fdom.port.ModuleInternal.prototype.onMessage = function(flow, message) {
+  if (flow === &#x27;control&#x27;) {
+    if (!this.controlChannel &amp;&amp; message.channel) {
+      this.controlChannel = message.channel;
+      fdom.util.mixin(this.config, message.config);
+    }
+  } else if (flow === &#x27;default&#x27; &amp;&amp; !this.appId) {
+    // Recover the ID of this module:
+    this.port = this.manager.hub.getDestination(message.channel);
+    this.externalChannel = message.channel;
+    this.appId = message.appId;
+    this.lineage = message.lineage;
+
+    var objects = this.mapProxies(message.manifest);
+
+    this.once(&#x27;start&#x27;, this.loadScripts.bind(this, message.id,
+        message.manifest.app.script));
+    this.loadLinks(objects);
+  } else if (flow === &#x27;default&#x27; &amp;&amp; this.requests[message.id]) {
+    this.requests[message.id](message.data);
+    delete this.requests[message.id];
+  } else if (flow === &#x27;default&#x27; &amp;&amp; message.type === &#x27;manifest&#x27;) {
+    this.updateManifest(message.name, message.manifest);
+  }
+};
+
+/**
+ * Get a textual description of this Port.
+ * @method toString
+ * @return {String} a description of this Port.
+ */
+fdom.port.ModuleInternal.prototype.toString = function() {
+  return &quot;[Module Environment Helper]&quot;;
+};
+
+/**
+ * Attach a proxy to the externally visible namespace.
+ * @method attach
+ * @param {String} name The name of the proxy.
+ * @param {Proxy} proxy The proxy to attach.
+ * @param {String} api The API the proxy implements.
+ * @private.
+ */
+fdom.port.ModuleInternal.prototype.attach = function(name, proxy, api) {
+  var exp = this.config.global.freedom;
+
+  if (!exp[name]) {
+    exp[name] = proxy.getProxyInterface();
+    if (api) {
+      exp[name].api = api;
+    }
+    if (this.manifests[name]) {
+      exp[name].manifest = this.manifests[name];
+    }
+  }
+
+  this.pendingPorts -= 1;
+  if (this.pendingPorts === 0) {
+    this.emit(&#x27;start&#x27;);
+  }
+};
+
+/**
+ * Request a set of proxy interfaces, and bind them to the external
+ * namespace.
+ * @method loadLinks
+ * @param {Object[]} items Descriptors of the proxy ports to load.
+ * @private
+ */
+fdom.port.ModuleInternal.prototype.loadLinks = function(items) {
+  var i, proxy, provider, core, api;
+  for (i = 0; i &lt; items.length; i += 1) {
+    api = undefined;
+    if (items[i].def) {
+      api = items[i].def.name;
+      if (items[i].provides) {
+        proxy = new fdom.port.Provider(items[i].def.definition);
+      } else {
+        proxy = new fdom.port.Proxy(fdom.proxy.ApiInterface.bind({},
+            items[i].def.definition));
+      }
+    } else {
+      proxy = new fdom.port.Proxy(fdom.proxy.EventInterface);
+    }
+    
+    proxy.once(&#x27;start&#x27;, this.attach.bind(this, items[i].name, proxy, api));
+    this.manager.createLink(this.port, items[i].name, proxy);
+    this.pendingPorts += 1;
+  }
+  
+  // Allow resolution of files by parent.
+  fdom.resources.addResolver(function(manifest, url, resolve) {
+    var id = Math.random();
+    this.requests[id] = resolve;
+    this.emit(this.externalChannel, {
+      type: &#x27;resolve&#x27;,
+      id: id,
+      data: url
+    });
+    return true;
+  }.bind(this));
+
+  // Attach Core.
+  this.pendingPorts += 1;
+
+  core = fdom.apis.get(&#x27;core&#x27;).definition;
+  provider = new fdom.port.Provider(core);
+  this.manager.getCore(function(CoreProv) {
+    new CoreProv(this.manager).setId(this.lineage);
+    provider.getInterface().provideAsynchronous(CoreProv);
+  }.bind(this));
+
+  this.emit(this.controlChannel, {
+    type: &#x27;Link to core&#x27;,
+    request: &#x27;link&#x27;,
+    name: &#x27;core&#x27;,
+    to: provider
+  });
+
+  proxy = new fdom.port.Proxy(fdom.proxy.ApiInterface.bind({}, core));
+  this.manager.createLink(provider, &#x27;default&#x27;, proxy);
+  this.attach(&#x27;core&#x27;, proxy);
+
+  if (this.pendingPorts === 0) {
+    this.emit(&#x27;start&#x27;);
+  }
+};
+
+/**
+ * Update the exported manifest of a dependency.
+ * Sets it internally if not yet exported, or attaches the property if it
+ * is loaded after the module has started (we don&#x27;t delay start to retreive
+ * the manifest of the dependency.)
+ * @method updateManifest
+ * @param {String} name The Dependency
+ * @param {Object} manifest The manifest of the dependency
+ */
+fdom.port.ModuleInternal.prototype.updateManifest = function(name, manifest) {
+  var exp = this.config.global.freedom;
+
+  if (exp[name]) {
+    exp[name].manifest = manifest;
+  } else {
+    this.manifests[name] = manifest;
+  }
+};
+
+/**
+ * Determine which proxy ports should be exposed by this module.
+ * @method mapProxies
+ * @param {Object} manifest the module JSON manifest.
+ * @return {Object[]} proxy descriptors defined in the manifest.
+ */
+fdom.port.ModuleInternal.prototype.mapProxies = function(manifest) {
+  var proxies = [], seen = [&#x27;core&#x27;], i, obj;
+  
+  if (manifest.permissions) {
+    for (i = 0; i &lt; manifest.permissions.length; i += 1) {
+      obj = {
+        name: manifest.permissions[i],
+        def: undefined
+      };
+      obj.def = fdom.apis.get(obj.name);
+      if (seen.indexOf(obj.name) &lt; 0 &amp;&amp; obj.def) {
+        proxies.push(obj);
+        seen.push(obj.name);
+      }
+    }
+  }
+  
+  if (manifest.dependencies) {
+    fdom.util.eachProp(manifest.dependencies, function(desc, name) {
+      obj = {
+        name: name
+      };
+      if (seen.indexOf(name) &lt; 0) {
+        if (desc.api) {
+          obj.def = fdom.apis.get(desc.api);
+        }
+        proxies.push(obj);
+        seen.push(name);
+      }
+    });
+  }
+  
+  if (manifest.provides) {
+    for (i = 0; i &lt; manifest.provides.length; i += 1) {
+      obj = {
+        name: manifest.provides[i],
+        def: undefined,
+        provides: true
+      };
+      obj.def = fdom.apis.get(obj.name);
+      if (seen.indexOf(obj.name) &lt; 0 &amp;&amp; obj.def) {
+        proxies.push(obj);
+        seen.push(obj.name);
+      }
+    }
+  }
+
+  return proxies;
+};
+
+/**
+ * Load external scripts into this namespace.
+ * @method loadScripts
+ * @param {String} from The URL of this modules&#x27;s manifest.
+ * @param {String[]} scripts The URLs of the scripts to load.
+ */
+fdom.port.ModuleInternal.prototype.loadScripts = function(from, scripts) {
+  var i = 0,
+      safe = true,
+      importer = function importScripts(script, resolve) {
+        this.config.global.importScripts(script);
+        resolve();
+      }.bind(this),
+      urls = [],
+      outstanding = 0,
+      load = function(url) {
+        urls.push(url);
+        outstanding -= 1;
+        if (outstanding === 0) {
+          if (safe) {
+            this.emit(this.externalChannel, {
+              type: &#x27;ready&#x27;
+            });
+            this.tryLoad(importer, urls);
+          } else {
+            this.tryLoad(importer, urls).then(function() {
+              this.emit(this.externalChannel, {
+                type: &#x27;ready&#x27;
+              });
+            }.bind(this));
+          }
+        }
+      }.bind(this);
+
+  if (!this.config.global.importScripts) {
+    safe = false;
+    importer = function(url, resolve) {
+      var script = this.config.global.document.createElement(&#x27;script&#x27;);
+      script.src = url;
+      script.addEventListener(&#x27;load&#x27;, resolve, true);
+      this.config.global.document.body.appendChild(script);
+    }.bind(this);
+  }
+
+  if (typeof scripts === &#x27;string&#x27;) {
+    outstanding = 1;
+    fdom.resources.get(from, scripts).then(load);
+  } else {
+    outstanding = scripts.length;
+    for (i = 0; i &lt; scripts.length; i += 1) {
+      fdom.resources.get(from, scripts[i]).then(load);
+    }
+  }
+};
+
+/**
+ * Attempt to load resolved scripts into the namespace.
+ * @method tryLoad
+ * @private
+ * @param {Function} importer The actual import function
+ * @param {String[]} urls The resoved URLs to load.
+ * @returns {Promise} completion of load
+ */
+fdom.port.ModuleInternal.prototype.tryLoad = function(importer, urls) {
+  var i,
+      promises = [];
+  try {
+    for (i = 0; i &lt; urls.length; i += 1) {
+      promises.push(new Promise(importer.bind({}, urls[i])));
+    }
+  } catch(e) {
+    fdom.debug.warn(e.stack);
+    fdom.debug.error(&quot;Error loading &quot; + urls[i], e);
+    fdom.debug.error(&quot;If the stack trace is not useful, see https://&quot; +
+        &quot;github.com/UWNetworksLab/freedom/wiki/Debugging-Script-Parse-Errors&quot;);
+  }
+  return Promise.all(promises);
+};
+
+    </pre>
+</div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../assets/vendor/prettify/prettify-min.js"></script>
+<script>prettyPrint();</script>
+<script src="../assets/js/yui-prettify.js"></script>
+<script src="../assets/../api.js"></script>
+<script src="../assets/js/api-filter.js"></script>
+<script src="../assets/js/api-list.js"></script>
+<script src="../assets/js/api-search.js"></script>
+<script src="../assets/js/apidocs.js"></script>
+</body>
+</html>
