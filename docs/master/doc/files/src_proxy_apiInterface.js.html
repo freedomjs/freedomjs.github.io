@@ -268,7 +268,7 @@ fdom.proxy.conform = function(template, from, externals, separate) {
     return String(&#x27;&#x27;) + from;
   case &#x27;number&#x27;:
     return Number(1) * from;
-  case &#x27;bool&#x27;:
+  case &#x27;boolean&#x27;:
     return Boolean(from === true);
   case &#x27;object&#x27;:
     // TODO(willscott): Allow removal if sandboxing enforces this.
@@ -375,7 +375,8 @@ fdom.proxy.recursiveFreezeObject = function(obj) {
     if (obj.hasOwnProperty(k)) {
       Object.defineProperty(ret, k, {
         value: fdom.proxy.recursiveFreezeObject(obj[k]),
-        writable: false
+        writable: false,
+        enumerable: true
       });
     }
   }
