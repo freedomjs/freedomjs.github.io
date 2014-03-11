@@ -1,0 +1,13 @@
+{
+  "name": "WebRTC Transport",
+  "description": "Included WebRTC Transport Provider",
+  "app": {
+    "script": "transport.webrtc.js"
+  },
+  "provides": [
+    "transport"
+  ],
+  "permissions": [
+    "core.peerconnection"
+  ]
+}

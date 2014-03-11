@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>src/resource.js - freedom</title>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/3.9.1/build/cssgrids/cssgrids-min.css">
+    <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
+    <link rel="stylesheet" href="../assets/css/main.css" id="site_styles">
+    <link rel="shortcut icon" type="image/png" href="../assets/favicon.png">
+    <script src="http://yui.yahooapis.com/combo?3.9.1/build/yui/yui-min.js"></script>
+</head>
+<body class="yui3-skin-sam">
+
+<div id="doc">
+    <div id="hd" class="yui3-g header">
+        <div class="yui3-u-3-4">
+            
+                <h1><img src="../assets/css/logo.png" title="freedom"></h1>
+            
+        </div>
+        <div class="yui3-u-1-4 version">
+            <em>API Docs for: 0.4.1</em>
+        </div>
+    </div>
+    <div id="bd" class="yui3-g">
+
+        <div class="yui3-u-1-4">
+            <div id="docs-sidebar" class="sidebar apidocs">
+                <div id="api-list">
+    <h2 class="off-left">APIs</h2>
+    <div id="api-tabview" class="tabview">
+        <ul class="tabs">
+            <li><a href="#api-classes">Classes</a></li>
+            <li><a href="#api-modules">Modules</a></li>
+        </ul>
+
+        <div id="api-tabview-filter">
+            <input type="search" id="api-filter" placeholder="Type to filter APIs">
+        </div>
+
+        <div id="api-tabview-panel">
+            <ul id="api-classes" class="apis classes">
+            
+                <li><a href="../classes/API.html">API</a></li>
+            
+                <li><a href="../classes/handleEvents.html">handleEvents</a></li>
+            
+                <li><a href="../classes/Hub.html">Hub</a></li>
+            
+                <li><a href="../classes/Link.html">Link</a></li>
+            
+                <li><a href="../classes/Link.Direct.html">Link.Direct</a></li>
+            
+                <li><a href="../classes/link.Frame.html">link.Frame</a></li>
+            
+                <li><a href="../classes/Manager.html">Manager</a></li>
+            
+                <li><a href="../classes/Module.html">Module</a></li>
+            
+                <li><a href="../classes/ModuleInternal.html">ModuleInternal</a></li>
+            
+                <li><a href="../classes/Provider.html">Provider</a></li>
+            
+                <li><a href="../classes/Proxy.html">Proxy</a></li>
+            
+                <li><a href="../classes/Resource.html">Resource</a></li>
+            
+                <li><a href="../classes/Runtime.html">Runtime</a></li>
+            
+                <li><a href="../classes/Runtime.Runtime.html">Runtime.Runtime</a></li>
+            
+                <li><a href="../classes/util.html">util</a></li>
+            
+                <li><a href="../classes/Worker.html">Worker</a></li>
+            
+            </ul>
+
+            <ul id="api-modules" class="apis modules">
+            
+                <li><a href="../modules/freedom.html">freedom</a></li>
+            
+            </ul>
+        </div>
+    </div>
+</div>
+
+            </div>
+        </div>
+        <div class="yui3-u-3-4">
+                <div id="api-options">
+        Show:
+        <label for="api-show-inherited">
+            <input type="checkbox" id="api-show-inherited" checked>
+            Inherited
+        </label>
+
+        <label for="api-show-protected">
+            <input type="checkbox" id="api-show-protected">
+            Protected
+        </label>
+
+        <label for="api-show-private">
+            <input type="checkbox" id="api-show-private">
+            Private
+        </label>
+        <label for="api-show-deprecated">
+            <input type="checkbox" id="api-show-deprecated">
+            Deprecated
+        </label>
+
+    </div>
+
+
+            <div class="apidocs">
+                <div id="docs-main">
+                    <div class="content">
+                        <h1 class="file-heading">File: src/resource.js</h1>
+
+<div class="file">
+    <pre class="code prettyprint linenums">
+/*globals fdom:true, XMLHttpRequest, Promise */
+/*jslint indent:2,white:true,node:true,sloppy:true */
+if (typeof fdom === &#x27;undefined&#x27;) {
+  fdom = {};
+}
+
+/**
+ * The Resource registry for FreeDOM.  Used to look up requested Resources,
+ * and provide lookup and migration of resources.
+ * @Class Resource
+ * @constructor
+ */
+var Resource = function() {
+  this.files = {};
+  this.resolvers = [this.httpResolver];
+  this.contentRetreivers = {
+    &#x27;http&#x27;: this.xhrRetriever,
+    &#x27;https&#x27;: this.xhrRetriever,
+    &#x27;chrome-extension&#x27;: this.xhrRetriever,
+    &#x27;resource&#x27;: this.xhrRetriever,
+    &#x27;chrome&#x27;: this.xhrRetriever,
+    &#x27;manifest&#x27;: this.manifestRetriever
+  };
+};
+
+/**
+ * Resolve a resurce URL requested from a module.
+ * @method get
+ * @param {String} manifest The canonical address of the module requesting.
+ * @param {String} url The resource to get.
+ * @returns {Promise} A promise for the resource address.
+ */
+Resource.prototype.get = function(manifest, url) {
+  var key = JSON.stringify([manifest, url]);
+  
+  return new Promise(function(resolve, reject) {
+    if (this.files[key]) {
+      resolve(this.files[key]);
+    } else {
+      this.resolve(manifest, url).then(function(key, resolve, address) {
+        this.files[key] = address;
+        fdom.debug.log(&#x27;Resolved &#x27; + key + &#x27; to &#x27; + address);
+        resolve(address);
+      }.bind(this, key, resolve), reject);
+    }
+  }.bind(this));
+};
+
+/**
+ * Get the contents of a resource.
+ * @method getContents
+ * @param {String} url The resource to read.
+ * @returns {Promise} A promise for the resource contents.
+ */
+Resource.prototype.getContents = function(url) {
+  return new Promise(function(resolve, reject) {
+    var prop;
+    if (!url) {
+      fdom.debug.warn(&quot;Asked to get contents of undefined URL.&quot;);
+      return reject();
+    }
+    for (prop in this.contentRetreivers) {
+      if (this.contentRetreivers.hasOwnProperty(prop)) {
+        if (url.indexOf(prop + &quot;://&quot;) === 0) {
+          return this.contentRetreivers[prop](url, resolve, reject);
+        }
+      }
+    }
+    reject();
+  }.bind(this));
+};
+
+/**
+ * Resolve a resource using known resolvers. Unlike get, resolve does
+ * not cache resolved resources.
+ * @method resolve
+ * @private
+ * @param {String} manifest The module requesting the resource.
+ * @param {String} url The resource to resolve;
+ * @returns {Promise} A promise for the resource address.
+ */
+Resource.prototype.resolve = function(manifest, url) {
+  return new Promise(function(resolve, reject) {
+    var promises = [];
+    if (url === undefined) {
+      return reject();
+    }
+    fdom.util.eachReverse(this.resolvers, function(resolver) {
+      promises.push(new Promise(resolver.bind({}, manifest, url)));
+    }.bind(this));
+    Promise.race(promises).then(resolve, reject);
+  }.bind(this));
+};
+
+/**
+ * Register resolvers: code that knows how to get resources
+ * needed by the runtime. A resolver will be called with four
+ * arguments: the absolute manifest of the requester, the
+ * resource being requested, and a resolve / reject pair to
+ * fulfill a promise.
+ * @method addResolver
+ * @param {Function} resolver The resolver to add.
+ */
+Resource.prototype.addResolver = function(resolver) {
+  this.resolvers.push(resolver);
+};
+
+/**
+ * Register retrievers: code that knows how to load resources
+ * needed by the runtime. A retriever will be called with a URL
+ * to retrieve with a protocol that it is able to handle.
+ * @method addRetriever
+ * @param {String} proto The protocol to register for.
+ * @param {Function} retriever The retriever to add.
+ */
+Resource.prototype.addRetriever = function(proto, retriever) {
+  if (this.contentRetreivers[proto]) {
+    fdom.debug.warn(&quot;Unwilling to override file retrieval for &quot; + proto);
+    return;
+  }
+  this.contentRetreivers[proto] = retriever;
+};
+
+/**
+ * Resolve URLs which can be accessed using standard HTTP requests.
+ * @method httpResolver
+ * @private
+ * @param {String} manifest The Manifest URL.
+ * @param {String} url The URL to resolve.
+ * @param {Function} resolve The promise to complete.
+ * @param {Function} reject The promise to reject.
+ * @returns {Boolean} True if the URL could be resolved.
+ */
+Resource.prototype.httpResolver = function(manifest, url, resolve, reject) {
+  var protocols = [&quot;http&quot;, &quot;https&quot;, &quot;chrome&quot;, &quot;chrome-extension&quot;, &quot;resource&quot;],
+      dirname,
+      i, protocolIdx, pathIdx,
+      path, base;
+  for (i = 0; i &lt; protocols.length; i += 1) {
+    if (url.indexOf(protocols[i] + &quot;://&quot;) === 0) {
+      resolve(url);
+      return true;
+    }
+  }
+  
+  if (!manifest) {
+    return false;
+  }
+  for (i = 0; i &lt; protocols.length; i += 1) {
+    if (manifest.indexOf(protocols[i] + &quot;://&quot;) === 0 &amp;&amp;
+       url.indexOf(&quot;://&quot;) === -1) {
+      dirname = manifest.substr(0, manifest.lastIndexOf(&quot;/&quot;));
+      protocolIdx = dirname.indexOf(&quot;://&quot;);
+      pathIdx = protocolIdx + 3 + dirname.substr(protocolIdx + 3).indexOf(&quot;/&quot;);
+      path = dirname.substr(pathIdx);
+      base = dirname.substr(0, pathIdx);
+      if (url.indexOf(&quot;/&quot;) === 0) {
+        resolve(base + url);
+      } else {
+        resolve(base + path + &quot;/&quot; + url);
+      }
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
+ * Retrieve manifest content from a self-descriptive manifest url.
+ * These urls are used to reference a manifest without requiring subsequent,
+ * potentially non-CORS requests.
+ * @method manifestRetriever
+ * @private
+ * @param {String} manifest The Manifest URL
+ * @param {Function} resolve The promise to complete.
+ * @param {Function} reject The promise to reject.
+ */
+Resource.prototype.manifestRetriever = function(manifest, resolve, reject) {
+  var data;
+  try {
+    data = manifest.substr(11);
+    JSON.parse(data);
+    resolve(data);
+  } catch(e) {
+    console.warn(&quot;Invalid manifest URL referenced:&quot; + manifest);
+    reject();
+  }
+};
+
+/**
+ * Retrieve resource contents using an XHR request.
+ * @method xhrRetriever
+ * @private
+ * @param {String} url The resource to fetch.
+ * @param {Function} resolve The promise to complete.
+ * @param {Function} reject The promise to reject.
+ */
+Resource.prototype.xhrRetriever = function(url, resolve, reject) {
+  var ref = new XMLHttpRequest();
+  ref.addEventListener(&#x27;readystatechange&#x27;, function(resolve, reject) {
+    if (ref.readyState === 4 &amp;&amp; ref.responseText) {
+      resolve(ref.responseText);
+    } else if (ref.readyState === 4) {
+      console.warn(&quot;Failed to load file &quot; + url + &quot;: &quot; + ref.status);
+      reject(ref.status);
+    }
+  }.bind({}, resolve, reject), false);
+  ref.overrideMimeType(&#x27;application/json&#x27;);
+  ref.open(&quot;GET&quot;, url, true);
+  ref.send();
+};
+
+/**
+ * Defines fdom.resources as a singleton registry for file management.
+ */
+fdom.resources = new Resource();
+
+    </pre>
+</div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../assets/vendor/prettify/prettify-min.js"></script>
+<script>prettyPrint();</script>
+<script src="../assets/js/yui-prettify.js"></script>
+<script src="../assets/../api.js"></script>
+<script src="../assets/js/api-filter.js"></script>
+<script src="../assets/js/api-list.js"></script>
+<script src="../assets/js/api-search.js"></script>
+<script src="../assets/js/apidocs.js"></script>
+</body>
+</html>
