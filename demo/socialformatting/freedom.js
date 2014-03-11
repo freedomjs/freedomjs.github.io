@@ -4855,12 +4855,6 @@ fdom.apis.set('social', {
       'status': 'string',
       'timestamp': 'number'
     },
-    'to': {                 // <client_state>, defined above.
-      'userId': 'string',
-      'clientId': 'string',
-      'status': 'string',
-      'timestamp': 'number'
-    },
     'message': 'string'     // message contents
   }},
 
