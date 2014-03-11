@@ -4282,7 +4282,9 @@ fdom.proxy.portableToMessage = function(template, streams) {
 fdom.proxy.conform = function(template, from, externals, separate) {
   /* jshint -W086 */
   if (typeof(from) === 'function') {
-    from = undefined;
+    //from = undefined;
+    //throw "Trying to conform a function";
+    return undefined;
   }
   switch(template) {
   case 'string':
@@ -4293,7 +4295,11 @@ fdom.proxy.conform = function(template, from, externals, separate) {
     return Boolean(from === true);
   case 'object':
     // TODO(willscott): Allow removal if sandboxing enforces this.
-    return JSON.parse(JSON.stringify(from));
+    if (typeof from === 'undefined') {
+      return undefined;
+    } else {
+      return JSON.parse(JSON.stringify(from));
+    }
   case 'blob':
     if (separate) {
       if (from instanceof Blob) {
