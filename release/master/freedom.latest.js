@@ -4457,7 +4457,9 @@ fdom.apis.set("core.storage", {
 });
 
 fdom.apis.set("core.socket", {
-  'create': {type: "method", value: ["string", "object"], ret: "number"},
+  'create': {type: "method", value: ["string", "object"], ret: {
+    socketId: "number"
+  }},
   'connect': {
     type: "method",
     value: ["number", "string", "number"],
