@@ -2688,8 +2688,8 @@ fdom.port.Provider.prototype.getProvider = function(identifier, args) {
       }
       var prop = port.definition[msg.type],
           args = fdom.proxy.portableToMessage(prop.value, msg),
-          ret = function(msg, prop, ret, err) {
-            var streams = fdom.proxy.messageToPortable(prop.ret, ret);
+          ret = function(msg, prop, resolve, reject) {
+            var streams = fdom.proxy.messageToPortable(prop.ret, resolve);
             this.emit(this.emitChannel, {
               type: 'method',
               to: msg.to,
@@ -2700,7 +2700,7 @@ fdom.port.Provider.prototype.getProvider = function(identifier, args) {
                 name: msg.type,
                 text: streams.text,
                 binary: streams.binary,
-                error: err
+                error: reject
               }
             });
           }.bind(port, msg, prop);
@@ -4282,7 +4282,9 @@ fdom.proxy.portableToMessage = function(template, streams) {
 fdom.proxy.conform = function(template, from, externals, separate) {
   /* jshint -W086 */
   if (typeof(from) === 'function') {
-    from = undefined;
+    //from = undefined;
+    //throw "Trying to conform a function";
+    return undefined;
   }
   switch(template) {
   case 'string':
@@ -4293,7 +4295,11 @@ fdom.proxy.conform = function(template, from, externals, separate) {
     return Boolean(from === true);
   case 'object':
     // TODO(willscott): Allow removal if sandboxing enforces this.
-    return JSON.parse(JSON.stringify(from));
+    if (typeof from === 'undefined') {
+      return undefined;
+    } else {
+      return JSON.parse(JSON.stringify(from));
+    }
   case 'blob':
     if (separate) {
       if (from instanceof Blob) {
@@ -4396,7 +4402,8 @@ fdom.proxy.recursiveFreezeObject = function(obj) {
     if (obj.hasOwnProperty(k)) {
       Object.defineProperty(ret, k, {
         value: fdom.proxy.recursiveFreezeObject(obj[k]),
-        writable: false
+        writable: false,
+        enumerable: true
       });
     }
   }
@@ -4456,7 +4463,9 @@ fdom.apis.set("core.storage", {
 });
 
 fdom.apis.set("core.socket", {
-  'create': {type: "method", value: ["string", "object"], ret: "number"},
+  'create': {type: "method", value: ["string", "object"], ret: {
+    socketId: "number"
+  }},
   'connect': {
     type: "method",
     value: ["number", "string", "number"],
@@ -4658,7 +4667,7 @@ fdom.apis.set('core.peerconnection', {
  * {
  *   'userId': 'string',    // Unique ID of user (e.g. alice@gmail.com)
  *   'clientId': 'string',  // Unique ID of client (e.g. alice@gmail.com/Android-23nadsv32f)
- *   'status': 'number',    // Status of the client. See the 'STATUS' constants
+ *   'status': 'string',    // Status of the client. See the 'STATUS' constants
  *   'timestamp': 'number'  // Timestamp of last received change to <client_state>
  * }
  * 
@@ -4683,17 +4692,19 @@ fdom.apis.set('social', {
   **/
   'ERRCODE': {type: 'constant', value: {
     /** GENERAL **/
+    'SUCCESS': {errcode: "SUCCESS", message: "Success!"},
     // Unknown
-    'OFFLINE': 'User is currently offline',
-    'UNKNOWN': 'WTF is going on?',
+    'UNKNOWN': {errcode: 'UNKNOWN', message: "Unknown error"},
+    // User is currently offline
+    'OFFLINE': {errcode: 'OFFLINE', message: "User is currently offline"},
 
     /** LOGIN **/
-    // Error with authenticating to the server
-    'LOGIN_BADCREDENTIALS': 'Missing or invalid user credentials',
+    // Error with authenticating to the server (e.g. missing or invalid credentials)
+    'LOGIN_BADCREDENTIALS': {errcode: 'LOGIN_BADCREDENTIALS', message: "Error authenticating with server"},
     // Error with connecting to the server
-    'LOGIN_FAILEDCONNECTION': 'Error connecting to the login server',
-    // Already logged in
-    'LOGIN_ALREADYONLINE': 'User is already logged in',
+    'LOGIN_FAILEDCONNECTION': {errcode: 'LOGIN_FAILEDCONNECTION', message: "Error connecting to server"},
+    // User is already logged in
+    'LOGIN_ALREADYONLINE': {errcode: 'LOGIN_ALREADYONLINE', message: "User is already logged in"},
 
     /** CLEARCACHEDCREDENTIALS**/
     // None at the moment
@@ -4705,7 +4716,8 @@ fdom.apis.set('social', {
     // See GENERAL
 
     /** SENDMESSAGE **/
-    'SEND_INVALIDDESTINATION': 'Trying to send a message to an invalid destination',
+    // Trying to send a message to an invalid destination (e.g. not in user's roster)
+    'SEND_INVALIDDESTINATION': {errcode: 'SEND_INVALIDDESTINATION', message: "Trying to send a message to an invalid destination"},
 
     /** LOGOUT **/
     // See GENERAL
@@ -4717,12 +4729,12 @@ fdom.apis.set('social', {
    **/
   'STATUS': {type: 'constant', value: {
     // Not logged in
-    'OFFLINE': 0,
+    'OFFLINE': 'OFFLINE',
     // This client runs the same freedom.js app as you and is online
-    'ONLINE': 1,
+    'ONLINE': 'ONLINE',
     // This client is online, but does not run the same app (chat client)
     // (i.e. can be useful to invite others to your freedom.js app)
-    'ONLINE_WITH_OTHER_APP': 2
+    'ONLINE_WITH_OTHER_APP': 'ONLINE_WITH_OTHER_APP'
   }},
 
   /**
@@ -4752,7 +4764,7 @@ fdom.apis.set('social', {
     ret: {
       'userId': 'string',     // userId of myself on this network
       'clientId': 'string',   // clientId of my client on this network
-      'status': 'number',     // One of the constants defined in 'STATUS'
+      'status': 'string',     // One of the constants defined in 'STATUS'
       'timestamp': 'number'   // Timestamp of last received change to <client_state>
     }
   },
@@ -4832,13 +4844,13 @@ fdom.apis.set('social', {
     'from': {               // message source (fits <client_state>)
       'userId': 'string',   // Unique ID of user (e.g. alice@gmail.com)
       'clientId': 'string', // Unique ID of client (e.g. alice@gmail.com/Android-23nadsv32f)
-      'status': 'number',   // Status of the client. See the 'STATUS' constants
+      'status': 'string',   // Status of the client. See the 'STATUS' constants
       'timestamp': 'number' // Timestamp of last received change to <client_state>
     },
     'to': {                 // message destination (fits <client_state>)
       'userId': 'string',   // Unique ID of user (e.g. alice@gmail.com)
       'clientId': 'string', // Unique ID of client (e.g. alice@gmail.com/Android-23nadsv32f)
-      'status': 'number',   // Status of the client. See the 'STATUS' constants
+      'status': 'string',   // Status of the client. See the 'STATUS' constants
       'timestamp': 'number' // Timestamp of last received change to <client_state>
     },
     'message': 'string'     // message contents
@@ -4871,7 +4883,7 @@ fdom.apis.set('social', {
     //REQUIRED
     'userId': 'string',   // Unique ID of user (e.g. alice@gmail.com)
     'clientId': 'string', // Unique ID of client (e.g. alice@gmail.com/Android-23nadsv32f)
-    'status': 'number',   // Status of the client. See the 'STATUS' constants
+    'status': 'string',   // Status of the client. See the 'STATUS' constants
     'timestamp': 'number' // Timestamp of last received change to <client_state>
     //OPTIONAL
     //None

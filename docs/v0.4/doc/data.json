@@ -2,7 +2,7 @@
     "project": {
         "name": "freedom",
         "description": "Embracing a distributed web",
-        "version": "0.4.0"
+        "version": "0.4.1"
     },
     "files": {
         "src/link/direct.js": {
@@ -804,7 +804,7 @@
         },
         {
             "file": "src/proxy/apiInterface.js",
-            "line": 213,
+            "line": 219,
             "description": "Make a thing into an Array Buffer",
             "static": 1,
             "itemtype": "method",
@@ -824,7 +824,7 @@
         },
         {
             "file": "src/proxy/apiInterface.js",
-            "line": 239,
+            "line": 245,
             "description": "Recursively traverse a [nested] object and freeze its keys from being\nwritable. Note, the result can have new keys added to it, but existing ones\ncannot be  overwritten. Doesn't do anything for arrays or other collections.",
             "itemtype": "method",
             "name": "recursiveFreezeObject",
