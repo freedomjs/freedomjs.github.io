@@ -987,7 +987,7 @@
         },
         {
             "file": "src/hub.js",
-            "line": 58,
+            "line": 64,
             "description": "Get the local destination port of a flow.",
             "itemtype": "method",
             "name": "getDestination",
@@ -1007,7 +1007,7 @@
         },
         {
             "file": "src/hub.js",
-            "line": 72,
+            "line": 78,
             "description": "Get the local source port of a flow.",
             "itemtype": "method",
             "name": "getSource",
@@ -1027,7 +1027,7 @@
         },
         {
             "file": "src/hub.js",
-            "line": 89,
+            "line": 95,
             "description": "Register a destination for messages with this hub.",
             "itemtype": "method",
             "name": "register",
@@ -1053,7 +1053,7 @@
         },
         {
             "file": "src/hub.js",
-            "line": 105,
+            "line": 111,
             "description": "Deregister a destination for messages with the hub.\nNote: does not remove associated routes. As such, deregistering will\nprevent the installation of new routes, but will not distrupt existing\nhub routes.",
             "itemtype": "method",
             "name": "deregister",
@@ -1073,7 +1073,7 @@
         },
         {
             "file": "src/hub.js",
-            "line": 122,
+            "line": 128,
             "description": "Install a new route in the hub.",
             "itemtype": "method",
             "name": "install",
@@ -1103,7 +1103,7 @@
         },
         {
             "file": "src/hub.js",
-            "line": 153,
+            "line": 159,
             "description": "Uninstall a hub route.",
             "itemtype": "method",
             "name": "uninstall",
@@ -1128,7 +1128,7 @@
         },
         {
             "file": "src/hub.js",
-            "line": 181,
+            "line": 187,
             "description": "Generate a unique routing identifier.",
             "itemtype": "method",
             "name": "generateRoute",

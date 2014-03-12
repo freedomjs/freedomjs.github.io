@@ -164,11 +164,17 @@ fdom.Hub.prototype.onMessage = function(source, message) {
   if (!message.quiet) {
     var type = message.type;
     if (message.type === &#x27;message&#x27; &amp;&amp; message.message &amp;&amp;
-        message.message.type) {
-      type = message.message.type;
+        message.message.action === &#x27;method&#x27;) {
+      type = &#x27;method.&#x27; + message.message.type;
+    } else if (message.type === &#x27;method&#x27; &amp;&amp; message.message &amp;&amp;
+        message.message.type === &#x27;method&#x27;) {
+      type = &#x27;return.&#x27; + message.message.name;
+    } else if (message.type === &#x27;message&#x27; &amp;&amp; message.message &amp;&amp;
+        message.message.type === &#x27;event&#x27;) {
+      type = &#x27;event.&#x27; + message.message.name;
     }
     fdom.debug.log(this.apps[destination.source].toString() +
-        &quot; -&quot; + message.type + &quot;-&gt; &quot; +
+        &quot; -&quot; + type + &quot;-&gt; &quot; +
         this.apps[destination.app].toString() + &quot;.&quot; + destination.flow);
   }
 
