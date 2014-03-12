@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.1</em>
+            <em>API Docs for: 0.4.2</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -256,7 +256,7 @@ fdom.port.Module.prototype.start = function() {
   }
   if (this.manifest &amp;&amp; this.controlChannel) {
     this.loadLinks();
-    this.port = new fdom.link[this.config.portType](this);
+    this.port = new fdom.link[this.config.portType](this.manifestId);
     // Listen to all port messages.
     this.port.on(this.emitMessage.bind(this));
     // Tell the local port to ask us for help.

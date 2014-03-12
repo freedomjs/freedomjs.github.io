@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.1</em>
+            <em>API Docs for: 0.4.2</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -132,7 +132,10 @@ fdom.link = fdom.link || {};
  * @uses handleEvents
  * @constructor
  */
-fdom.link.Worker = function() {
+fdom.link.Worker = function(id) {
+  if (id) {
+    this.manifest = id.substr(id.lastIndexOf(&#x27;/&#x27;) + 1);
+  }
   fdom.Link.call(this);
 };
 
@@ -195,7 +198,7 @@ fdom.link.Worker.prototype.setupWorker = function() {
     worker = new Worker(this.config.source);
   } else {
     blob = new window.Blob([this.config.src], {type: &#x27;text/javascript&#x27;});
-    worker = new Worker(window.URL.createObjectURL(blob));
+    worker = new Worker(window.URL.createObjectURL(blob) + &#x27;#&#x27; + this.manifest);
   }
   worker.addEventListener(&#x27;error&#x27;, function(err) {
     fdom.debug.error(err, this.toString());

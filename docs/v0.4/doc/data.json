@@ -2,7 +2,7 @@
     "project": {
         "name": "freedom",
         "description": "Embracing a distributed web",
-        "version": "0.4.1"
+        "version": "0.4.2"
     },
     "files": {
         "src/link/direct.js": {
@@ -655,7 +655,7 @@
         },
         {
             "file": "src/link/worker.js",
-            "line": 19,
+            "line": 22,
             "description": "Start this port by listening or creating a worker.",
             "itemtype": "method",
             "name": "start",
@@ -665,7 +665,7 @@
         },
         {
             "file": "src/link/worker.js",
-            "line": 32,
+            "line": 35,
             "description": "Stop this port by destroying the worker.",
             "itemtype": "method",
             "name": "stop",
@@ -675,7 +675,7 @@
         },
         {
             "file": "src/link/worker.js",
-            "line": 41,
+            "line": 44,
             "description": "Get the textual description of this port.",
             "itemtype": "method",
             "name": "toString",
@@ -687,7 +687,7 @@
         },
         {
             "file": "src/link/worker.js",
-            "line": 50,
+            "line": 53,
             "description": "Set up a global listener to handle incoming messages to this\nfreedom.js context.",
             "itemtype": "method",
             "name": "setupListener",
@@ -695,7 +695,7 @@
         },
         {
             "file": "src/link/worker.js",
-            "line": 68,
+            "line": 71,
             "description": "Set up a worker with an isolated freedom.js context inside.",
             "itemtype": "method",
             "name": "setupWorker",
@@ -703,7 +703,7 @@
         },
         {
             "file": "src/link/worker.js",
-            "line": 98,
+            "line": 101,
             "description": "Receive messages from the hub to this port.\nReceived messages will be emitted from the other side of the port.",
             "itemtype": "method",
             "name": "deliverMessage",
