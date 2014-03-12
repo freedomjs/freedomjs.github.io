@@ -987,7 +987,7 @@
         },
         {
             "file": "src/hub.js",
-            "line": 53,
+            "line": 58,
             "description": "Get the local destination port of a flow.",
             "itemtype": "method",
             "name": "getDestination",
@@ -1007,7 +1007,7 @@
         },
         {
             "file": "src/hub.js",
-            "line": 67,
+            "line": 72,
             "description": "Get the local source port of a flow.",
             "itemtype": "method",
             "name": "getSource",
@@ -1027,7 +1027,7 @@
         },
         {
             "file": "src/hub.js",
-            "line": 84,
+            "line": 89,
             "description": "Register a destination for messages with this hub.",
             "itemtype": "method",
             "name": "register",
@@ -1053,7 +1053,7 @@
         },
         {
             "file": "src/hub.js",
-            "line": 100,
+            "line": 105,
             "description": "Deregister a destination for messages with the hub.\nNote: does not remove associated routes. As such, deregistering will\nprevent the installation of new routes, but will not distrupt existing\nhub routes.",
             "itemtype": "method",
             "name": "deregister",
@@ -1073,7 +1073,7 @@
         },
         {
             "file": "src/hub.js",
-            "line": 117,
+            "line": 122,
             "description": "Install a new route in the hub.",
             "itemtype": "method",
             "name": "install",
@@ -1090,7 +1090,7 @@
                 },
                 {
                     "name": "flow",
-                    "description": "The flow on which the destination will receive routed messages.",
+                    "description": "The flow where the destination will receive messages.",
                     "type": "String"
                 }
             ],
@@ -1103,7 +1103,7 @@
         },
         {
             "file": "src/hub.js",
-            "line": 148,
+            "line": 153,
             "description": "Uninstall a hub route.",
             "itemtype": "method",
             "name": "uninstall",
@@ -1128,7 +1128,7 @@
         },
         {
             "file": "src/hub.js",
-            "line": 176,
+            "line": 181,
             "description": "Generate a unique routing identifier.",
             "itemtype": "method",
             "name": "generateRoute",
@@ -1545,7 +1545,7 @@
         },
         {
             "file": "src/port-module.js",
-            "line": 200,
+            "line": 204,
             "description": "Intercept messages as they arrive from the module,\nmapping them between internal and external flow names.",
             "itemtype": "method",
             "name": "emitMessage",
@@ -1568,7 +1568,7 @@
         },
         {
             "file": "src/port-module.js",
-            "line": 279,
+            "line": 281,
             "description": "Load the module description from its manifest.",
             "itemtype": "method",
             "name": "loadManifest",
@@ -1579,7 +1579,7 @@
         },
         {
             "file": "src/port-module.js",
-            "line": 301,
+            "line": 303,
             "description": "Request the external routes used by this module.",
             "itemtype": "method",
             "name": "loadLinks",
@@ -1590,7 +1590,7 @@
         },
         {
             "file": "src/port-module.js",
-            "line": 353,
+            "line": 355,
             "description": "Update the module environment with information about a dependent manifest.",
             "itemtype": "method",
             "name": "updateEnv",
