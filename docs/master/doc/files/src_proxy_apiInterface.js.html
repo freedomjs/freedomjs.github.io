@@ -264,6 +264,10 @@ fdom.proxy.conform = function(template, from, externals, separate) {
     //from = undefined;
     //throw &quot;Trying to conform a function&quot;;
     return undefined;
+  } else if (typeof(from) === &#x27;undefined&#x27;) {
+    return undefined;
+  } else if (from === null) {
+    return null;
   }
   switch(template) {
   case &#x27;string&#x27;:
