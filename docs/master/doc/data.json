@@ -2270,6 +2270,43 @@
         {
             "file": "src/resource.js",
             "line": 169,
+            "description": "Resolve URLs which are self-describing.",
+            "itemtype": "method",
+            "name": "nullResolver",
+            "access": "private",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "manifest",
+                    "description": "The Manifest URL.",
+                    "type": "String"
+                },
+                {
+                    "name": "url",
+                    "description": "The URL to resolve.",
+                    "type": "String"
+                },
+                {
+                    "name": "resolve",
+                    "description": "The promise to complete.",
+                    "type": "Function"
+                },
+                {
+                    "name": "reject",
+                    "description": "The promise to reject.",
+                    "type": "Function"
+                }
+            ],
+            "return": {
+                "description": "True if the URL could be resolved.",
+                "type": "Boolean"
+            },
+            "class": "Resource",
+            "module": "freedom"
+        },
+        {
+            "file": "src/resource.js",
+            "line": 190,
             "description": "Retrieve manifest content from a self-descriptive manifest url.\nThese urls are used to reference a manifest without requiring subsequent,\npotentially non-CORS requests.",
             "itemtype": "method",
             "name": "manifestRetriever",
@@ -2297,7 +2334,7 @@
         },
         {
             "file": "src/resource.js",
-            "line": 191,
+            "line": 212,
             "description": "Retrieve resource contents using an XHR request.",
             "itemtype": "method",
             "name": "xhrRetriever",
@@ -2325,7 +2362,7 @@
         },
         {
             "file": "src/resource.js",
-            "line": 214,
+            "line": 235,
             "description": "Defines fdom.resources as a singleton registry for file management.",
             "class": "Resource",
             "module": "freedom"
@@ -2633,6 +2670,10 @@
         },
         {
             "message": "replacing incorrect tag: returns with return",
+            "line": " src/resource.js:169"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
             "line": " src/util.js:118"
         },
         {
@@ -2653,7 +2694,7 @@
         },
         {
             "message": "Missing item type\nDefines fdom.resources as a singleton registry for file management.",
-            "line": " src/resource.js:214"
+            "line": " src/resource.js:235"
         }
     ]
 }
