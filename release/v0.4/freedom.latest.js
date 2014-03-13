@@ -1040,13 +1040,24 @@ fdom.Hub.prototype.onMessage = function(source, message) {
   }
 
   if(!this.apps[destination.app]) {
-    fdom.debug.warn("Message dropped to deregistered destination " + destination.app);
+    fdom.debug.warn("Message dropped to destination " + destination.app);
     return;
   }
 
   if (!message.quiet) {
+    var type = message.type;
+    if (message.type === 'message' && message.message &&
+        message.message.action === 'method') {
+      type = 'method.' + message.message.type;
+    } else if (message.type === 'method' && message.message &&
+        message.message.type === 'method') {
+      type = 'return.' + message.message.name;
+    } else if (message.type === 'message' && message.message &&
+        message.message.type === 'event') {
+      type = 'event.' + message.message.name;
+    }
     fdom.debug.log(this.apps[destination.source].toString() +
-        " -" + message.type + "-> " +
+        " -" + type + "-> " +
         this.apps[destination.app].toString() + "." + destination.flow);
   }
 
@@ -1122,7 +1133,7 @@ fdom.Hub.prototype.deregister = function(app) {
  * @method install
  * @param {Port} source The source of the route.
  * @param {Port} destination The destination of the route.
- * @param {String} flow The flow on which the destination will receive routed messages.
+ * @param {String} flow The flow where the destination will receive messages.
  * @return {String} A routing source identifier for sending messages.
  */
 fdom.Hub.prototype.install = function(source, destination, flow) {
@@ -1131,7 +1142,7 @@ fdom.Hub.prototype.install = function(source, destination, flow) {
     return;
   }
   if (!destination) {
-    fdom.debug.warn("Unwilling to generate a flow to nowhere from " + source.id);
+    fdom.debug.warn("Unwilling to generate blackhole flow from " + source.id);
     return;
   }
 
@@ -1927,7 +1938,11 @@ fdom.port.Module.prototype.stop = function() {
  * @return {String} The description of this Port.
  */
 fdom.port.Module.prototype.toString = function() {
-  return "[Module " + this.manifestId + "]";
+  var manifest = this.manifestId;
+  if (manifest.indexOf('/') > -1) {
+    manifest = manifest.substr(manifest.lastIndexOf('/') + 1);
+  }
+  return "[Module " + manifest + "]";
 };
 
 /**
@@ -1940,8 +1955,6 @@ fdom.port.Module.prototype.toString = function() {
  */
 fdom.port.Module.prototype.emitMessage = function(name, message) {
   if (this.internalPortMap[name] === false && message.channel) {
-    fdom.debug.log('Module saw new channel binding: ' + name +
-        'registered as ' + message.channel);
     this.internalPortMap[name] = message.channel;
     this.emit('internalChannelReady');
     return;
@@ -3248,7 +3261,7 @@ Resource.prototype.get = function(manifest, url) {
     } else {
       this.resolve(manifest, url).then(function(key, resolve, address) {
         this.files[key] = address;
-        fdom.debug.log('Resolved ' + key + ' to ' + address);
+        //fdom.debug.log('Resolved ' + key + ' to ' + address);
         resolve(address);
       }.bind(this, key, resolve), reject);
     }
@@ -4288,6 +4301,10 @@ fdom.proxy.conform = function(template, from, externals, separate) {
     //from = undefined;
     //throw "Trying to conform a function";
     return undefined;
+  } else if (typeof(from) === 'undefined' || template === undefined) {
+    return undefined;
+  } else if (from === null) {
+    return null;
   }
   switch(template) {
   case 'string':
@@ -4356,8 +4373,7 @@ fdom.proxy.conform = function(template, from, externals, separate) {
     });
     return val;
   }
-  fdom.debug.log('Conform ignoring value for template:' + template);
-  fdom.debug.log(from);
+  fdom.debug.warn('Unknown template type: ' + template);
 };
 
 /**
@@ -5460,6 +5476,11 @@ SimpleDataPeer.prototype.openDataChannel = function (channelId, continuation) {
       this.addDataChannel(channelId, dataChannel);
       continuation();
     }.bind(this);
+    dataChannel.onerror = function(err) {
+      //@(ryscheng) todo - replace with errors that work across the interface
+      console.error(err);
+      continuation(undefined, err);
+    };
   }.bind(this));
 };
 
@@ -5485,8 +5506,7 @@ SimpleDataPeer.prototype.setSendSignalMessage = function (sendSignalMessageFn) {
 
 // Handle a message send on the signalling channel to this peer.
 SimpleDataPeer.prototype.handleSignalMessage = function (messageText) {
-//  console.log(this.peerName + ": " + "handleSignalMessage: \n" +
-//      messageText);
+  //console.log(this.peerName + ": " + "handleSignalMessage: \n" + messageText);
   var json = JSON.parse(messageText);
   this.runWhenReady(function () {
     // TODO: If we are offering and they are also offerring at the same time,
@@ -5499,6 +5519,7 @@ SimpleDataPeer.prototype.handleSignalMessage = function (messageText) {
         new RTCSessionDescription(json.sdp),
         // Success
         function () {
+          //console.log(this.peerName + ": setRemoteDescription succeeded");
           if (this.pc.remoteDescription.type === "offer") {
             this.pc.createAnswer(this.onDescription.bind(this));
           }
@@ -5511,7 +5532,7 @@ SimpleDataPeer.prototype.handleSignalMessage = function (messageText) {
       );
     } else if (json.candidate) {
       // Add remote ice candidate.
-      console.log(this.peerName + ": Adding ice candidate: " + JSON.stringify(json.candidate));
+      //console.log(this.peerName + ": Adding ice candidate: " + JSON.stringify(json.candidate));
       var ice_candidate = new RTCIceCandidate(json.candidate);
       this.pc.addIceCandidate(ice_candidate);
     } else {
@@ -5540,7 +5561,7 @@ SimpleDataPeer.prototype.close = function () {
   if (this.pc.signalingState !== "closed") {
     this.pc.close();
   }
-  // console.log(this.peerName + ": " + "Closed peer connection.");
+  //console.log(this.peerName + ": " + "Closed peer connection.");
 };
 
 SimpleDataPeer.prototype.addDataChannel = function (channelId, channel) {
@@ -5567,6 +5588,7 @@ SimpleDataPeer.prototype.onDescription = function (description) {
       this.pc.setLocalDescription(
         description,
         function () {
+          //console.log(this.peerName + ": setLocalDescription succeeded");
           this.sendSignalMessage(JSON.stringify({'sdp': description}));
         }.bind(this),
         function (e) {
@@ -5583,7 +5605,7 @@ SimpleDataPeer.prototype.onDescription = function (description) {
 };
 
 SimpleDataPeer.prototype.onNegotiationNeeded = function (e) {
-  // console.log(this.peerName + ": " + "_onNegotiationNeeded", this._pc, e);
+  //console.log(this.peerName + ": " + "_onNegotiationNeeded", this._pc, e);
   if (this.pcState !== SimpleDataPeerState.DISCONNECTED) {
     // Negotiation messages are falsely requested for new data channels.
     //   https://code.google.com/p/webrtc/issues/detail?id=2431
@@ -5625,7 +5647,7 @@ SimpleDataPeer.prototype.onNegotiationNeeded = function (e) {
 SimpleDataPeer.prototype.onIceCallback = function (event) {
   if (event.candidate) {
     // Send IceCandidate to peer.
-    // console.log(this.peerName + ": " + "ice callback with candidate", event);
+    //console.log(this.peerName + ": " + "ice callback with candidate", event);
     if (this.sendSignalMessage) {
       this.sendSignalMessage(JSON.stringify({'candidate': event.candidate}));
     } else {
@@ -5635,8 +5657,7 @@ SimpleDataPeer.prototype.onIceCallback = function (event) {
 };
 
 SimpleDataPeer.prototype.onSignalingStateChange = function () {
-//  console.log(this.peerName + ": " + "_onSignalingStateChange: ",
-//      this._pc.signalingState);
+  //console.log(this.peerName + ": " + "_onSignalingStateChange: ", this._pc.signalingState);
   if (this.pc.signalingState === "stable") {
     this.pcState = SimpleDataPeerState.CONNECTED;
   }

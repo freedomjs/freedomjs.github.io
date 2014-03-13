@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.2</em>
+            <em>API Docs for: 0.4.3</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -264,6 +264,10 @@ fdom.proxy.conform = function(template, from, externals, separate) {
     //from = undefined;
     //throw &quot;Trying to conform a function&quot;;
     return undefined;
+  } else if (typeof(from) === &#x27;undefined&#x27; || template === undefined) {
+    return undefined;
+  } else if (from === null) {
+    return null;
   }
   switch(template) {
   case &#x27;string&#x27;:
@@ -332,8 +336,7 @@ fdom.proxy.conform = function(template, from, externals, separate) {
     });
     return val;
   }
-  fdom.debug.log(&#x27;Conform ignoring value for template:&#x27; + template);
-  fdom.debug.log(from);
+  fdom.debug.warn(&#x27;Unknown template type: &#x27; + template);
 };
 
 /**

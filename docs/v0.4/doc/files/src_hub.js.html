@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.2</em>
+            <em>API Docs for: 0.4.3</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -157,13 +157,24 @@ fdom.Hub.prototype.onMessage = function(source, message) {
   }
 
   if(!this.apps[destination.app]) {
-    fdom.debug.warn(&quot;Message dropped to deregistered destination &quot; + destination.app);
+    fdom.debug.warn(&quot;Message dropped to destination &quot; + destination.app);
     return;
   }
 
   if (!message.quiet) {
+    var type = message.type;
+    if (message.type === &#x27;message&#x27; &amp;&amp; message.message &amp;&amp;
+        message.message.action === &#x27;method&#x27;) {
+      type = &#x27;method.&#x27; + message.message.type;
+    } else if (message.type === &#x27;method&#x27; &amp;&amp; message.message &amp;&amp;
+        message.message.type === &#x27;method&#x27;) {
+      type = &#x27;return.&#x27; + message.message.name;
+    } else if (message.type === &#x27;message&#x27; &amp;&amp; message.message &amp;&amp;
+        message.message.type === &#x27;event&#x27;) {
+      type = &#x27;event.&#x27; + message.message.name;
+    }
     fdom.debug.log(this.apps[destination.source].toString() +
-        &quot; -&quot; + message.type + &quot;-&gt; &quot; +
+        &quot; -&quot; + type + &quot;-&gt; &quot; +
         this.apps[destination.app].toString() + &quot;.&quot; + destination.flow);
   }
 
@@ -239,7 +250,7 @@ fdom.Hub.prototype.deregister = function(app) {
  * @method install
  * @param {Port} source The source of the route.
  * @param {Port} destination The destination of the route.
- * @param {String} flow The flow on which the destination will receive routed messages.
+ * @param {String} flow The flow where the destination will receive messages.
  * @return {String} A routing source identifier for sending messages.
  */
 fdom.Hub.prototype.install = function(source, destination, flow) {
@@ -248,7 +259,7 @@ fdom.Hub.prototype.install = function(source, destination, flow) {
     return;
   }
   if (!destination) {
-    fdom.debug.warn(&quot;Unwilling to generate a flow to nowhere from &quot; + source.id);
+    fdom.debug.warn(&quot;Unwilling to generate blackhole flow from &quot; + source.id);
     return;
   }
 
