@@ -97,10 +97,6 @@ header h2 {
   max-width: 100%;
 }
 
-#downloads {
-  margin-bottom: 40px;
-}
-
 a.button {
   border: 1px solid;
   border-color: #eee #ccc #ccc #eee;
@@ -321,13 +317,7 @@ footer a:hover {
   *display:inline; /* ie7 */
 }
 .navbar a {
-  padding: 3px 12px;
-  text-decoration: none;
   line-height: 100%;
-  background: #F5F5F5;
-  color: #000000;
-  border-radius: 5px;
-  font-size: 0.75em;
 }
 .navbar a:hover {
   color: #696970;
@@ -353,12 +343,6 @@ footer a:hover {
     padding-top: 10px;
     padding-bottom: 10px;
   }
-  #downloads {
-    margin-bottom: 25px;
-  }
-  #download-zip, #download-tar-gz {
-    display: none;
-  }
   .inner {
     width: 94%;
     margin: 0 auto;
@@ -374,12 +358,6 @@ footer a:hover {
     padding: 5px 0;
     position: relative;
     top: 0;
-    left: 0;
-    border: solid 1px #aaa;
-    background: #fff url(images/icon-menu.png) no-repeat 10px 11px;
-    background-image: none;
-    border-radius: 5px;
-    box-shadow: 0 1px 2px rgba(0,0,0,.3);
     left: 50%;
     margin-left: -120px;
   }
@@ -396,7 +374,6 @@ footer a:hover {
     text-align: left;
   }
   .navbar .current a {
-    background: none;
     color: #666;
   }
 
