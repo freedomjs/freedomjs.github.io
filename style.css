@@ -113,6 +113,16 @@ footer {
   }
 }
 
+.featurette-narrow {
+  width: 20%;
+  background: #000000;
+}
+
+.featurette-wide {
+  width: 70%;
+  background: #F5F5F5;
+}
+
 button {
   background: transparent;
   border: 1px solid;
