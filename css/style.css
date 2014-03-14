@@ -1,0 +1,57 @@
+@import url("//fonts.googleapis.com/css?family=Rosario:700i");
+
+body {
+  font: 16px/26px "Roboto", "Helvetica Neue", Helvetica, arial, sans-serif;
+  color: #444;
+  -webkit-font-smoothing: antialiased;
+  font-smoothing: antialiased;
+  font-weight: 300;
+}
+
+/* Custom container */
+.container {
+  margin: 0 auto;
+  max-width: 700px;
+}
+
+#logo, .freedomjs {
+  font-family: 'Rosario', sans-serif;
+  font-weight: 700;
+  font-style: italic;
+  color: rgb(253, 60, 0);
+}
+
+#logo {
+  font-size: 5em;
+}
+
+.big {
+  font-size: 1.5em;
+}
+
+header {
+  text-align: center;
+}
+
+
+.featurette-narrow {
+  width: 20%;
+  background: #000000;
+}
+
+.featurette-wide {
+  width: 70%;
+  background: #F5F5F5;
+}
+
+button {
+  background: transparent;
+  border: 1px solid;
+  border-color: #eee #ccc #ccc #eee;
+  font-size: 100%;
+  outline: none;
+}
+
+button:active {
+  background: #eee;
+}
