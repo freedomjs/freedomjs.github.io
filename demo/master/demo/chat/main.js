@@ -17,7 +17,11 @@ var myClientState = null;
  * Just forward it to the Social provider
  **/
 freedom.on('send-message', function(val) {
-  social.sendMessage(val.to, val.message);
+  social.sendMessage(val.to, val.message).then(function(ret) {
+    //Fulfill - sendMessage succeeded
+  }, function(err) {
+    freedom.emit("recv-err", err);
+  });
 });
 
 /**
@@ -74,7 +78,7 @@ social.login({
   rememberLogin: false
 }).then(function(ret) {
   myClientState = ret;
-  console.log("!!!"+JSON.stringify(myClientState));
+  console.log("state: " + JSON.stringify(myClientState));
   if (ret.status == social.STATUS["ONLINE"]) {
     freedom.emit('recv-uid', ret.clientId);
     freedom.emit('recv-status', "online");
