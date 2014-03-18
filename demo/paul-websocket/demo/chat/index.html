@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang='en-US'>
+<head>
+  <title>Chat ~ freedom.js Demos</title>
+  <meta http-equiv='Content-Type' content='text/html;charset=utf-8' />
+  <link href='../style.css' rel='stylesheet' type='text/css' />
+  <!-- Include freedom.js, pass it the manifest, and a set of options -->
+  <script type='text/javascript'
+      src='../../freedom.js'
+      data-manifest='manifest.json'>
+  {
+    "strongIsolation": true,
+    "stayLocal": true,
+    "debug": true
+  }
+  </script>
+  <script type='text/javascript' src='ux.js'></script>
+
+  <style type='text/css'>
+  section {border: 1px solid black; position:relative; display: inline-block; vertical-align:top;}
+  #uid {font-family: helvetica; float:left;}
+  #buddylist {padding: 5px; margin-left:-5px; min-width: 150px;}
+  #msg-input {width:700px; margin:0;}
+  #messagelist {height: 400px; overflow-y: scroll; padding-left: 5px;}
+  </style>
+</head>
+
+<body>
+  <header id='logo'>freedom.js</header>
+  <header><span id='triangle'>&#9654;</span> Demos</header>
+  <header><span id='triangle'>&#9654;</span> Chat</header>
+  <div style='clear:both; height:15px;'></div>
+  <section>
+    <div id='messagelist' class='text'></div>
+    <div id='uid'>Logging In</div>
+    <input id='msg-input' type='text' placeholder='Type message here'/>
+  </section>
+  <section id='buddylist'>
+  </section>
+</body>
+</html>
