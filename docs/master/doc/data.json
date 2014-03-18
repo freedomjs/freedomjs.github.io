@@ -1915,7 +1915,7 @@
         },
         {
             "file": "src/port-proxy.js",
-            "line": 91,
+            "line": 93,
             "description": "Create a function that can be used to get interfaces from this proxy from\na user-visible point.",
             "itemtype": "method",
             "name": "getProxyInterface",
@@ -1924,7 +1924,7 @@
         },
         {
             "file": "src/port-proxy.js",
-            "line": 158,
+            "line": 161,
             "description": "Provides a bound class for creating a proxy.Interface associated\nwith this proxy. This partial level of construction can be used\nto allow the proxy to be used as a provider for another API.",
             "itemtype": "method",
             "name": "getInterfaceConstructor",
@@ -1935,7 +1935,7 @@
         },
         {
             "file": "src/port-proxy.js",
-            "line": 173,
+            "line": 176,
             "description": "Emit a message on the channel once setup is complete.",
             "itemtype": "method",
             "name": "doEmit",
@@ -1963,7 +1963,7 @@
         },
         {
             "file": "src/port-proxy.js",
-            "line": 192,
+            "line": 195,
             "description": "Teardown a single interface of this proxy.",
             "itemtype": "method",
             "name": "teardown",
@@ -1979,7 +1979,7 @@
         },
         {
             "file": "src/port-proxy.js",
-            "line": 209,
+            "line": 212,
             "description": "Handle a message error reported to this proxy.",
             "itemtype": "method",
             "name": "error",
@@ -2000,7 +2000,7 @@
         },
         {
             "file": "src/port-proxy.js",
-            "line": 226,
+            "line": 229,
             "description": "Close / teardown the flow this proxy terminates.",
             "itemtype": "method",
             "name": "doClose",
@@ -2009,7 +2009,7 @@
         },
         {
             "file": "src/port-proxy.js",
-            "line": 248,
+            "line": 251,
             "description": "Get the textual description of this port.",
             "itemtype": "method",
             "name": "toString",
@@ -2021,7 +2021,7 @@
         },
         {
             "file": "src/port-proxy.js",
-            "line": 261,
+            "line": 264,
             "description": "Get the next ID for a proxy channel.",
             "itemtype": "method",
             "name": "nextId",
