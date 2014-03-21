@@ -6097,9 +6097,9 @@ View_unprivileged.prototype.onMessage = function (m) {
 fdom.apis.register("core.view", View_unprivileged);
 
 /*globals freedom:true, fdom, WebSocket, DEBUG, console*/
+/* sloppy:true*/
 
 function WS(app, dispatchEvent, url, protocols, testWebSocket) {
-  "use strict";
   var WSImplementation;
   // Sub in a mock WebSocket implementation for unit testing.
   if (testWebSocket) {
@@ -6134,8 +6134,6 @@ function WS(app, dispatchEvent, url, protocols, testWebSocket) {
 }
 
 WS.prototype.send = function(data, continuation) {
-  "use strict";
-
   var toSend = data.text || data.binary || data.buffer;
   var errcode, message;
 
@@ -6166,19 +6164,14 @@ WS.prototype.send = function(data, continuation) {
 };
 
 WS.prototype.getReadyState = function(continuation) {
-  "use strict";
-
   continuation(this.websocket.readyState);
 };
 
 WS.prototype.getBufferedAmount = function(continuation) {
-  "use strict";
-
   continuation(this.websocket.bufferedAmount);
 };
 
 WS.prototype.close = function(code, reason, continuation) {
-  "use strict";
   try {
     if (code && reason) {
       this.websocket.close(code, reason);
@@ -6201,14 +6194,10 @@ WS.prototype.close = function(code, reason, continuation) {
 };
 
 WS.prototype.onOpen = function(event) {
-  "use strict";
-
   this.dispatchEvent('onOpen');
 };
 
 WS.prototype.onMessage = function(event) {
-  "use strict";
-
   var data = {
     text: undefined,
     binary: undefined,
@@ -6225,14 +6214,12 @@ WS.prototype.onMessage = function(event) {
 };
 
 WS.prototype.onError = function(event) {
-  "use strict";
   // Nothing to pass on
   // See: http://stackoverflow.com/a/18804298/300539
   this.dispatchEvent('onError');
 };
 
 WS.prototype.onClose = function(event) {
-  "use strict";
   this.dispatchEvent('onClose',
                      {code: event.code,
                       reason: event.reason,
