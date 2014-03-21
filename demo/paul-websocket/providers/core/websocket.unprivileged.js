@@ -1,11 +1,22 @@
-/*globals freedom:true, fdom, WebSocket, DEBUG */
+/*globals freedom:true, fdom, WebSocket, DEBUG, console*/
 
-function WS(url, protocols, dispatchEvent) {
+function WS(app, dispatchEvent, url, protocols, testWebSocket) {
   "use strict";
+  var WSImplementation;
+  // Sub in a mock WebSocket implementation for unit testing.
+  if (testWebSocket) {
+    WSImplementation = testWebSocket;
+  } else {
+    WSImplementation = WebSocket;
+  }
 
   this.dispatchEvent = dispatchEvent;
   try {
-    this.websocket = new WebSocket(url, protocols);
+    if (protocols && protocols.length > 0) {
+      this.websocket = new WSImplementation(url, protocols);
+    } else {
+      this.websocket = new WSImplementation(url);
+    }
   } catch (e) {
     var error = {};
     if (e instanceof SyntaxError) {
@@ -28,7 +39,6 @@ WS.prototype.send = function(data, continuation) {
   "use strict";
 
   var toSend = data.text || data.binary || data.buffer;
-  var err = false;
   var errcode, message;
 
   if (toSend) {
@@ -44,10 +54,10 @@ WS.prototype.send = function(data, continuation) {
     }
   } else {
     errcode = "BAD_SEND";
-    message = ":(";
+    message = "No text, binary, or buffer data found.";
   }
 
-  if (err) {
+  if (errcode) {
     continuation(undefined, {
       errcode: errcode,
       message: message
@@ -108,7 +118,7 @@ WS.prototype.onMessage = function(event) {
   };
   if (event.data instanceof ArrayBuffer) {
     data.buffer = data;
-  } else if (event.data instanceof 'Blob') {
+  } else if (event.data instanceof Blob) {
     data.binary = data;
   } else if (typeof event.data === 'string') {
     data.text = event.data;

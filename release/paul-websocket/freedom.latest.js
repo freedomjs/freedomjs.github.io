@@ -2849,7 +2849,9 @@ fdom.port.Proxy.prototype.onMessage = function(source, message) {
  * @method getInterface
  */
 fdom.port.Proxy.prototype.getInterface = function() {
-  var Iface = this.getInterfaceConstructor();
+  var Iface = this.getInterfaceConstructor(),
+      args = Array.prototype.slice.call(arguments, 0);
+  Iface = Iface.bind.apply(Iface, [Iface].concat(args));
   return new Iface();
 };
 
@@ -2860,7 +2862,8 @@ fdom.port.Proxy.prototype.getInterface = function() {
  */
 fdom.port.Proxy.prototype.getProxyInterface = function() {
   var func = function(p) {
-    return p.getInterface();
+    var args = Array.prototype.slice.call(arguments, 1);
+    return p.getInterface(args);
   }.bind({}, this);
 
   func.close = function(iface) {
@@ -4795,11 +4798,11 @@ fdom.apis.set("core.websocket", {
     type: 'event',
     // The data will be stored in one of the keys,
     // corresponding with the type received
-    value: [{
+    value: {
       "text": "string",
       "binary": "blob",
       "buffer": "buffer"
-    }]
+    }
   },
   'onOpen': {
     type: 'event',
@@ -6093,11 +6096,10 @@ View_unprivileged.prototype.onMessage = function (m) {
 
 fdom.apis.register("core.view", View_unprivileged);
 
-/*globals freedom:true, fdom, WebSocket, DEBUG*/
+/*globals freedom:true, fdom, WebSocket, DEBUG, console*/
 
-function WS(url, protocols, dispatchEvent, testWebSocket) {
+function WS(app, dispatchEvent, url, protocols, testWebSocket) {
   "use strict";
-
   var WSImplementation;
   // Sub in a mock WebSocket implementation for unit testing.
   if (testWebSocket) {
@@ -6108,7 +6110,7 @@ function WS(url, protocols, dispatchEvent, testWebSocket) {
 
   this.dispatchEvent = dispatchEvent;
   try {
-    if (protocols) {
+    if (protocols && protocols.length > 0) {
       this.websocket = new WSImplementation(url, protocols);
     } else {
       this.websocket = new WSImplementation(url);
