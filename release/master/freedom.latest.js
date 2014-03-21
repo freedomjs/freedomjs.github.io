@@ -4750,6 +4750,82 @@ fdom.apis.set('core.peerconnection', {
   'onClose': {type: "event", value: {}}
 });
 
+fdom.apis.set("core.websocket", {
+  // Constructs new websocket. Errors in construction are passed on
+  // through the onError event.
+  'constructor': {value:
+    // URL to connect through
+    ["string",
+    // Protocols
+    ["array", "string"]]},
+  // Send the data to the other side of this connection. Only one of
+  // the entries in the dictionary that is passed will be sent.
+  'send': {
+    type: "method",
+    value: [{
+      "text": "string",
+      "binary": "blob",
+      "buffer": "buffer"
+    }],
+    err: {
+      "errcode": "string",
+      "message": "string"
+    }
+  },
+  'getReadyState': {
+    type: "method",
+    value: [],
+    // 0 -> CONNECTING
+    // 1 -> OPEN
+    // 2 -> CLOSING
+    // 3 -> CLOSED
+    ret: "number"
+  },
+  "getBufferedAmount": {type: "method",
+                        value: ["string"],
+                        ret: "number"},
+  'close': {
+    type: "method",
+    // The first argument is a status code from
+    // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
+    value: ["number", "string"],
+    err: {
+      "errcode": "string",
+      "message": "string"
+    }
+  },
+  'onMessage': {
+    type: 'event',
+    // The data will be stored in one of the keys,
+    // corresponding with the type received
+    value: {
+      "text": "string",
+      "binary": "blob",
+      "buffer": "buffer"
+    }
+  },
+  'onOpen': {
+    type: 'event',
+    value: []
+  },
+  'onError': {
+    type: 'event',
+    value: [{
+      "errcode": "string",
+      "message": "string"
+    }]
+  },
+  'onClose': {
+    type: 'event',
+    // Values given by WebSockets spec:
+    // http://www.w3.org/TR/websockets/#closeevent
+    value: [{
+      "code": "number",
+      "reason": "string",
+      "wasClean": "boolean"
+    }]
+  }
+});
 
 /*globals fdom:true */
 /* indent:2,sloppy:true */
@@ -6019,6 +6095,138 @@ View_unprivileged.prototype.onMessage = function (m) {
 };
 
 fdom.apis.register("core.view", View_unprivileged);
+
+/*globals freedom:true, fdom, WebSocket, DEBUG, console*/
+/* sloppy:true*/
+
+function WS(app, dispatchEvent, url, protocols, testWebSocket) {
+  var WSImplementation;
+  // Sub in a mock WebSocket implementation for unit testing.
+  if (testWebSocket) {
+    WSImplementation = testWebSocket;
+  } else {
+    WSImplementation = WebSocket;
+  }
+
+  this.dispatchEvent = dispatchEvent;
+  try {
+    if (protocols && protocols.length > 0) {
+      this.websocket = new WSImplementation(url, protocols);
+    } else {
+      this.websocket = new WSImplementation(url);
+    }
+  } catch (e) {
+    var error = {};
+    if (e instanceof SyntaxError) {
+      error.errcode = 'SYNTAX';
+    } else {
+      error.errcode = e.name;
+    }
+    error.message = e.message;
+    dispatchEvent('onError', error);
+    return;
+  }
+
+  this.websocket.onopen = this.onOpen.bind(this);
+  this.websocket.onclose = this.onClose.bind(this);
+  this.websocket.onmessage = this.onMessage.bind(this);
+  this.websocket.onerror = this.onError.bind(this);
+}
+
+WS.prototype.send = function(data, continuation) {
+  var toSend = data.text || data.binary || data.buffer;
+  var errcode, message;
+
+  if (toSend) {
+    try {
+      this.websocket.send(toSend);
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        errcode = "SYNTAX";
+      } else {
+        errcode = "INVALID_STATE";
+      }
+      message = e.message;
+    }
+  } else {
+    errcode = "BAD_SEND";
+    message = "No text, binary, or buffer data found.";
+  }
+
+  if (errcode) {
+    continuation(undefined, {
+      errcode: errcode,
+      message: message
+    });
+  } else {
+    continuation();
+  }
+};
+
+WS.prototype.getReadyState = function(continuation) {
+  continuation(this.websocket.readyState);
+};
+
+WS.prototype.getBufferedAmount = function(continuation) {
+  continuation(this.websocket.bufferedAmount);
+};
+
+WS.prototype.close = function(code, reason, continuation) {
+  try {
+    if (code && reason) {
+      this.websocket.close(code, reason);
+    } else {
+      this.websocket.close();
+    }
+    continuation();
+  } catch (e) {
+    var errorCode;
+    if (e instanceof SyntaxError) {
+      errorCode = "SYNTAX";
+    } else {
+      errorCode = "INVALID_ACCESS";
+    }
+    continuation(undefined,{
+      errcode: errorCode,
+      message: e.message
+    });
+  }
+};
+
+WS.prototype.onOpen = function(event) {
+  this.dispatchEvent('onOpen');
+};
+
+WS.prototype.onMessage = function(event) {
+  var data = {
+    text: undefined,
+    binary: undefined,
+    buffer: undefined
+  };
+  if (event.data instanceof ArrayBuffer) {
+    data.buffer = data;
+  } else if (event.data instanceof Blob) {
+    data.binary = data;
+  } else if (typeof event.data === 'string') {
+    data.text = event.data;
+  }
+  this.dispatchEvent('onMessage', data);
+};
+
+WS.prototype.onError = function(event) {
+  // Nothing to pass on
+  // See: http://stackoverflow.com/a/18804298/300539
+  this.dispatchEvent('onError');
+};
+
+WS.prototype.onClose = function(event) {
+  this.dispatchEvent('onClose',
+                     {code: event.code,
+                      reason: event.reason,
+                      wasClean: event.wasClean});
+};
+
+fdom.apis.register('core.websocket', WS);
 
 
     // Create default context.
