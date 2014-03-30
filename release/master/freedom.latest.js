@@ -6027,7 +6027,7 @@ View_unprivileged.prototype.open = function (name, what, continuation) {
   this.host.style.display = "relative";
 
   var container = document.body,
-    config = this.app.config.views,
+    config = this.app.manifest.views,
     root,
     frame;
   if (config && config[name] && document.getElementById(name)) {
