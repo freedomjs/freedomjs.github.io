@@ -106,7 +106,9 @@ header h2 {
 }
 
 .platforms {
-  text-align: center; 
+  text-align: center;
+  background: #f1dbad;
+  border-radius: 5px;
 }
 
 .platforms img {
@@ -189,7 +191,6 @@ hr {
   margin-top: 1em;
   padding-bottom: 1em;
   border: none;
-  background: transparent url('../img/hr.png') 50% 0 no-repeat;
 }
 
 strong {
