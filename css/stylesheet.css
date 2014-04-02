@@ -93,6 +93,27 @@ header h2 {
   margin: 0 auto;
 }
 
+.lastChild > * {
+  display: none;
+}
+
+.lastChild > *:last-child {
+  display:block;
+}
+
+#connections {
+  height: 400px;
+}
+
+.platforms {
+  text-align: center; 
+}
+
+.platforms img {
+  width: 20%;
+  max-width: 100px;
+}
+
 #container .inner img {
   max-width: 100%;
 }

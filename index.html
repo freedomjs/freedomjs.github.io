@@ -52,6 +52,18 @@
 </section>
 
 <!-- jumbotron? -->
+<script type="text/javascript"
+  src="release/master/freedom.latest.js"
+  data-manifest="demo/master/demo/connections/manifest.json">
+  {
+    "stayLocal": true,
+    "debug": false 
+  }
+</script>
+<section id="connections" class="lastChild">
+  <span>freedom.js is loading</span>
+</section>
+
 
 <!-- overview -->
 <div>
@@ -72,15 +84,14 @@
   <div>
     <h1>P2P is reborn in the Web</h1>
     <p>Build powerful P2P apps using only JavaScript and HTML in a single-page 
-    application. Write applications in terms of peers. Our API lets you subscribe
-    to a peer's online status and send data between online peers.
-    Stop worrying about the low-level networking like NAT traversal, rendezvous,
-    etc. Our plug-n-play network stacks immediately let you bootstrap to
-    Google+, Facebook, and a global freedom.js social network.
+    application. Write applications in terms of peers, not IP addresses. 
+    Our API lets you subscribe to a peer's online status and send data to them. 
+    Period. Stop worrying about the low-level networking like NAT traversal, 
+    rendezvous, etc.
     </p>
     <a href="https://github.com/freedomjs/freedom/wiki">
       Start developing
-    </a>.
+    </a>
   </div>
 </div>
 
@@ -90,7 +101,7 @@
   <div><!--image--></div>
   <div>
     <p>Ship your web app using static web servers and CDNs,
-      or use someone else"s for free like GitHub Pages.
+      or use someone else's for free like GitHub Pages.
       Package your code in a node.js package or browser extension.
       It's just JavaScript.
     </p> 
@@ -102,14 +113,19 @@
 
 <!-- featurette-row -->
 <div>
+  <div class="platforms">
+    <img src="img/chrome.jpg" alt="Chrome">
+    <img src="img/firefox.png" alt="Firefox">
+    <img src="img/nodejs.png" alt="node.js">
+    <img src="img/cordova.png" alt="Apache Cordova">
+  </div>
   <div><h1>Serious about cross-platform</h1></div>
-  <div><!--image--></div>
   <div>
     <p>When you write your app with freedom.js, they magically work without 
       modification in modern browsers, Chrome extensions, Firefox extensions, 
       native mobile apps, and node.js.</p>
     <a href="https://github.com/freedomjs/freedom/wiki/Applications">
-      Some freedom.js applications
+      freedom.js applications
     </a>
   </div>
 </div>
@@ -119,12 +135,21 @@
   <div><h1>Plug-n-play networks</h1></div>
   <div><!--image--></div>
   <div>
-    <p>Code against a high-level API, giving you access to abstractions like a user, 
-      friends on their social network, a binary network stream between users, and a key-value store. 
-      Want to use a different social network? No problem! Our plug-and-play API providers let you swap 
-      out the implementations behind the freedom.js interface, allowing your application to support 
-      multiple social networks, storage systems, and network stacks without changing your application code.</p>
-    <p>See how with our <a href="#">"Custom Provider" tutorial</a>.</p>
+    <p>
+      Want to use a different social network? No problem! 
+      Our plug-and-play API providers let you swap 
+      out the implementations behind the freedom.js interface, 
+      allowing your application to support 
+      multiple social networks, storage systems, and network stacks 
+      without changing your application code.
+      Bootstrap your application with Google+, Facebook,
+      or our global freedom.js social network today.
+      (more coming soon).
+      Or write your own!
+    </p>
+    <a href="https://github.com/freedomjs/freedom/wiki/Tutorial:-Getting-Started">
+      Start with our tutorials
+    </a>
   </div>
 </div>
 
