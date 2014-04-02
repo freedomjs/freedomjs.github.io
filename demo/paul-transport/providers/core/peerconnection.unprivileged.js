@@ -12,7 +12,7 @@ var SimpleDataPeerState = {
   CONNECTED: 'CONNECTED'
 };
 
-function SimpleDataPeer(peerName, stunServers, dataChannelCallbacks, mocks) {
+function SimpleDataPeer(peerName, stunServers, dataChannelCallbacks) {
   var RTCPC,
     constraints,
     config,
@@ -21,20 +21,14 @@ function SimpleDataPeer(peerName, stunServers, dataChannelCallbacks, mocks) {
   this.channels = {};
   this.dataChannelCallbacks = dataChannelCallbacks;
 
-  if (typeof mocks.RTCPeerConnection !== "undefined") {
-    RTCPC = mocks.RTCPeerConnection;
+  if (typeof RTCPeerConnection !== "undefined") {
+    RTCPC = RTCPeerConnection;
   } else if (typeof webkitRTCPeerConnection !== "undefined") {
     RTCPC = webkitRTCPeerConnection;
   } else if (typeof mozRTCPeerConnection !== "undefined") {
     RTCPC = mozRTCPeerConnection;
   } else {
     throw new Error("This environment does not seem to support RTCPeerConnection");
-  }
-
-  if (typeof mocks.RTCSessionDescription !== "undefined") {
-    this.RTCSessionDescription = mocks.RTCSessionDescription;
-  } else {
-    this.RTCSessionDescription = RTCSessionDescription;
   }
 
   constraints = {
@@ -136,7 +130,7 @@ SimpleDataPeer.prototype.handleSignalMessage = function (messageText) {
     if (json.sdp) {
       // Set the remote description.
       this.pc.setRemoteDescription(
-        new this.RTCSessionDescription(json.sdp),
+        new RTCSessionDescription(json.sdp),
         // Success
         function () {
           //console.log(this.peerName + ": setRemoteDescription succeeded");
@@ -294,8 +288,7 @@ SimpleDataPeer.prototype.onDataChannel = function (event) {
 };
 
 // _signallingChannel is a channel for emitting events back to the freedom Hub.
-function PeerConnection(portModule, dispatchEvent,
-                        RTCPeerConnection, RTCSessionDescription) {
+function PeerConnection(portModule, dispatchEvent) {
   // Channel for emitting events to consumer.
   this.dispatchEvent = dispatchEvent;
 
@@ -305,11 +298,6 @@ function PeerConnection(portModule, dispatchEvent,
   // This is the portApp (defined in freedom/src/port-app.js). A way to speak
   // to freedom.
   this.freedomModule = portModule;
-
-  // For tests we may mock out the PeerConnection and
-  // SessionDescription implementations
-  this.RTCPeerConnection = RTCPeerConnection;
-  this.RTCSessionDescription = RTCSessionDescription;
 
   // This is the a channel to send signalling messages.
   this.signallingChannel = null;
@@ -338,44 +326,41 @@ function PeerConnection(portModule, dispatchEvent,
 // }
 PeerConnection.prototype.setup = function (signallingChannelId, peerName,
                                             stunServers, continuation) {
-
   this.peerName = peerName;
-  var mocks = {RTCPeerConnection: this.RTCPeerConnection,
-               RTCSessionDescription: this.RTCSessionDescription};
-  var self = this;
-  var dataChannelCallbacks = {
-    // onOpenFn is called at the point messages will actually get through.
-    onOpenFn: function (dataChannel, info) {
-      self.dispatchEvent("onOpenDataChannel",
+  var self = this,
+    dataChannelCallbacks = {
+      // onOpenFn is called at the point messages will actually get through.
+      onOpenFn: function (dataChannel, info) {
+        self.dispatchEvent("onOpenDataChannel",
                          info.label);
-    },
-    onCloseFn: function (dataChannel, info) {
-      self.dispatchEvent("onCloseDataChannel",
+      },
+      onCloseFn: function (dataChannel, info) {
+        self.dispatchEvent("onCloseDataChannel",
                          { channelId: info.label});
-    },
-    // Default on real message prints it to console.
-    onMessageFn: function (dataChannel, info, event) {
-      if (event.data instanceof ArrayBuffer) {
-        self.dispatchEvent('onReceived', {
-          'channelLabel': info.label,
-          'buffer': event.data
-        });
-      } else if (typeof (event.data) === 'string') {
-        self.dispatchEvent('onReceived', {
-          'channelLabel': info.label,
-          'text': event.data
-        });
+      },
+      // Default on real message prints it to console.
+      onMessageFn: function (dataChannel, info, event) {
+        if (event.data instanceof ArrayBuffer) {
+          self.dispatchEvent('onReceived', {
+            'channelLabel': info.label,
+            'buffer': event.data
+          });
+        } else if (typeof (event.data) === 'string') {
+          self.dispatchEvent('onReceived', {
+            'channelLabel': info.label,
+            'text': event.data
+          });
+        }
+      },
+      // Default on error, prints it.
+      onErrorFn: function (dataChannel, info, err) {
+        console.error(dataChannel.peerName + ": dataChannel(" +
+                      dataChannel.dataChannel.label + "): error: ", err);
       }
-    },
-    // Default on error, prints it.
-    onErrorFn: function (dataChannel, info, err) {
-      console.error(dataChannel.peerName + ": dataChannel(" +
-                    dataChannel.dataChannel.label + "): error: ", err);
-    }
-  };
+    };
 
   this.peer = new SimpleDataPeer(this.peerName, stunServers,
-                                 dataChannelCallbacks, mocks);
+                                  dataChannelCallbacks);
 
   // Setup link between Freedom messaging and _peer's signalling.
   // Note: the signalling channel should only be sending receiveing strings.
