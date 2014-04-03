@@ -236,6 +236,8 @@ fdom.port.Debug.prototype.print = function(message) {
     if (typeof process !== &#x27;undefined&#x27; &amp;&amp; message.source) {
       arr.unshift(&#x27;\x1B[39m&#x27;);
       arr.unshift(&#x27;\x1B[31m&#x27; + message.source);
+    } else if (this.console.__mozillaConsole__ &amp;&amp; message.source) {
+      arr.unshift(message.source.toUpperCase());
     } else if (message.source) {
       arr.unshift(&#x27;color: red&#x27;);
       arr.unshift(&#x27;%c &#x27; + message.source);

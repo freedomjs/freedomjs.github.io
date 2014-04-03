@@ -1279,7 +1279,7 @@
         },
         {
             "file": "src/port-debug.js",
-            "line": 130,
+            "line": 132,
             "description": "Print a log message to the console.",
             "itemtype": "method",
             "name": "log",
@@ -1288,7 +1288,7 @@
         },
         {
             "file": "src/port-debug.js",
-            "line": 138,
+            "line": 140,
             "description": "Print a warning message to the console.",
             "itemtype": "method",
             "name": "warn",
@@ -1297,7 +1297,7 @@
         },
         {
             "file": "src/port-debug.js",
-            "line": 146,
+            "line": 148,
             "description": "Print an error message to the console.",
             "itemtype": "method",
             "name": "error",
