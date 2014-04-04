@@ -34,71 +34,101 @@
     if (typeof window === 'undefined') {
       var window = global;
     }
-(function() {
-var define, requireModule, require, requirejs;
-
-(function() {
-  var registry = {}, seen = {};
-
-  define = function(name, deps, callback) {
-    registry[name] = { deps: deps, callback: callback };
-  };
-
-  requirejs = require = requireModule = function(name) {
-  requirejs._eak_seen = registry;
-
-    if (seen[name]) { return seen[name]; }
-    seen[name] = {};
-
-    if (!registry[name]) {
-      throw new Error("Could not find module " + name);
+function SimpleDataPeer(peerName, stunServers, dataChannelCallbacks, mocks) {
+    var RTCPC, constraints, config, i;
+    if (this.peerName = peerName, this.channels = {}, this.dataChannelCallbacks = dataChannelCallbacks, 
+    "undefined" != typeof mocks.RTCPeerConnection) RTCPC = mocks.RTCPeerConnection; else if ("undefined" != typeof webkitRTCPeerConnection) RTCPC = webkitRTCPeerConnection; else {
+        if ("undefined" == typeof mozRTCPeerConnection) throw new Error("This environment does not seem to support RTCPeerConnection");
+        RTCPC = mozRTCPeerConnection;
     }
+    for (this.RTCSessionDescription = "undefined" != typeof mocks.RTCSessionDescription ? mocks.RTCSessionDescription : RTCSessionDescription, 
+    constraints = {
+        optional: [ {
+            DtlsSrtpKeyAgreement: !0
+        } ]
+    }, // A way to speak to the peer to send SDP headers etc.
+    this.sendSignalMessage = null, this.pc = null, // The peer connection.
+    // Get TURN servers for the peer connection.
+    config = {
+        iceServers: []
+    }, i = 0; i < stunServers.length; i += 1) config.iceServers.push({
+        url: stunServers[i]
+    });
+    this.pc = new RTCPC(config, constraints), // Add basic event handlers.
+    this.pc.addEventListener("icecandidate", this.onIceCallback.bind(this)), this.pc.addEventListener("negotiationneeded", this.onNegotiationNeeded.bind(this)), 
+    this.pc.addEventListener("datachannel", this.onDataChannel.bind(this)), this.pc.addEventListener("signalingstatechange", function() {
+        "stable" === this.pc.signalingState && (this.pcState = SimpleDataPeerState.CONNECTED);
+    }.bind(this)), // This state variable is used to fake offer/answer when they are wrongly
+    // requested and we really just need to reuse what we already have.
+    this.pcState = SimpleDataPeerState.DISCONNECTED;
+}
 
-    var mod = registry[name],
-        deps = mod.deps,
-        callback = mod.callback,
-        reified = [],
-        exports;
+// _signallingChannel is a channel for emitting events back to the freedom Hub.
+function PeerConnection(portModule, dispatchEvent, RTCPeerConnection, RTCSessionDescription) {
+    // Channel for emitting events to consumer.
+    this.dispatchEvent = dispatchEvent, // a (hopefully unique) ID for debugging.
+    this.peerName = "p" + Math.random(), // This is the portApp (defined in freedom/src/port-app.js). A way to speak
+    // to freedom.
+    this.freedomModule = portModule, // For tests we may mock out the PeerConnection and
+    // SessionDescription implementations
+    this.RTCPeerConnection = RTCPeerConnection, this.RTCSessionDescription = RTCSessionDescription, 
+    // This is the a channel to send signalling messages.
+    this.signallingChannel = null, // The DataPeer object for talking to the peer.
+    this.peer = null, // The Core object for managing channels.
+    this.freedomModule.once("core", function(Core) {
+        this.core = new Core();
+    }.bind(this)), this.freedomModule.emit(this.freedomModule.controlChannel, {
+        type: "core request delegated to peerconnection",
+        request: "core"
+    });
+}
 
-    for (var i=0, l=deps.length; i<l; i++) {
-      if (deps[i] === 'exports') {
-        reified.push(exports = {});
-      } else {
-        reified.push(requireModule(resolve(deps[i])));
-      }
+/*globals freedom:true, fdom, WebSocket, DEBUG, console*/
+function WS(app, dispatchEvent, url, protocols, testWebSocket) {
+    var WSImplementation;
+    // Sub in a mock WebSocket implementation for unit testing.
+    WSImplementation = testWebSocket ? testWebSocket : WebSocket, this.dispatchEvent = dispatchEvent;
+    try {
+        this.websocket = protocols && protocols.length > 0 ? new WSImplementation(url, protocols) : new WSImplementation(url);
+    } catch (e) {
+        var error = {};
+        return error.errcode = e instanceof SyntaxError ? "SYNTAX" : e.name, error.message = e.message, 
+        void dispatchEvent("onError", error);
     }
+    this.websocket.onopen = this.onOpen.bind(this), this.websocket.onclose = this.onClose.bind(this), 
+    this.websocket.onmessage = this.onMessage.bind(this), this.websocket.onerror = this.onError.bind(this);
+}
 
-    var value = callback.apply(this, reified);
-    return seen[name] = exports || value;
-
-    function resolve(child) {
-      if (child.charAt(0) !== '.') { return child; }
-      var parts = child.split("/");
-      var parentBase = name.split("/").slice(0, -1);
-
-      for (var i=0, l=parts.length; i<l; i++) {
-        var part = parts[i];
-
-        if (part === '..') { parentBase.pop(); }
-        else if (part === '.') { continue; }
-        else { parentBase.push(part); }
-      }
-
-      return parentBase.join("/");
-    }
-  };
-})();
-
-define("promise/all", 
-  ["./utils","exports"],
-  function(__dependency1__, __exports__) {
-    "use strict";
-    /* global toString */
-
-    var isArray = __dependency1__.isArray;
-    var isFunction = __dependency1__.isFunction;
-
-    /**
+!function() {
+    var define, requireModule, require, requirejs;
+    !function() {
+        var registry = {}, seen = {};
+        define = function(name, deps, callback) {
+            registry[name] = {
+                deps: deps,
+                callback: callback
+            };
+        }, requirejs = require = requireModule = function(name) {
+            function resolve(child) {
+                if ("." !== child.charAt(0)) return child;
+                for (var parts = child.split("/"), parentBase = name.split("/").slice(0, -1), i = 0, l = parts.length; l > i; i++) {
+                    var part = parts[i];
+                    if (".." === part) parentBase.pop(); else {
+                        if ("." === part) continue;
+                        parentBase.push(part);
+                    }
+                }
+                return parentBase.join("/");
+            }
+            if (requirejs._eak_seen = registry, seen[name]) return seen[name];
+            if (seen[name] = {}, !registry[name]) throw new Error("Could not find module " + name);
+            for (var exports, mod = registry[name], deps = mod.deps, callback = mod.callback, reified = [], i = 0, l = deps.length; l > i; i++) reified.push("exports" === deps[i] ? exports = {} : requireModule(resolve(deps[i])));
+            var value = callback.apply(this, reified);
+            return seen[name] = exports || value;
+        };
+    }(), define("promise/all", [ "./utils", "exports" ], function(__dependency1__, __exports__) {
+        "use strict";
+        /**
       Returns a promise that is fulfilled when all the given promises have been
       fulfilled, or rejected if any of them become rejected. The return promise
       is fulfilled with an array that gives all the values in the order they were
@@ -143,119 +173,69 @@ define("promise/all",
       @return {Promise} promise that is fulfilled when all `promises` have been
       fulfilled, or rejected if any of them become rejected.
     */
-    function all(promises) {
-      /*jshint validthis:true */
-      var Promise = this;
-
-      if (!isArray(promises)) {
-        throw new TypeError('You must pass an array to all.');
-      }
-
-      return new Promise(function(resolve, reject) {
-        var results = [], remaining = promises.length,
-        promise;
-
-        if (remaining === 0) {
-          resolve([]);
+        function all(promises) {
+            /*jshint validthis:true */
+            var Promise = this;
+            if (!isArray(promises)) throw new TypeError("You must pass an array to all.");
+            return new Promise(function(resolve, reject) {
+                function resolver(index) {
+                    return function(value) {
+                        resolveAll(index, value);
+                    };
+                }
+                function resolveAll(index, value) {
+                    results[index] = value, 0 === --remaining && resolve(results);
+                }
+                var promise, results = [], remaining = promises.length;
+                0 === remaining && resolve([]);
+                for (var i = 0; i < promises.length; i++) promise = promises[i], promise && isFunction(promise.then) ? promise.then(resolver(i), reject) : resolveAll(i, promise);
+            });
         }
-
-        function resolver(index) {
-          return function(value) {
-            resolveAll(index, value);
-          };
+        /* global toString */
+        var isArray = __dependency1__.isArray, isFunction = __dependency1__.isFunction;
+        __exports__.all = all;
+    }), define("promise/asap", [ "exports" ], function(__exports__) {
+        "use strict";
+        // node
+        function useNextTick() {
+            return function() {
+                process.nextTick(flush);
+            };
         }
-
-        function resolveAll(index, value) {
-          results[index] = value;
-          if (--remaining === 0) {
-            resolve(results);
-          }
+        function useMutationObserver() {
+            var iterations = 0, observer = new BrowserMutationObserver(flush), node = document.createTextNode("");
+            return observer.observe(node, {
+                characterData: !0
+            }), function() {
+                node.data = iterations = ++iterations % 2;
+            };
         }
-
-        for (var i = 0; i < promises.length; i++) {
-          promise = promises[i];
-
-          if (promise && isFunction(promise.then)) {
-            promise.then(resolver(i), reject);
-          } else {
-            resolveAll(i, promise);
-          }
+        function useSetTimeout() {
+            return function() {
+                local.setTimeout(flush, 1);
+            };
         }
-      });
-    }
-
-    __exports__.all = all;
-  });
-define("promise/asap", 
-  ["exports"],
-  function(__exports__) {
-    "use strict";
-    var browserGlobal = (typeof window !== 'undefined') ? window : {};
-    var BrowserMutationObserver = browserGlobal.MutationObserver || browserGlobal.WebKitMutationObserver;
-    var local = (typeof global !== 'undefined') ? global : this;
-
-    // node
-    function useNextTick() {
-      return function() {
-        process.nextTick(flush);
-      };
-    }
-
-    function useMutationObserver() {
-      var iterations = 0;
-      var observer = new BrowserMutationObserver(flush);
-      var node = document.createTextNode('');
-      observer.observe(node, { characterData: true });
-
-      return function() {
-        node.data = (iterations = ++iterations % 2);
-      };
-    }
-
-    function useSetTimeout() {
-      return function() {
-        local.setTimeout(flush, 1);
-      };
-    }
-
-    var queue = [];
-    function flush() {
-      for (var i = 0; i < queue.length; i++) {
-        var tuple = queue[i];
-        var callback = tuple[0], arg = tuple[1];
-        callback(arg);
-      }
-      queue = [];
-    }
-
-    var scheduleFlush;
-
-    // Decide what async method to use to triggering processing of queued callbacks:
-    if (typeof process !== 'undefined' && {}.toString.call(process) === '[object process]') {
-      scheduleFlush = useNextTick();
-    } else if (BrowserMutationObserver) {
-      scheduleFlush = useMutationObserver();
-    } else {
-      scheduleFlush = useSetTimeout();
-    }
-
-    function asap(callback, arg) {
-      var length = queue.push([callback, arg]);
-      if (length === 1) {
-        // If length is 1, that means that we need to schedule an async flush.
-        // If additional callbacks are queued before the queue is flushed, they
-        // will be processed by this flush that we are scheduling.
-        scheduleFlush();
-      }
-    }
-
-    __exports__.asap = asap;
-  });
-define("promise/cast", 
-  ["exports"],
-  function(__exports__) {
-    "use strict";
-    /**
+        function flush() {
+            for (var i = 0; i < queue.length; i++) {
+                var tuple = queue[i], callback = tuple[0], arg = tuple[1];
+                callback(arg);
+            }
+            queue = [];
+        }
+        function asap(callback, arg) {
+            var length = queue.push([ callback, arg ]);
+            1 === length && // If length is 1, that means that we need to schedule an async flush.
+            // If additional callbacks are queued before the queue is flushed, they
+            // will be processed by this flush that we are scheduling.
+            scheduleFlush();
+        }
+        var scheduleFlush, browserGlobal = "undefined" != typeof window ? window : {}, BrowserMutationObserver = browserGlobal.MutationObserver || browserGlobal.WebKitMutationObserver, local = "undefined" != typeof global ? global : this, queue = [];
+        // Decide what async method to use to triggering processing of queued callbacks:
+        scheduleFlush = "undefined" != typeof process && "[object process]" === {}.toString.call(process) ? useNextTick() : BrowserMutationObserver ? useMutationObserver() : useSetTimeout(), 
+        __exports__.asap = asap;
+    }), define("promise/cast", [ "exports" ], function(__exports__) {
+        "use strict";
+        /**
       `RSVP.Promise.cast` returns the same promise if that promise shares a constructor
       with the promise being casted.
 
@@ -305,299 +285,139 @@ define("promise/cast",
       @return {Promise} promise that is fulfilled when all properties of `promises`
       have been fulfilled, or rejected if any of them become rejected.
     */
-
-
-    function cast(object) {
-      /*jshint validthis:true */
-      if (object && typeof object === 'object' && object.constructor === this) {
-        return object;
-      }
-
-      var Promise = this;
-
-      return new Promise(function(resolve) {
-        resolve(object);
-      });
-    }
-
-    __exports__.cast = cast;
-  });
-define("promise/config", 
-  ["exports"],
-  function(__exports__) {
-    "use strict";
-    var config = {
-      instrument: false
-    };
-
-    function configure(name, value) {
-      if (arguments.length === 2) {
-        config[name] = value;
-      } else {
-        return config[name];
-      }
-    }
-
-    __exports__.config = config;
-    __exports__.configure = configure;
-  });
-define("promise/polyfill", 
-  ["./promise","./utils","exports"],
-  function(__dependency1__, __dependency2__, __exports__) {
-    "use strict";
-    var RSVPPromise = __dependency1__.Promise;
-    var isFunction = __dependency2__.isFunction;
-
-    function polyfill() {
-      var es6PromiseSupport = 
-        "Promise" in window &&
-        // Some of these methods are missing from
-        // Firefox/Chrome experimental implementations
-        "cast" in window.Promise &&
-        "resolve" in window.Promise &&
-        "reject" in window.Promise &&
-        "all" in window.Promise &&
-        "race" in window.Promise &&
-        // Older version of the spec had a resolver object
-        // as the arg rather than a function
-        (function() {
-          var resolve;
-          new window.Promise(function(r) { resolve = r; });
-          return isFunction(resolve);
-        }());
-
-      if (!es6PromiseSupport) {
-        window.Promise = RSVPPromise;
-      }
-    }
-
-    __exports__.polyfill = polyfill;
-  });
-define("promise/promise", 
-  ["./config","./utils","./cast","./all","./race","./resolve","./reject","./asap","exports"],
-  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __exports__) {
-    "use strict";
-    var config = __dependency1__.config;
-    var configure = __dependency1__.configure;
-    var objectOrFunction = __dependency2__.objectOrFunction;
-    var isFunction = __dependency2__.isFunction;
-    var now = __dependency2__.now;
-    var cast = __dependency3__.cast;
-    var all = __dependency4__.all;
-    var race = __dependency5__.race;
-    var staticResolve = __dependency6__.resolve;
-    var staticReject = __dependency7__.reject;
-    var asap = __dependency8__.asap;
-
-    var counter = 0;
-
-    config.async = asap; // default async is asap;
-
-    function Promise(resolver) {
-      if (!isFunction(resolver)) {
-        throw new TypeError('You must pass a resolver function as the first argument to the promise constructor');
-      }
-
-      if (!(this instanceof Promise)) {
-        throw new TypeError("Failed to construct 'Promise': Please use the 'new' operator, this object constructor cannot be called as a function.");
-      }
-
-      this._subscribers = [];
-
-      invokeResolver(resolver, this);
-    }
-
-    function invokeResolver(resolver, promise) {
-      function resolvePromise(value) {
-        resolve(promise, value);
-      }
-
-      function rejectPromise(reason) {
-        reject(promise, reason);
-      }
-
-      try {
-        resolver(resolvePromise, rejectPromise);
-      } catch(e) {
-        rejectPromise(e);
-      }
-    }
-
-    function invokeCallback(settled, promise, callback, detail) {
-      var hasCallback = isFunction(callback),
-          value, error, succeeded, failed;
-
-      if (hasCallback) {
-        try {
-          value = callback(detail);
-          succeeded = true;
-        } catch(e) {
-          failed = true;
-          error = e;
-        }
-      } else {
-        value = detail;
-        succeeded = true;
-      }
-
-      if (handleThenable(promise, value)) {
-        return;
-      } else if (hasCallback && succeeded) {
-        resolve(promise, value);
-      } else if (failed) {
-        reject(promise, error);
-      } else if (settled === FULFILLED) {
-        resolve(promise, value);
-      } else if (settled === REJECTED) {
-        reject(promise, value);
-      }
-    }
-
-    var PENDING   = void 0;
-    var SEALED    = 0;
-    var FULFILLED = 1;
-    var REJECTED  = 2;
-
-    function subscribe(parent, child, onFulfillment, onRejection) {
-      var subscribers = parent._subscribers;
-      var length = subscribers.length;
-
-      subscribers[length] = child;
-      subscribers[length + FULFILLED] = onFulfillment;
-      subscribers[length + REJECTED]  = onRejection;
-    }
-
-    function publish(promise, settled) {
-      var child, callback, subscribers = promise._subscribers, detail = promise._detail;
-
-      for (var i = 0; i < subscribers.length; i += 3) {
-        child = subscribers[i];
-        callback = subscribers[i + settled];
-
-        invokeCallback(settled, child, callback, detail);
-      }
-
-      promise._subscribers = null;
-    }
-
-    Promise.prototype = {
-      constructor: Promise,
-
-      _state: undefined,
-      _detail: undefined,
-      _subscribers: undefined,
-
-      then: function(onFulfillment, onRejection) {
-        var promise = this;
-
-        var thenPromise = new this.constructor(function() {});
-
-        if (this._state) {
-          var callbacks = arguments;
-          config.async(function invokePromiseCallback() {
-            invokeCallback(promise._state, thenPromise, callbacks[promise._state - 1], promise._detail);
-          });
-        } else {
-          subscribe(this, thenPromise, onFulfillment, onRejection);
-        }
-
-        return thenPromise;
-      },
-
-      'catch': function(onRejection) {
-        return this.then(null, onRejection);
-      }
-    };
-
-    Promise.all = all;
-    Promise.cast = cast;
-    Promise.race = race;
-    Promise.resolve = staticResolve;
-    Promise.reject = staticReject;
-
-    function handleThenable(promise, value) {
-      var then = null,
-      resolved;
-
-      try {
-        if (promise === value) {
-          throw new TypeError("A promises callback cannot return that same promise.");
-        }
-
-        if (objectOrFunction(value)) {
-          then = value.then;
-
-          if (isFunction(then)) {
-            then.call(value, function(val) {
-              if (resolved) { return true; }
-              resolved = true;
-
-              if (value !== val) {
-                resolve(promise, val);
-              } else {
-                fulfill(promise, val);
-              }
-            }, function(val) {
-              if (resolved) { return true; }
-              resolved = true;
-
-              reject(promise, val);
+        function cast(object) {
+            /*jshint validthis:true */
+            if (object && "object" == typeof object && object.constructor === this) return object;
+            var Promise = this;
+            return new Promise(function(resolve) {
+                resolve(object);
             });
-
-            return true;
-          }
         }
-      } catch (error) {
-        if (resolved) { return true; }
-        reject(promise, error);
-        return true;
-      }
-
-      return false;
-    }
-
-    function resolve(promise, value) {
-      if (promise === value) {
-        fulfill(promise, value);
-      } else if (!handleThenable(promise, value)) {
-        fulfill(promise, value);
-      }
-    }
-
-    function fulfill(promise, value) {
-      if (promise._state !== PENDING) { return; }
-      promise._state = SEALED;
-      promise._detail = value;
-
-      config.async(publishFulfillment, promise);
-    }
-
-    function reject(promise, reason) {
-      if (promise._state !== PENDING) { return; }
-      promise._state = SEALED;
-      promise._detail = reason;
-
-      config.async(publishRejection, promise);
-    }
-
-    function publishFulfillment(promise) {
-      publish(promise, promise._state = FULFILLED);
-    }
-
-    function publishRejection(promise) {
-      publish(promise, promise._state = REJECTED);
-    }
-
-    __exports__.Promise = Promise;
-  });
-define("promise/race", 
-  ["./utils","exports"],
-  function(__dependency1__, __exports__) {
-    "use strict";
-    /* global toString */
-    var isArray = __dependency1__.isArray;
-
-    /**
+        __exports__.cast = cast;
+    }), define("promise/config", [ "exports" ], function(__exports__) {
+        "use strict";
+        function configure(name, value) {
+            return 2 !== arguments.length ? config[name] : void (config[name] = value);
+        }
+        var config = {
+            instrument: !1
+        };
+        __exports__.config = config, __exports__.configure = configure;
+    }), define("promise/polyfill", [ "./promise", "./utils", "exports" ], function(__dependency1__, __dependency2__, __exports__) {
+        "use strict";
+        function polyfill() {
+            var es6PromiseSupport = "Promise" in window && // Some of these methods are missing from
+            // Firefox/Chrome experimental implementations
+            "cast" in window.Promise && "resolve" in window.Promise && "reject" in window.Promise && "all" in window.Promise && "race" in window.Promise && // Older version of the spec had a resolver object
+            // as the arg rather than a function
+            function() {
+                var resolve;
+                return new window.Promise(function(r) {
+                    resolve = r;
+                }), isFunction(resolve);
+            }();
+            es6PromiseSupport || (window.Promise = RSVPPromise);
+        }
+        var RSVPPromise = __dependency1__.Promise, isFunction = __dependency2__.isFunction;
+        __exports__.polyfill = polyfill;
+    }), define("promise/promise", [ "./config", "./utils", "./cast", "./all", "./race", "./resolve", "./reject", "./asap", "exports" ], function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __exports__) {
+        "use strict";
+        // default async is asap;
+        function Promise(resolver) {
+            if (!isFunction(resolver)) throw new TypeError("You must pass a resolver function as the first argument to the promise constructor");
+            if (!(this instanceof Promise)) throw new TypeError("Failed to construct 'Promise': Please use the 'new' operator, this object constructor cannot be called as a function.");
+            this._subscribers = [], invokeResolver(resolver, this);
+        }
+        function invokeResolver(resolver, promise) {
+            function resolvePromise(value) {
+                resolve(promise, value);
+            }
+            function rejectPromise(reason) {
+                reject(promise, reason);
+            }
+            try {
+                resolver(resolvePromise, rejectPromise);
+            } catch (e) {
+                rejectPromise(e);
+            }
+        }
+        function invokeCallback(settled, promise, callback, detail) {
+            var value, error, succeeded, failed, hasCallback = isFunction(callback);
+            if (hasCallback) try {
+                value = callback(detail), succeeded = !0;
+            } catch (e) {
+                failed = !0, error = e;
+            } else value = detail, succeeded = !0;
+            handleThenable(promise, value) || (hasCallback && succeeded ? resolve(promise, value) : failed ? reject(promise, error) : settled === FULFILLED ? resolve(promise, value) : settled === REJECTED && reject(promise, value));
+        }
+        function subscribe(parent, child, onFulfillment, onRejection) {
+            var subscribers = parent._subscribers, length = subscribers.length;
+            subscribers[length] = child, subscribers[length + FULFILLED] = onFulfillment, subscribers[length + REJECTED] = onRejection;
+        }
+        function publish(promise, settled) {
+            for (var child, callback, subscribers = promise._subscribers, detail = promise._detail, i = 0; i < subscribers.length; i += 3) child = subscribers[i], 
+            callback = subscribers[i + settled], invokeCallback(settled, child, callback, detail);
+            promise._subscribers = null;
+        }
+        function handleThenable(promise, value) {
+            var resolved, then = null;
+            try {
+                if (promise === value) throw new TypeError("A promises callback cannot return that same promise.");
+                if (objectOrFunction(value) && (then = value.then, isFunction(then))) return then.call(value, function(val) {
+                    return resolved ? !0 : (resolved = !0, void (value !== val ? resolve(promise, val) : fulfill(promise, val)));
+                }, function(val) {
+                    return resolved ? !0 : (resolved = !0, void reject(promise, val));
+                }), !0;
+            } catch (error) {
+                return resolved ? !0 : (reject(promise, error), !0);
+            }
+            return !1;
+        }
+        function resolve(promise, value) {
+            promise === value ? fulfill(promise, value) : handleThenable(promise, value) || fulfill(promise, value);
+        }
+        function fulfill(promise, value) {
+            promise._state === PENDING && (promise._state = SEALED, promise._detail = value, 
+            config.async(publishFulfillment, promise));
+        }
+        function reject(promise, reason) {
+            promise._state === PENDING && (promise._state = SEALED, promise._detail = reason, 
+            config.async(publishRejection, promise));
+        }
+        function publishFulfillment(promise) {
+            publish(promise, promise._state = FULFILLED);
+        }
+        function publishRejection(promise) {
+            publish(promise, promise._state = REJECTED);
+        }
+        var config = __dependency1__.config, objectOrFunction = (__dependency1__.configure, 
+        __dependency2__.objectOrFunction), isFunction = __dependency2__.isFunction, cast = (__dependency2__.now, 
+        __dependency3__.cast), all = __dependency4__.all, race = __dependency5__.race, staticResolve = __dependency6__.resolve, staticReject = __dependency7__.reject, asap = __dependency8__.asap;
+        config.async = asap;
+        var PENDING = void 0, SEALED = 0, FULFILLED = 1, REJECTED = 2;
+        Promise.prototype = {
+            constructor: Promise,
+            _state: void 0,
+            _detail: void 0,
+            _subscribers: void 0,
+            then: function(onFulfillment, onRejection) {
+                var promise = this, thenPromise = new this.constructor(function() {});
+                if (this._state) {
+                    var callbacks = arguments;
+                    config.async(function() {
+                        invokeCallback(promise._state, thenPromise, callbacks[promise._state - 1], promise._detail);
+                    });
+                } else subscribe(this, thenPromise, onFulfillment, onRejection);
+                return thenPromise;
+            },
+            "catch": function(onRejection) {
+                return this.then(null, onRejection);
+            }
+        }, Promise.all = all, Promise.cast = cast, Promise.race = race, Promise.resolve = staticResolve, 
+        Promise.reject = staticReject, __exports__.Promise = Promise;
+    }), define("promise/race", [ "./utils", "exports" ], function(__dependency1__, __exports__) {
+        "use strict";
+        /**
       `RSVP.race` allows you to watch a series of promises and act as soon as the
       first promise given to the `promises` argument fulfills or rejects.
 
@@ -659,35 +479,20 @@ define("promise/race",
       fulfilled, or rejected with the reason that the first completed promise
       was rejected with.
     */
-    function race(promises) {
-      /*jshint validthis:true */
-      var Promise = this;
-
-      if (!isArray(promises)) {
-        throw new TypeError('You must pass an array to race.');
-      }
-      return new Promise(function(resolve, reject) {
-        var results = [], promise;
-
-        for (var i = 0; i < promises.length; i++) {
-          promise = promises[i];
-
-          if (promise && typeof promise.then === 'function') {
-            promise.then(resolve, reject);
-          } else {
-            resolve(promise);
-          }
+        function race(promises) {
+            /*jshint validthis:true */
+            var Promise = this;
+            if (!isArray(promises)) throw new TypeError("You must pass an array to race.");
+            return new Promise(function(resolve, reject) {
+                for (var promise, i = 0; i < promises.length; i++) promise = promises[i], promise && "function" == typeof promise.then ? promise.then(resolve, reject) : resolve(promise);
+            });
         }
-      });
-    }
-
-    __exports__.race = race;
-  });
-define("promise/reject", 
-  ["exports"],
-  function(__exports__) {
-    "use strict";
-    /**
+        /* global toString */
+        var isArray = __dependency1__.isArray;
+        __exports__.race = race;
+    }), define("promise/reject", [ "exports" ], function(__exports__) {
+        "use strict";
+        /**
       `RSVP.reject` returns a promise that will become rejected with the passed
       `reason`. `RSVP.reject` is essentially shorthand for the following:
 
@@ -723,22 +528,17 @@ define("promise/reject",
       @return {Promise} a promise that will become rejected with the given
       `reason`.
     */
-    function reject(reason) {
-      /*jshint validthis:true */
-      var Promise = this;
-
-      return new Promise(function (resolve, reject) {
-        reject(reason);
-      });
-    }
-
-    __exports__.reject = reject;
-  });
-define("promise/resolve", 
-  ["exports"],
-  function(__exports__) {
-    "use strict";
-    /**
+        function reject(reason) {
+            /*jshint validthis:true */
+            var Promise = this;
+            return new Promise(function(resolve, reject) {
+                reject(reason);
+            });
+        }
+        __exports__.reject = reject;
+    }), define("promise/resolve", [ "exports" ], function(__exports__) {
+        "use strict";
+        /**
       `RSVP.resolve` returns a promise that will become fulfilled with the passed
       `value`. `RSVP.resolve` is essentially shorthand for the following:
 
@@ -770,53 +570,35 @@ define("promise/resolve",
       @return {Promise} a promise that will become fulfilled with the given
       `value`
     */
-    function resolve(value) {
-      /*jshint validthis:true */
-      var Promise = this;
-      return new Promise(function(resolve, reject) {
-        resolve(value);
-      });
-    }
-
-    __exports__.resolve = resolve;
-  });
-define("promise/utils", 
-  ["exports"],
-  function(__exports__) {
-    "use strict";
-    function objectOrFunction(x) {
-      return isFunction(x) || (typeof x === "object" && x !== null);
-    }
-
-    function isFunction(x) {
-      return typeof x === "function";
-    }
-
-    function isArray(x) {
-      return Object.prototype.toString.call(x) === "[object Array]";
-    }
-
-    // Date.now is not available in browsers < IE9
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now#Compatibility
-    var now = Date.now || function() { return new Date().getTime(); };
-
-
-    __exports__.objectOrFunction = objectOrFunction;
-    __exports__.isFunction = isFunction;
-    __exports__.isArray = isArray;
-    __exports__.now = now;
-  });
-requireModule('promise/polyfill').polyfill();
-}());
-/* Reenable warnings disabled in preamble.js due to 3rd party sloppyness */
-/* jshint +W093 */
-/* jshint -W034 */
-
-/*globals fdom:true, Promise */
-/* indent:2,white:true,node:true,sloppy:true */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
+        function resolve(value) {
+            /*jshint validthis:true */
+            var Promise = this;
+            return new Promise(function(resolve) {
+                resolve(value);
+            });
+        }
+        __exports__.resolve = resolve;
+    }), define("promise/utils", [ "exports" ], function(__exports__) {
+        "use strict";
+        function objectOrFunction(x) {
+            return isFunction(x) || "object" == typeof x && null !== x;
+        }
+        function isFunction(x) {
+            return "function" == typeof x;
+        }
+        function isArray(x) {
+            return "[object Array]" === Object.prototype.toString.call(x);
+        }
+        // Date.now is not available in browsers < IE9
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now#Compatibility
+        var now = Date.now || function() {
+            return new Date().getTime();
+        };
+        __exports__.objectOrFunction = objectOrFunction, __exports__.isFunction = isFunction, 
+        __exports__.isArray = isArray, __exports__.now = now;
+    }), requireModule("promise/polyfill").polyfill();
+}(), /*globals fdom:true, Promise */
+"undefined" == typeof fdom && (fdom = {});
 
 /**
  * The API registry for FreeDOM.  Used to look up requested APIs,
@@ -825,9 +607,7 @@ if (typeof fdom === 'undefined') {
  * @constructor
  */
 var Api = function() {
-  this.apis = {};
-  this.providers = {};
-  this.waiters = {};
+    this.apis = {}, this.providers = {}, this.waiters = {};
 };
 
 /**
@@ -837,46 +617,31 @@ var Api = function() {
  * @returns {{name:String, definition:API}} The API if registered.
  */
 Api.prototype.get = function(api) {
-  if (!this.apis[api]) {
-    return false;
-  }
-  return {
-    name: api,
-    definition: this.apis[api]
-  };
-};
-
-/**
+    return this.apis[api] ? {
+        name: api,
+        definition: this.apis[api]
+    } : !1;
+}, /**
  * Set an API to a definition.
  * @method set
  * @param {String} name The API name.
  * @param {API} definition The JSON object defining the API.
  */
 Api.prototype.set = function(name, definition) {
-  this.apis[name] = definition;
-};
-
-/**
+    this.apis[name] = definition;
+}, /**
  * Register a core API provider.
  * @method register
  * @param {String} name the API name.
  * @param {Function} constructor the function to create a provider for the API.
  */
 Api.prototype.register = function(name, constructor) {
-  var i;
-
-  this.providers[name] = constructor;
-
-  if (this.waiters[name]) {
-    for (i = 0; i < this.waiters[name].length; i += 1) {
-      this.waiters[name][i][0](constructor.bind({},
-          this.waiters[name][i][2]));
+    var i;
+    if (this.providers[name] = constructor, this.waiters[name]) {
+        for (i = 0; i < this.waiters[name].length; i += 1) this.waiters[name][i][0](constructor.bind({}, this.waiters[name][i][2]));
+        delete this.waiters[name];
     }
-    delete this.waiters[name];
-  }
-};
-
-/**
+}, /**
  * Get a core API connected to a given FreeDOM module.
  * @method getCore
  * @param {String} name the API to retrieve.
@@ -885,39 +650,19 @@ Api.prototype.register = function(name, constructor) {
  * a local API definition.
  */
 Api.prototype.getCore = function(name, from) {
-  return new Promise(function(resolve, reject) {
-    if (this.apis[name]) {
-      if (this.providers[name]) {
-        resolve(this.providers[name].bind({}, from));
-      } else {
-        if (!this.waiters[name]) {
-          this.waiters[name] = [];
-        }
-        this.waiters[name].push([resolve, reject, from]);
-      }
-    } else {
-      fdom.debug.warn('Api.getCore asked for unknown core: ' + name);
-      reject(null);
-    }
-  }.bind(this));
-};
-
-/**
+    return new Promise(function(resolve, reject) {
+        this.apis[name] ? this.providers[name] ? resolve(this.providers[name].bind({}, from)) : (this.waiters[name] || (this.waiters[name] = []), 
+        this.waiters[name].push([ resolve, reject, from ])) : (fdom.debug.warn("Api.getCore asked for unknown core: " + name), 
+        reject(null));
+    }.bind(this));
+}, /**
  * Defines fdom.apis for fdom module registry and core provider registation.
  */
-fdom.apis = new Api();
-
-/*globals fdom:true, Promise, document, location */
-/* indent:2,sloppy:true */
-
+fdom.apis = new Api(), /*globals fdom:true, Promise, document, location */
 /**
  * @module freedom
  */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
-
-/**
+"undefined" == typeof fdom && (fdom = {}), /**
  * External freedom Setup.  global.freedom is set to the value returned by
  * setup (see preamble.js and postamble.js for that mechanism).  As a result,
  * this is the primary entry function for the freedom library.
@@ -928,189 +673,87 @@ if (typeof fdom === 'undefined') {
  * @param {Object} config Overriding config for freedom.js
  * @static
  */
-fdom.setup = function (global, freedom_src, config) {
-  fdom.debug = new fdom.port.Debug();
-
-  var hub = new fdom.Hub(),
-    site_cfg = {
-      'debug': true,
-      'stayLocal': false,
-      'portType': 'Worker',
-      'appContext': (!config || typeof (config.isApp) === "undefined") ?
-          fdom.util.isAppContext() :
-          config.isApp
-    },
-    manager = new fdom.port.Manager(hub),
-    external = new fdom.port.Proxy(fdom.proxy.EventInterface),
-    setupApp = function (app) {
-      manager.setup(app);
-      manager.createLink(external, 'default', app);
-    },
-    link;
-
-  manager.setup(external);
-
-  if (site_cfg.appContext) {
-    if (config) {
-      fdom.util.mixin(site_cfg, config, true);
-    }
-    site_cfg.global = global;
-    site_cfg.src = freedom_src;
-    setupApp(new fdom.link[site_cfg.portType]());
-
+fdom.setup = function(global, freedom_src, config) {
+    fdom.debug = new fdom.port.Debug();
+    var link, hub = new fdom.Hub(), site_cfg = {
+        debug: !0,
+        stayLocal: !1,
+        portType: "Worker",
+        appContext: config && "undefined" != typeof config.isApp ? config.isApp : fdom.util.isAppContext()
+    }, manager = new fdom.port.Manager(hub), external = new fdom.port.Proxy(fdom.proxy.EventInterface), setupApp = function(app) {
+        manager.setup(app), manager.createLink(external, "default", app);
+    };
     // Delay debug messages until delegation to the parent context is setup.
-    manager.once('delegate', manager.setup.bind(manager, fdom.debug));
-  } else {
-    manager.setup(fdom.debug);
-    fdom.util.advertise(config ? config.advertise : undefined);
-    
     // Configure against data-manifest.
-    if (typeof document !== 'undefined') {
-      fdom.util.eachReverse(fdom.util.scripts(global), function (script) {
-        var manifest = script.getAttribute('data-manifest'),
-          source = script.src;
-        if (manifest) {
-          site_cfg.source = source;
-          site_cfg.manifest = manifest;
-          if (script.textContent.trim().length) {
-            try {
-              fdom.util.mixin(site_cfg, JSON.parse(script.textContent), true);
-            } catch (e) {
-              fdom.debug.warn("Failed to parse configuration: " + e);
-            }
-          }
-          return true;
-        }
-      });
-    }
-
-    site_cfg.global = global;
-    site_cfg.src = freedom_src;
-    site_cfg.resources = fdom.resources;
-    if (config) {
-      fdom.util.mixin(site_cfg, config, true);
-    }
-
     //Try to talk to local FreeDOM Manager
-    if (!site_cfg.stayLocal) {
-      link = new fdom.port.Runtime();
-      manager.setup(link);
-    }
-
-    if (typeof location !== 'undefined') {
-      link = location.protocol + "//" + location.host + location.pathname;
-    } else if (site_cfg.location) {
-      link = site_cfg.location;
-    }
-    fdom.resources.get(link, site_cfg.manifest).then(function (url) {
-      setupApp(new fdom.port.Module(url, []));
-    });
-  }
-  hub.emit('config', site_cfg);
-
-  // Enable console.log from worker contexts.
-  if (typeof global.console === 'undefined') {
-    global.console = fdom.debug;
-  }
-  
-  return external.getInterface();
-};
-
-/*globals fdom:true */
-/* indent:2,white:true,node:true,sloppy:true */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
-
-/**
+    // Enable console.log from worker contexts.
+    return manager.setup(external), site_cfg.appContext ? (config && fdom.util.mixin(site_cfg, config, !0), 
+    site_cfg.global = global, site_cfg.src = freedom_src, setupApp(new fdom.link[site_cfg.portType]()), 
+    manager.once("delegate", manager.setup.bind(manager, fdom.debug))) : (manager.setup(fdom.debug), 
+    fdom.util.advertise(config ? config.advertise : void 0), "undefined" != typeof document && fdom.util.eachReverse(fdom.util.scripts(global), function(script) {
+        var manifest = script.getAttribute("data-manifest"), source = script.src;
+        if (manifest) {
+            if (site_cfg.source = source, site_cfg.manifest = manifest, script.textContent.trim().length) try {
+                fdom.util.mixin(site_cfg, JSON.parse(script.textContent), !0);
+            } catch (e) {
+                fdom.debug.warn("Failed to parse configuration: " + e);
+            }
+            return !0;
+        }
+    }), site_cfg.global = global, site_cfg.src = freedom_src, site_cfg.resources = fdom.resources, 
+    config && fdom.util.mixin(site_cfg, config, !0), site_cfg.stayLocal || (link = new fdom.port.Runtime(), 
+    manager.setup(link)), "undefined" != typeof location ? link = location.protocol + "//" + location.host + location.pathname : site_cfg.location && (link = site_cfg.location), 
+    fdom.resources.get(link, site_cfg.manifest).then(function(url) {
+        setupApp(new fdom.port.Module(url, []));
+    })), hub.emit("config", site_cfg), "undefined" == typeof global.console && (global.console = fdom.debug), 
+    external.getInterface();
+}, /*globals fdom:true */
+"undefined" == typeof fdom && (fdom = {}), /**
  * Defines fdom.Hub, the core message hub between freedom modules.
  * Incomming messages from apps are sent to hub.onMessage()
  * @class Hub
  * @constructor
  */
 fdom.Hub = function() {
-  this.route = Math.round(Math.random() * 1000000);
-  this.config = {};
-  this.apps = {};
-  this.routes = {};
-  this.unbound = [];
-
-  fdom.util.handleEvents(this);
-  this.on('config', function(config) {
-    fdom.util.mixin(this.config, config);
-  }.bind(this));
-};
-
-/**
+    this.route = Math.round(1e6 * Math.random()), this.config = {}, this.apps = {}, 
+    this.routes = {}, this.unbound = [], fdom.util.handleEvents(this), this.on("config", function(config) {
+        fdom.util.mixin(this.config, config);
+    }.bind(this));
+}, /**
  * Handle an incoming message from a freedom app.
  * @method onMessage
  * @param {String} source The identifiying source of the message.
  * @param {Object} message The sent message.
  */
 fdom.Hub.prototype.onMessage = function(source, message) {
-  var destination = this.routes[source];
-  if (!destination || !destination.app) {
-    fdom.debug.warn("Message dropped from unregistered source " + source);
-    return;
-  }
-
-  if(!this.apps[destination.app]) {
-    fdom.debug.warn("Message dropped to destination " + destination.app);
-    return;
-  }
-
-  if (!message.quiet) {
-    var type = message.type;
-    if (message.type === 'message' && message.message &&
-        message.message.action === 'method') {
-      type = 'method.' + message.message.type;
-    } else if (message.type === 'method' && message.message &&
-        message.message.type === 'method') {
-      type = 'return.' + message.message.name;
-    } else if (message.type === 'message' && message.message &&
-        message.message.type === 'event') {
-      type = 'event.' + message.message.name;
+    var destination = this.routes[source];
+    if (!destination || !destination.app) return void fdom.debug.warn("Message dropped from unregistered source " + source);
+    if (!this.apps[destination.app]) return void fdom.debug.warn("Message dropped to destination " + destination.app);
+    if (!message.quiet) {
+        var type = message.type;
+        "message" === message.type && message.message && "method" === message.message.action ? type = "method." + message.message.type : "method" === message.type && message.message && "method" === message.message.type ? type = "return." + message.message.name : "message" === message.type && message.message && "event" === message.message.type && (type = "event." + message.message.name), 
+        fdom.debug.log(this.apps[destination.source].toString() + " -" + type + "-> " + this.apps[destination.app].toString() + "." + destination.flow);
     }
-    fdom.debug.log(this.apps[destination.source].toString() +
-        " -" + type + "-> " +
-        this.apps[destination.app].toString() + "." + destination.flow);
-  }
-
-  this.apps[destination.app].onMessage(destination.flow, message);
-};
-
-/**
+    this.apps[destination.app].onMessage(destination.flow, message);
+}, /**
  * Get the local destination port of a flow.
  * @method getDestination
  * @param {String} source The flow to retrieve.
  * @return {Port} The destination port.
  */
 fdom.Hub.prototype.getDestination = function(source) {
-  var destination = this.routes[source];
-  if (!destination) {
-    return null;
-  }
-  return this.apps[destination.app];
-};
-
-/**
+    var destination = this.routes[source];
+    return destination ? this.apps[destination.app] : null;
+}, /**
  * Get the local source port of a flow.
  * @method getSource
  * @param {Port} source The flow identifier to retrieve.
  * @return {Port} The source port.
  */
 fdom.Hub.prototype.getSource = function(source) {
-  if (!source) {
-    return false;
-  }
-  if (!this.apps[source.id]) {
-    fdom.debug.warn("No registered source '" + source.id + "'");
-    return false;
-  }
-  return this.apps[source.id];
-};
-
-/**
+    return source ? this.apps[source.id] ? this.apps[source.id] : (fdom.debug.warn("No registered source '" + source.id + "'"), 
+    !1) : !1;
+}, /**
  * Register a destination for messages with this hub.
  * @method register
  * @param {Port} app The Port to register.
@@ -1118,15 +761,8 @@ fdom.Hub.prototype.getSource = function(source) {
  * @return {Boolean} Whether the app was registered.
  */
 fdom.Hub.prototype.register = function(app, force) {
-  if (!this.apps[app.id] || force) {
-    this.apps[app.id] = app;
-    return true;
-  } else {
-    return false;
-  }
-};
-
-/**
+    return !this.apps[app.id] || force ? (this.apps[app.id] = app, !0) : !1;
+}, /**
  * Deregister a destination for messages with the hub.
  * Note: does not remove associated routes. As such, deregistering will
  * prevent the installation of new routes, but will not distrupt existing
@@ -1136,14 +772,8 @@ fdom.Hub.prototype.register = function(app, force) {
  * @return {Boolean} Whether the app was deregistered.
  */
 fdom.Hub.prototype.deregister = function(app) {
-  if(!this.apps[app.id]) {
-    return false;
-  }
-  delete this.apps[app.id];
-  return true;
-};
-
-/**
+    return this.apps[app.id] ? (delete this.apps[app.id], !0) : !1;
+}, /**
  * Install a new route in the hub.
  * @method install
  * @param {Port} source The source of the route.
@@ -1152,29 +782,17 @@ fdom.Hub.prototype.deregister = function(app) {
  * @return {String} A routing source identifier for sending messages.
  */
 fdom.Hub.prototype.install = function(source, destination, flow) {
-  source = this.getSource(source);
-  if (!source) {
-    return;
-  }
-  if (!destination) {
-    fdom.debug.warn("Unwilling to generate blackhole flow from " + source.id);
-    return;
-  }
-
-  var route = this.generateRoute();
-  this.routes[route] = {
-    app: destination,
-    flow: flow,
-    source: source.id
-  };
-  if (typeof source.on === 'function') {
-    source.on(route, this.onMessage.bind(this, route));
-  }
-
-  return route;
-};
-
-/**
+    if (source = this.getSource(source)) {
+        if (!destination) return void fdom.debug.warn("Unwilling to generate blackhole flow from " + source.id);
+        var route = this.generateRoute();
+        return this.routes[route] = {
+            app: destination,
+            flow: flow,
+            source: source.id
+        }, "function" == typeof source.on && source.on(route, this.onMessage.bind(this, route)), 
+        route;
+    }
+}, /**
  * Uninstall a hub route.
  * @method uninstall
  * @param {Port} source The source of the route.
@@ -1182,43 +800,22 @@ fdom.Hub.prototype.install = function(source, destination, flow) {
  * @return {Boolean} Whether the route was able to be uninstalled.
  */
 fdom.Hub.prototype.uninstall = function(source, flow) {
-  source = this.getSource(source);
-  if (!source) {
-    return;
-  }
-
-  var route = this.routes[flow];
-  if (!route) {
-    return false;
-  } else if (route.source !== source.id) {
-    fdom.debug.warn("Flow " + flow + " does not belong to port " + source.id);
-    return false;
-  }
-
-  delete this.routes[flow];
-  if (typeof source.off === 'function') {
-    source.off(route);
-  }
-  return true;
-};
-
-/**
+    if (source = this.getSource(source)) {
+        var route = this.routes[flow];
+        return route ? route.source !== source.id ? (fdom.debug.warn("Flow " + flow + " does not belong to port " + source.id), 
+        !1) : (delete this.routes[flow], "function" == typeof source.off && source.off(route), 
+        !0) : !1;
+    }
+}, /**
  * Generate a unique routing identifier.
  * @method generateRoute
  * @return {String} a routing source identifier.
  * @private
  */
 fdom.Hub.prototype.generateRoute = function() {
-  return (this.route += 1);
-};
-
-/*globals fdom:true */
-/* indent:2, white:true, node:true, sloppy:true, browser:true */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
-
-/**
+    return this.route += 1;
+}, /*globals fdom:true */
+"undefined" == typeof fdom && (fdom = {}), /**
  * A link connects two freedom hubs. This is an abstract class
  * providing common functionality of translating control channels,
  * and integrating config information.
@@ -1227,15 +824,9 @@ if (typeof fdom === 'undefined') {
  * @constructor
  */
 fdom.Link = function() {
-  this.id = 'Link' + Math.random();
-  this.config = {};
-  this.src = null;
-
-  fdom.util.handleEvents(this);
-  fdom.util.mixin(this, fdom.Link.prototype);
-};
-
-/**
+    this.id = "Link" + Math.random(), this.config = {}, this.src = null, fdom.util.handleEvents(this), 
+    fdom.util.mixin(this, fdom.Link.prototype);
+}, /**
  * Receive messages from the hub to this port.
  * Manages startup, and passes others to 'deliverMessage' implemented
  * in derived classes.
@@ -1244,61 +835,34 @@ fdom.Link = function() {
  * @param {Object} message The Message.
  */
 fdom.Link.prototype.onMessage = function(flow, message) {
-  if (flow === 'control' && !this.controlChannel) {
-    if (!this.controlChannel && message.channel) {
-      this.controlChannel = message.channel;
-      fdom.util.mixin(this.config, message.config);
-      this.start();
-    }
-  } else {
-    this.deliverMessage(flow, message);
-  }
-};
-
-/**
+    "control" !== flow || this.controlChannel ? this.deliverMessage(flow, message) : !this.controlChannel && message.channel && (this.controlChannel = message.channel, 
+    fdom.util.mixin(this.config, message.config), this.start());
+}, /**
  * Emit messages to the the hub, mapping control channels.
  * @method emitMessage
  * @param {String} flow the flow to emit the message on.
  * @param {Object} messgae The message to emit.
  */
 fdom.Link.prototype.emitMessage = function(flow, message) {
-  if (flow === 'control' && this.controlChannel) {
-    flow = this.controlChannel;
-  }
-  this.emit(flow, message);
-};
-
-/*globals fdom:true */
-/* indent:2, white:true, node:true, sloppy:true, browser:true */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
-fdom.port = fdom.port || {};
-
-/**
+    "control" === flow && this.controlChannel && (flow = this.controlChannel), this.emit(flow, message);
+}, /*globals fdom:true */
+"undefined" == typeof fdom && (fdom = {}), fdom.port = fdom.port || {}, /**
  * A freedom port providing debugging output to the console.
  * @uses handleEvents
  * @extends Port
  * @constructor
  */
 fdom.port.Debug = function() {
-  this.id = 'debug';
-  this.emitChannel = false;
-  this.console = null;
-  this.config = false;
-  fdom.util.handleEvents(this);
-};
-
-/**
+    this.id = "debug", this.emitChannel = !1, this.console = null, this.config = !1, 
+    fdom.util.handleEvents(this);
+}, /**
  * Provide a textual description of this port.
  * @method toString
  * @return {String} the textual description.
  */
 fdom.port.Debug.prototype.toString = function() {
-  return '[Console]';
-};
-
-/**
+    return "[Console]";
+}, /**
  * Handler for receiving messages sent to the debug port.
  * These messages are used to retreive config for exposing console.
  * @method onMessage
@@ -1306,15 +870,10 @@ fdom.port.Debug.prototype.toString = function() {
  * @param {Object} message the received message.
  */
 fdom.port.Debug.prototype.onMessage = function(source, message) {
-  if (source === 'control' && message.channel && !this.emitChannel) {
-    this.emitChannel = message.channel;
-    this.config = message.config.debug;
-    this.console = message.config.global.console;
-    this.emit('ready');
-  }
-};
-
-/**
+    "control" === source && message.channel && !this.emitChannel && (this.emitChannel = message.channel, 
+    this.config = message.config.debug, this.console = message.config.global.console, 
+    this.emit("ready"));
+}, /**
  * Dispatch a debug message with arbitrary severity.
  * @method format
  * @param {String} severity the severity of the message.
@@ -1323,114 +882,59 @@ fdom.port.Debug.prototype.onMessage = function(source, message) {
  * @private
  */
 fdom.port.Debug.prototype.format = function(severity, source, args) {
-  var i, alist = [];
-  if (typeof args === "string") {
-    alist.push(args);
-  } else {
-    for (i = 0; i < args.length; i += 1) {
-      alist.push(args[i]);
-    }
-  }
-  if (!this.emitChannel) {
-    this.on('ready', this.format.bind(this, severity, source, alist));
-    return;
-  }
-  this.emit(this.emitChannel, {
-    severity: severity,
-    source: source,
-    quiet: true,
-    request: 'debug',
-    msg: JSON.stringify(alist)
-  });
-};
-
-/**
+    var i, alist = [];
+    if ("string" == typeof args) alist.push(args); else for (i = 0; i < args.length; i += 1) alist.push(args[i]);
+    return this.emitChannel ? void this.emit(this.emitChannel, {
+        severity: severity,
+        source: source,
+        quiet: !0,
+        request: "debug",
+        msg: JSON.stringify(alist)
+    }) : void this.on("ready", this.format.bind(this, severity, source, alist));
+}, /**
  * Print received messages on the console.
  * @method print
  * @param {Object} message The message emitted by {@see format} to print.
  */
 fdom.port.Debug.prototype.print = function(message) {
-  var debug = Boolean(this.config), args, arr = [], i = 0;
-  if (typeof this.config === 'string') {
-    debug = false;
-    args = this.config.split(' ');
-    for (i = 0; i < args.length; i += 1) {
-      if (args[i].indexOf('source:') === 0) {
-        if (message.source === undefined ||
-            message.source.indexOf(args[i].substr(7)) > -1) {
-          debug = true;
-          break;
+    var args, debug = Boolean(this.config), arr = [], i = 0;
+    if ("string" == typeof this.config) for (debug = !1, args = this.config.split(" "), 
+    i = 0; i < args.length; i += 1) if (0 === args[i].indexOf("source:")) {
+        if (void 0 === message.source || message.source.indexOf(args[i].substr(7)) > -1) {
+            debug = !0;
+            break;
         }
-      } else {
-        if (message.msg.indexOf(args[i]) > -1) {
-          debug = true;
-          break;
-        }
-      }
+    } else if (message.msg.indexOf(args[i]) > -1) {
+        debug = !0;
+        break;
     }
-  }
-  if (!debug) {
-    return;
-  }
-  if (typeof this.console !== 'undefined' && this.console !== this) {
-    args = JSON.parse(message.msg);
-    if (typeof args === "string") {
-      arr.push(args);
-    } else {
-      while (args[i] !== undefined) {
-        arr.push(args[i]);
+    if (debug && "undefined" != typeof this.console && this.console !== this) {
+        if (args = JSON.parse(message.msg), "string" == typeof args) arr.push(args); else for (;void 0 !== args[i]; ) arr.push(args[i]), 
         i += 1;
-      }
+        "undefined" != typeof process && message.source ? (arr.unshift("[39m"), arr.unshift("[31m" + message.source)) : this.console.__mozillaConsole__ && message.source ? arr.unshift(message.source.toUpperCase()) : message.source && (arr.unshift("color: red"), 
+        arr.unshift("%c " + message.source)), !this.console[message.severity] && this.console.log && (message.severity = "log"), 
+        this.console[message.severity].apply(this.console, arr);
     }
-
-    if (typeof process !== 'undefined' && message.source) {
-      arr.unshift('\x1B[39m');
-      arr.unshift('\x1B[31m' + message.source);
-    } else if (this.console.__mozillaConsole__ && message.source) {
-      arr.unshift(message.source.toUpperCase());
-    } else if (message.source) {
-      arr.unshift('color: red');
-      arr.unshift('%c ' + message.source);
-    }
-    if (!this.console[message.severity] && this.console.log) {
-      message.severity = 'log';
-    }
-    this.console[message.severity].apply(this.console, arr);
-  }
-};
-
-/**
+}, /**
  * Print a log message to the console.
  * @method log
  */
 fdom.port.Debug.prototype.log = function() {
-  this.format('log', undefined, arguments);
-};
-
-/**
+    this.format("log", void 0, arguments);
+}, /**
  * Print a warning message to the console.
  * @method warn
  */
 fdom.port.Debug.prototype.warn = function() {
-  this.format('warn', undefined, arguments);
-};
-
-/**
+    this.format("warn", void 0, arguments);
+}, /**
  * Print an error message to the console.
  * @method error
  */
 fdom.port.Debug.prototype.error = function() {
-  this.format('error', undefined, arguments);
-};
-
-/*globals fdom:true */
-/* indent:2,white:true,node:true,sloppy:true */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
-fdom.port = fdom.port || {};
-
-/**
+    this.format("error", void 0, arguments), this.console && this.console.error.apply(this.console, arguments);
+}, /*globals fdom:true */
+"undefined" == typeof fdom && (fdom = {}), fdom.port = fdom.port || {}, /**
  * A freedom port which manages the control plane of of changing hub routes.
  * @class Manager
  * @extends Port
@@ -1438,35 +942,19 @@ fdom.port = fdom.port || {};
  * @constructor
  */
 fdom.port.Manager = function(hub) {
-  this.id = 'control';
-  this.config = {};
-  this.controlFlows = {};
-  this.dataFlows = {};
-  this.dataFlows[this.id] = [];
-  this.reverseFlowMap = {};
-  this.hub = hub;
-  this.delegate = null;
-  this.toDelegate = {};
-  
-  this.hub.on('config', function(config) {
-    fdom.util.mixin(this.config, config);
-    this.emit('config');
-  }.bind(this));
-  
-  fdom.util.handleEvents(this);
-  this.hub.register(this);
-};
-
-/**
+    this.id = "control", this.config = {}, this.controlFlows = {}, this.dataFlows = {}, 
+    this.dataFlows[this.id] = [], this.reverseFlowMap = {}, this.hub = hub, this.delegate = null, 
+    this.toDelegate = {}, this.hub.on("config", function(config) {
+        fdom.util.mixin(this.config, config), this.emit("config");
+    }.bind(this)), fdom.util.handleEvents(this), this.hub.register(this);
+}, /**
  * Provide a textual description of this port.
  * @method toString
  * @return {String} the description of this port.
  */
 fdom.port.Manager.prototype.toString = function() {
-  return "[Local Controller]";
-};
-
-/**
+    return "[Local Controller]";
+}, /**
  * Process messages sent to this port.
  * The manager, or 'control' destination handles several types of messages,
  * identified by the request property.  The actions are:
@@ -1483,142 +971,69 @@ fdom.port.Manager.prototype.toString = function() {
  * @param {Object} message The received message.
  */
 fdom.port.Manager.prototype.onMessage = function(flow, message) {
-  var reverseFlow = this.controlFlows[flow], origin;
-  if (!reverseFlow) {
-    fdom.debug.warn("Unknown message source: " + flow);
-    return;
-  }
-  origin = this.hub.getDestination(reverseFlow);
-
-  if (this.delegate && reverseFlow !== this.delegate && this.toDelegate[flow]) {
-    // Ship off to the delegee
-    this.emit(this.delegate, {
-      type: 'Delegation',
-      request: 'handle',
-      quiet: true,
-      flow: flow,
-      message: message
+    var origin, reverseFlow = this.controlFlows[flow];
+    if (!reverseFlow) return void fdom.debug.warn("Unknown message source: " + flow);
+    if (origin = this.hub.getDestination(reverseFlow), this.delegate && reverseFlow !== this.delegate && this.toDelegate[flow]) // Ship off to the delegee
+    return void this.emit(this.delegate, {
+        type: "Delegation",
+        request: "handle",
+        quiet: !0,
+        flow: flow,
+        message: message
     });
-    return;
-  }
-
-  if (message.request === 'debug') {
-    if (this.config.debug) {
-      fdom.debug.print(message);
+    if ("debug" === message.request) return void (this.config.debug && fdom.debug.print(message));
+    if ("link" === message.request) this.createLink(origin, message.name, message.to, message.overrideDest); else if ("port" === message.request) message.exposeManager && (message.args = this), 
+    this.createLink(origin, message.name, new fdom.port[message.service](message.args)); else if ("bindport" === message.request) this.createLink({
+        id: message.id
+    }, "custom" + message.port, new fdom.port[message.service](message.args), "default", !0); else if ("delegate" === message.request) // Initate Delegation.
+    null === this.delegate && (this.delegate = reverseFlow), this.toDelegate[message.flow] = !0, 
+    this.emit("delegate"); else if ("resource" === message.request) fdom.resources.addResolver(message.args[0]), 
+    fdom.resources.addRetriever(message.service, message.args[1]); else if ("core" === message.request) {
+        if (this.core && reverseFlow === this.delegate) return void new this.core().onMessage(origin, message.message);
+        this.getCore(function(to, core) {
+            this.hub.onMessage(to, {
+                type: "core",
+                core: core
+            });
+        }.bind(this, reverseFlow));
+    } else if ("close" === message.request) this.destroy(origin); else {
+        if ("unlink" !== message.request) return fdom.debug.warn("Unknown control request: " + message.request), 
+        void fdom.debug.log(JSON.stringify(message));
+        this.removeLink(origin, message.to);
     }
-    return;
-  }
-
-  if (message.request === 'link') {
-    this.createLink(origin, message.name, message.to, message.overrideDest);
-  } else if (message.request === 'port') {
-    if (message.exposeManager) {
-      message.args = this;
-    }
-    this.createLink(origin, message.name,
-        new fdom.port[message.service](message.args));
-  } else if (message.request === 'bindport') {
-    this.createLink({id: message.id},
-                    'custom' + message.port,
-                    new fdom.port[message.service](message.args),
-                    'default',
-                    true);
-  } else if (message.request === 'delegate') {
-    // Initate Delegation.
-    if (this.delegate === null) {
-      this.delegate = reverseFlow;
-    }
-    this.toDelegate[message.flow] = true;
-    this.emit('delegate');
-  } else if (message.request === 'resource') {
-    fdom.resources.addResolver(message.args[0]);
-    fdom.resources.addRetriever(message.service, message.args[1]);
-  } else if (message.request === 'core') {
-    if (this.core && reverseFlow === this.delegate) {
-      (new this.core()).onMessage(origin, message.message);
-      return;
-    }
-    this.getCore(function(to, core) {
-      this.hub.onMessage(to, {
-        type: 'core',
-        core: core
-      });
-    }.bind(this, reverseFlow));
-  } else if (message.request === 'close') {
-    this.destroy(origin);
-  } else if (message.request === 'unlink') {
-    this.removeLink(origin, message.to);
-  } else {
-    fdom.debug.warn("Unknown control request: " + message.request);
-    fdom.debug.log(JSON.stringify(message));
-    return;
-  }
-};
-
-/**
+}, /**
  * Set up a port with the hub.
  * @method setup
  * @param {Port} port The port to register.
  */
 fdom.port.Manager.prototype.setup = function(port) {
-  if (!port.id) {
-    fdom.debug.warn("Refusing to setup unidentified port ");
-    return false;
-  }
-
-  if(this.controlFlows[port.id]) {
-    fdom.debug.warn("Refusing to re-initialize port " + port.id);
-    return false;
-  }
-
-  if (!this.config.global) {
-    this.once('config', this.setup.bind(this, port));
-    return;
-  }
-
-  this.hub.register(port);
-  var flow = this.hub.install(this, port.id, "control"),
-      reverse = this.hub.install(port, this.id, port.id);
-  this.controlFlows[port.id] = flow;
-  this.dataFlows[port.id] = [reverse];
-  this.reverseFlowMap[flow] = reverse;
-  this.reverseFlowMap[reverse] = flow;
-
-  this.hub.onMessage(flow, {
-    type: 'setup',
-    channel: reverse,
-    config: this.config
-  });
-
-  return true;
-};
-
-/**
+    if (!port.id) return fdom.debug.warn("Refusing to setup unidentified port "), !1;
+    if (this.controlFlows[port.id]) return fdom.debug.warn("Refusing to re-initialize port " + port.id), 
+    !1;
+    if (!this.config.global) return void this.once("config", this.setup.bind(this, port));
+    this.hub.register(port);
+    var flow = this.hub.install(this, port.id, "control"), reverse = this.hub.install(port, this.id, port.id);
+    return this.controlFlows[port.id] = flow, this.dataFlows[port.id] = [ reverse ], 
+    this.reverseFlowMap[flow] = reverse, this.reverseFlowMap[reverse] = flow, this.hub.onMessage(flow, {
+        type: "setup",
+        channel: reverse,
+        config: this.config
+    }), !0;
+}, /**
  * Tear down a port on the hub.
  * @method destroy
  * @apram {Port} port The port to unregister.
  */
 fdom.port.Manager.prototype.destroy = function(port) {
-  if (!port.id) {
-    fdom.debug.warn("Unable to tear down unidentified port");
-    return false;
-  }
-
-  // Remove the port.
-  delete this.controlFlows[port.id];
-
-  // Remove associated links.
-  var i;
-  for (i = this.dataFlows[port.id].length - 1; i >= 0; i -= 1) {
-    this.removeLink(port, this.dataFlows[port.id][i]);
-  }
-
-  // Remove the port.
-  delete this.dataFlows[port.id];
-  this.hub.deregister(port);
-};
-
-/**
+    if (!port.id) return fdom.debug.warn("Unable to tear down unidentified port"), !1;
+    // Remove the port.
+    delete this.controlFlows[port.id];
+    // Remove associated links.
+    var i;
+    for (i = this.dataFlows[port.id].length - 1; i >= 0; i -= 1) this.removeLink(port, this.dataFlows[port.id][i]);
+    // Remove the port.
+    delete this.dataFlows[port.id], this.hub.deregister(port);
+}, /**
  * Create a link between two ports.  Links are created in both directions,
  * and a message with those capabilities is sent to the source port.
  * @method createLink
@@ -1629,100 +1044,45 @@ fdom.port.Manager.prototype.destroy = function(port) {
  * @param {Boolean} [toDest] Tell the destination rather than source about the link.
  */
 fdom.port.Manager.prototype.createLink = function(port, name, destination, destName, toDest) {
-  if (!this.config.global) {
-    this.once('config', this.createLink.bind(this, port, name, destination, destName));
-    return;
-  }
-  
-  if (!this.controlFlows[port.id]) {
-    fdom.debug.warn('Unwilling to link from non-registered source.');
-    return;
-  }
-
-  if (!this.controlFlows[destination.id]) {
-    if(this.setup(destination) === false) {
-      fdom.debug.warn('Could not find or setup destination.');
-      return;
-    }
-  }
-  var outgoingName = destName || 'default',
-      outgoing = this.hub.install(port, destination.id, outgoingName),
-      reverse;
-
-  // Recover the port so that listeners are installed.
-  destination = this.hub.getDestination(outgoing);
-  reverse = this.hub.install(destination, port.id, name);
-
-  this.reverseFlowMap[outgoing] = reverse;
-  this.dataFlows[port.id].push(outgoing);
-  this.reverseFlowMap[reverse] = outgoing;
-  this.dataFlows[destination.id].push(reverse);
-
-  if (toDest) {
-    this.hub.onMessage(this.controlFlows[destination.id], {
-      type: 'createLink',
-      name: outgoingName,
-      channel: reverse,
-      reverse: outgoing
+    if (!this.config.global) return void this.once("config", this.createLink.bind(this, port, name, destination, destName));
+    if (!this.controlFlows[port.id]) return void fdom.debug.warn("Unwilling to link from non-registered source.");
+    if (!this.controlFlows[destination.id] && this.setup(destination) === !1) return void fdom.debug.warn("Could not find or setup destination.");
+    var reverse, outgoingName = destName || "default", outgoing = this.hub.install(port, destination.id, outgoingName);
+    // Recover the port so that listeners are installed.
+    destination = this.hub.getDestination(outgoing), reverse = this.hub.install(destination, port.id, name), 
+    this.reverseFlowMap[outgoing] = reverse, this.dataFlows[port.id].push(outgoing), 
+    this.reverseFlowMap[reverse] = outgoing, this.dataFlows[destination.id].push(reverse), 
+    toDest ? this.hub.onMessage(this.controlFlows[destination.id], {
+        type: "createLink",
+        name: outgoingName,
+        channel: reverse,
+        reverse: outgoing
+    }) : this.hub.onMessage(this.controlFlows[port.id], {
+        name: name,
+        type: "createLink",
+        channel: outgoing,
+        reverse: reverse
     });
-  } else {
-    this.hub.onMessage(this.controlFlows[port.id], {
-      name: name,
-      type: 'createLink',
-      channel: outgoing,
-      reverse: reverse
-    });
-  }
-};
-
-/**
+}, /**
  * Remove a link between to ports. The reverse link will also be removed.
  * @method removeLink
  * @param {Port} port The source port.
  * @param {String} name The flow to be removed.
  */
 fdom.port.Manager.prototype.removeLink = function(port, name) {
-  var reverse = this.hub.getDestination(name),
-      rflow = this.reverseFlowMap[name],
-      i;
-
-  if (!reverse || !rflow) {
-    fdom.debug.warn("Could not find metadata to remove flow: " + name);
-    return;
-  }
-
-  if (this.hub.getDestination(rflow).id !== port.id) {
-    fdom.debug.warn("Source port does not own flow " + name);
-    return;
-  }
-
-  // Notify ports that a channel is closing.
-  i = this.controlFlows[port.id];
-  if (i) {
-    this.hub.onMessage(i, {
-      type: 'close',
-      channel: name
-    });
-  }
-  i = this.controlFlows[reverse.id];
-  if (i) {
-    this.hub.onMessage(i, {
-      type: 'close',
-      channel: rflow
-    });
-  }
-
-  // Uninstall the channel.
-  this.hub.uninstall(port, name);
-  this.hub.uninstall(reverse, rflow);
-
-  delete this.reverseFlowMap[name];
-  delete this.reverseFlowMap[rflow];
-  this.forgetFlow(reverse.id, rflow);
-  this.forgetFlow(port.id, name);
-};
-
-/**
+    var i, reverse = this.hub.getDestination(name), rflow = this.reverseFlowMap[name];
+    // Notify ports that a channel is closing.
+    // Uninstall the channel.
+    return reverse && rflow ? this.hub.getDestination(rflow).id !== port.id ? void fdom.debug.warn("Source port does not own flow " + name) : (i = this.controlFlows[port.id], 
+    i && this.hub.onMessage(i, {
+        type: "close",
+        channel: name
+    }), i = this.controlFlows[reverse.id], i && this.hub.onMessage(i, {
+        type: "close",
+        channel: rflow
+    }), this.hub.uninstall(port, name), this.hub.uninstall(reverse, rflow), delete this.reverseFlowMap[name], 
+    delete this.reverseFlowMap[rflow], this.forgetFlow(reverse.id, rflow), void this.forgetFlow(port.id, name)) : void fdom.debug.warn("Could not find metadata to remove flow: " + name);
+}, /**
  * Forget the flow from id with a given name.
  * @method forgetFlow
  * @private
@@ -1730,43 +1090,23 @@ fdom.port.Manager.prototype.removeLink = function(port, name) {
  * @param {String} name The flow name.
  */
 fdom.port.Manager.prototype.forgetFlow = function(id, name) {
-  var i;
-  if (this.dataFlows[id]) {
-    for (i = 0; i < this.dataFlows[id].length; i += 1) {
-      if (this.dataFlows[id][i] === name) {
+    var i;
+    if (this.dataFlows[id]) for (i = 0; i < this.dataFlows[id].length; i += 1) if (this.dataFlows[id][i] === name) {
         this.dataFlows[id].splice(i, 1);
         break;
-      }
     }
-  }
-};
-
-/**
+}, /**
  * Get the core freedom.js API active on the current hub.
  * @method getCore
  * @private
  * @param {Function} cb Callback to fire with the core object.
  */
 fdom.port.Manager.prototype.getCore = function(cb) {
-  if (this.core) {
-    cb(this.core);
-  } else {
-    fdom.apis.getCore('core', this).then(function(core) {
-      this.core = core;
-      cb(this.core);
+    this.core ? cb(this.core) : fdom.apis.getCore("core", this).then(function(core) {
+        this.core = core, cb(this.core);
     }.bind(this));
-  }
-};
-
-
-/*globals fdom:true */
-/* indent:2,white:true,node:true,sloppy:true */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
-fdom.port = fdom.port || {};
-
-/**
+}, /*globals fdom:true */
+"undefined" == typeof fdom && (fdom = {}), fdom.port = fdom.port || {}, /**
  * The external Port face of a module on a hub.
  * @class Module
  * @extends Port
@@ -1775,82 +1115,39 @@ fdom.port = fdom.port || {};
  * @constructor
  */
 fdom.port.Module = function(manifestURL, creator) {
-  this.config = {};
-  this.id = manifestURL + Math.random();
-  this.manifestId = manifestURL;
-  this.lineage = [this.manifestId].concat(creator);
-  this.loadManifest();
-  this.externalPortMap = {};
-  this.internalPortMap = {};
-  this.started = false;
-
-  fdom.util.handleEvents(this);
-};
-
-/**
+    this.config = {}, this.id = manifestURL + Math.random(), this.manifestId = manifestURL, 
+    this.lineage = [ this.manifestId ].concat(creator), this.loadManifest(), this.externalPortMap = {}, 
+    this.internalPortMap = {}, this.started = !1, fdom.util.handleEvents(this);
+}, /**
  * Receive a message for the Module.
  * @method onMessage
  * @param {String} flow The origin of the message.
  * @param {Object} message The message received.
  */
 fdom.port.Module.prototype.onMessage = function(flow, message) {
-  if (flow === 'control') {
-    if (message.type === 'setup') {
-      this.controlChannel = message.channel;
-      fdom.util.mixin(this.config, message.config);
-      this.emit(this.controlChannel, {
-        type: 'Core Provider',
-        request: 'core'
-      });
-      this.start();
-      return;
-    } else if (message.type === 'createLink' && message.channel) {
-      this.externalPortMap[message.name] = message.channel;
-      if (this.internalPortMap[message.name] === undefined) {
-        this.internalPortMap[message.name] = false;
-      }
-      this.emit(message.channel, {
-        type: 'default channel announcement',
-        channel: message.reverse
-      });
-      return;
-    } else if (message.core) {
-      this.core = new message.core();
-      this.emit('core', message.core);
-      return;
-    } else if (message.type === 'close') {
-      // Closing channel.
-      if (message.channel === 'default' || message.channel === 'control') {
-        this.stop();
-      }
-      this.deregisterFlow(message.channel, false);
+    if ("control" === flow) {
+        if ("setup" === message.type) return this.controlChannel = message.channel, fdom.util.mixin(this.config, message.config), 
+        this.emit(this.controlChannel, {
+            type: "Core Provider",
+            request: "core"
+        }), void this.start();
+        if ("createLink" === message.type && message.channel) return this.externalPortMap[message.name] = message.channel, 
+        void 0 === this.internalPortMap[message.name] && (this.internalPortMap[message.name] = !1), 
+        void this.emit(message.channel, {
+            type: "default channel announcement",
+            channel: message.reverse
+        });
+        if (message.core) return this.core = new message.core(), void this.emit("core", message.core);
+        "close" === message.type ? (// Closing channel.
+        ("default" === message.channel || "control" === message.channel) && this.stop(), 
+        this.deregisterFlow(message.channel, !1)) : this.port.onMessage(flow, message);
     } else {
-      this.port.onMessage(flow, message);
+        if (this.externalPortMap[flow] === !1 && message.channel) //console.log('handling channel announcement for ' + flow);
+        return this.externalPortMap[flow] = message.channel, void 0 === this.internalPortMap[flow] && (this.internalPortMap[flow] = !1), 
+        void (this.manifest.provides && "default" === flow && (this.externalPortMap[this.manifest.provides[0]] = message.channel));
+        this.started ? this.internalPortMap[flow] === !1 ? this.once("internalChannelReady", this.onMessage.bind(this, flow, message)) : this.port.onMessage(this.internalPortMap[flow], message) : this.once("start", this.onMessage.bind(this, flow, message));
     }
-  } else {
-    if (this.externalPortMap[flow] === false && message.channel) {
-      //console.log('handling channel announcement for ' + flow);
-      this.externalPortMap[flow] = message.channel;
-      if (this.internalPortMap[flow] === undefined) {
-        this.internalPortMap[flow] = false;
-      }
-      if (this.manifest.provides && flow === 'default') {
-        this.externalPortMap[this.manifest.provides[0]] = message.channel;
-      }
-      return;
-    } else if (!this.started) {
-      this.once('start', this.onMessage.bind(this, flow, message));
-    } else {
-      if (this.internalPortMap[flow] === false) {
-        this.once('internalChannelReady', this.onMessage.bind(this, flow, message));
-      } else {
-        this.port.onMessage(this.internalPortMap[flow], message);
-      }
-    }
-  }
-};
-
-/**
+}, /**
  * Clean up after a flow which is no longer used / needed.
  * @method deregisterFLow
  * @param {String} flow The flow to remove mappings for.
@@ -1859,110 +1156,69 @@ fdom.port.Module.prototype.onMessage = function(flow, message) {
  * @private
  */
 fdom.port.Module.prototype.deregisterFlow = function(flow, internal) {
-  var key,
-      map = internal ? this.internalPortMap : this.externalPortMap;
-  // TODO: this is inefficient, but seems less confusing than a 3rd
-  // reverse lookup map.
-  for (key in map) {
-    if (map[key] === flow) {
-      if (internal) {
-        this.emit(this.controlChannel, {
-          type: 'Channel Teardown',
-          request: 'unlink',
-          to: this.externalPortMap[key]
-        });
-      } else {
-        this.port.onMessage('control', {
-          type: 'close',
-          channel: this.internalPortMap[key]
-        });
-      }
-      delete this.externalPortMap[key];
-      delete this.internalPortMap[key];
-      return true;
-    }
-  }
-  return false;
-};
-
-/**
+    var key, map = internal ? this.internalPortMap : this.externalPortMap;
+    // TODO: this is inefficient, but seems less confusing than a 3rd
+    // reverse lookup map.
+    for (key in map) if (map[key] === flow) return internal ? this.emit(this.controlChannel, {
+        type: "Channel Teardown",
+        request: "unlink",
+        to: this.externalPortMap[key]
+    }) : this.port.onMessage("control", {
+        type: "close",
+        channel: this.internalPortMap[key]
+    }), delete this.externalPortMap[key], delete this.internalPortMap[key], !0;
+    return !1;
+}, /**
  * Attempt to start the module once the remote freedom context
  * exists.
  * @method start
  * @private
  */
 fdom.port.Module.prototype.start = function() {
-  if (this.started || this.port) {
-    return false;
-  }
-  if (this.manifest && this.controlChannel) {
-    this.loadLinks();
-    this.port = new fdom.link[this.config.portType](this.manifestId);
     // Listen to all port messages.
-    this.port.on(this.emitMessage.bind(this));
     // Tell the local port to ask us for help.
-    this.port.onMessage('control', {
-      channel: 'control',
-      config: this.config
-    });
-
     // Tell the remote location to delegate debugging.
-    this.port.onMessage('control', {
-      type: 'Redirect',
-      request: 'delegate',
-      flow: 'debug'
-    });
-    this.port.onMessage('control', {
-      type: 'Redirect',
-      request: 'delegate',
-      flow: 'core'
-    });
-    
     // Tell the container to instantiate the counterpart to this external view.
-    this.port.onMessage('control', {
-      type: 'Environment Configuration',
-      request: 'port',
-      name: 'ModInternal',
-      service: 'ModuleInternal',
-      exposeManager: true
-    });
-  }
-};
-
-/**
+    return this.started || this.port ? !1 : void (this.manifest && this.controlChannel && (this.loadLinks(), 
+    this.port = new fdom.link[this.config.portType](this.manifestId), this.port.on(this.emitMessage.bind(this)), 
+    this.port.onMessage("control", {
+        channel: "control",
+        config: this.config
+    }), this.port.onMessage("control", {
+        type: "Redirect",
+        request: "delegate",
+        flow: "debug"
+    }), this.port.onMessage("control", {
+        type: "Redirect",
+        request: "delegate",
+        flow: "core"
+    }), this.port.onMessage("control", {
+        type: "Environment Configuration",
+        request: "port",
+        name: "ModInternal",
+        service: "ModuleInternal",
+        exposeManager: !0
+    })));
+}, /**
  * Stop the module when it is no longer needed, and tear-down state.
  * @method stop
  * @private
  */
 fdom.port.Module.prototype.stop = function() {
-  if (!this.started) {
-    return;
-  }
-  if (this.port) {
-    this.port.off();
-    this.port.onMessage('control', {
-      type: 'close',
-      channel: 'control'
-    });
-    delete this.port;
-  }
-  this.started = false;
-};
-
-/**
+    this.started && (this.port && (this.port.off(), this.port.onMessage("control", {
+        type: "close",
+        channel: "control"
+    }), delete this.port), this.started = !1);
+}, /**
  * Textual Description of the Port
  * @method toString
  * @return {String} The description of this Port.
  */
 fdom.port.Module.prototype.toString = function() {
-  var manifest = this.manifestId;
-  if (manifest.indexOf('/') > -1) {
-    manifest = manifest.substr(manifest.lastIndexOf('/') + 1);
-  }
-  return "[Module " + manifest + "]";
-};
-
-/**
+    var manifest = this.manifestId;
+    return manifest.indexOf("/") > -1 && (manifest = manifest.substr(manifest.lastIndexOf("/") + 1)), 
+    "[Module " + manifest + "]";
+}, /**
  * Intercept messages as they arrive from the module,
  * mapping them between internal and external flow names.
  * @method emitMessage
@@ -1971,193 +1227,116 @@ fdom.port.Module.prototype.toString = function() {
  * @private
  */
 fdom.port.Module.prototype.emitMessage = function(name, message) {
-  if (this.internalPortMap[name] === false && message.channel) {
-    this.internalPortMap[name] = message.channel;
-    this.emit('internalChannelReady');
-    return;
-  }
-  // Terminate debug redirection requested in start().
-  if (name === 'control') {
-    if (message.flow === 'debug' && message.message) {
-      fdom.debug.format(message.message.severity,
-          this.toString(),
-          message.message.msg);
-    } else if (message.flow === 'core' && message.message) {
-      if (!this.core) {
-        this.once('core', this.emitMessage.bind(this, name, message));
-        return;
-      }
-      if (message.message.type === 'register') {
-        message.message.reply = this.port.onMessage.bind(this.port, 'control');
-        this.externalPortMap[message.message.id] = false;
-      }
-      this.core.onMessage(this, message.message);
-    } else if (message.name === 'ModInternal' && !this.modInternal) {
-      this.modInternal = message.channel;
-      this.port.onMessage(this.modInternal, {
-        type: 'Initialization',
+    if (this.internalPortMap[name] === !1 && message.channel) return this.internalPortMap[name] = message.channel, 
+    void this.emit("internalChannelReady");
+    // Terminate debug redirection requested in start().
+    if ("control" === name) if ("debug" === message.flow && message.message) fdom.debug.format(message.message.severity, this.toString(), message.message.msg); else if ("core" === message.flow && message.message) {
+        if (!this.core) return void this.once("core", this.emitMessage.bind(this, name, message));
+        "register" === message.message.type && (message.message.reply = this.port.onMessage.bind(this.port, "control"), 
+        this.externalPortMap[message.message.id] = !1), this.core.onMessage(this, message.message);
+    } else "ModInternal" !== message.name || this.modInternal ? "createLink" === message.type ? (// A design decision was that the default channel is
+    // overridden when acting as a provider.
+    this.manifest.provides && 0 === this.manifest.provides.indexOf(message.name) && (this.internalPortMap["default"] = message.channel), 
+    this.internalPortMap[message.name] = message.channel, this.port.onMessage(message.channel, {
+        type: "channel announcement",
+        channel: message.reverse
+    }), this.emit("internalChannelReady")) : "close" === message.type && this.deregisterFlow(message.channel, !0) : (this.modInternal = message.channel, 
+    this.port.onMessage(this.modInternal, {
+        type: "Initialization",
         id: this.manifestId,
         appId: this.id,
         manifest: this.manifest,
         lineage: this.lineage,
         channel: message.reverse
-      });
-      this.emit('modInternal');
-    } else if (message.type === 'createLink') {
-      // A design decision was that the default channel is
-      // overridden when acting as a provider.
-      if (this.manifest.provides &&
-          this.manifest.provides.indexOf(message.name) === 0) {
-        this.internalPortMap['default'] = message.channel;
-      }
-
-      this.internalPortMap[message.name] = message.channel;
-      this.port.onMessage(message.channel, {
-        type: 'channel announcement',
-        channel: message.reverse
-      });
-      this.emit('internalChannelReady');
-    } else if (message.type === 'close') {
-      this.deregisterFlow(message.channel, true);
-    }
-  } else if (name === 'ModInternal' && message.type === 'ready' && !this.started) {
-    this.started = true;
-    this.emit('start');
-  } else if (name === 'ModInternal' && message.type === 'resolve') {
-    fdom.resources.get(this.manifestId, message.data).then(function(id, data) {
-      this.port.onMessage(this.modInternal, {
-        type: 'resolve response',
-        id: id,
-        data: data
-      });
+    }), this.emit("modInternal")); else "ModInternal" !== name || "ready" !== message.type || this.started ? "ModInternal" === name && "resolve" === message.type ? fdom.resources.get(this.manifestId, message.data).then(function(id, data) {
+        this.port.onMessage(this.modInternal, {
+            type: "resolve response",
+            id: id,
+            data: data
+        });
     }.bind(this, message.id), function() {
-      fdom.debug.warn('Error Resolving URL for Module.');
-    });
-  } else {
-    this.emit(this.externalPortMap[name], message);
-  }
-  return false;
-};
-
-/**
+        fdom.debug.warn("Error Resolving URL for Module.");
+    }) : this.emit(this.externalPortMap[name], message) : (this.started = !0, this.emit("start"));
+    return !1;
+}, /**
  * Load the module description from its manifest.
  * @method loadManifest
  * @private
  */
 fdom.port.Module.prototype.loadManifest = function() {
-  fdom.resources.getContents(this.manifestId).then(function(data) {
-    var resp = {};
-    try {
-      resp = JSON.parse(data);
-    } catch(err) {
-      fdom.debug.warn("Failed to load " + this.manifestId + ": " + err);
-      return;
-    }
-    this.manifest = resp;
-    this.emit('manifest', this.manifest);
-    this.start();
-  }.bind(this), function(err) {
-    fdom.debug.warn("Failed to load " + this.manifestId + ": " + err);
-  }.bind(this));
-};
-
-/**
+    fdom.resources.getContents(this.manifestId).then(function(data) {
+        var resp = {};
+        try {
+            resp = JSON.parse(data);
+        } catch (err) {
+            return void fdom.debug.warn("Failed to load " + this.manifestId + ": " + err);
+        }
+        this.manifest = resp, this.emit("manifest", this.manifest), this.start();
+    }.bind(this), function(err) {
+        fdom.debug.warn("Failed to load " + this.manifestId + ": " + err);
+    }.bind(this));
+}, /**
  * Request the external routes used by this module.
  * @method loadLinks
  * @private
  */
 fdom.port.Module.prototype.loadLinks = function() {
-  var i, channels = ['default'], name, dep,
-      finishLink = function(dep, provider) {
+    var i, name, dep, channels = [ "default" ], finishLink = function(dep, provider) {
         dep.getInterface().provideAsynchronous(provider);
-      };
-  if (this.manifest.permissions) {
-    for (i = 0; i < this.manifest.permissions.length; i += 1) {
-      name = this.manifest.permissions[i];
-      if (channels.indexOf(name) < 0 && name.indexOf('core.') === 0) {
-        channels.push(name);
-        dep = new fdom.port.Provider(fdom.apis.get(name).definition);
-        fdom.apis.getCore(name, this).then(finishLink.bind(this, dep));
-
-        this.emit(this.controlChannel, {
-          type: 'Link to ' + name,
-          request: 'link',
-          name: name,
-          to: dep
-        });
-      }
-    }
-  }
-  if (this.manifest.dependencies) {
-    fdom.util.eachProp(this.manifest.dependencies, function(desc, name) {
-      if (channels.indexOf(name) < 0) {
-        channels.push(name);
-      }
-      fdom.resources.get(this.manifestId, desc.url).then(function (url) {
-        var dep = new fdom.port.Module(url, this.lineage);
-        dep.once('manifest', this.updateEnv.bind(this, name));
-
-        this.emit(this.controlChannel, {
-          type: 'Link to ' + name,
-          request: 'link',
-          name: name,
-          to: dep
-        });
-      }.bind(this));
-    }.bind(this));
-  }
-  // Note that messages can be synchronous, so some ports may already be bound.
-  for (i = 0; i < channels.length; i += 1) {
-    this.externalPortMap[channels[i]] = this.externalPortMap[channels[i]] || false;
-    this.internalPortMap[channels[i]] = false;
-  }
-};
-
-/**
+    };
+    if (this.manifest.permissions) for (i = 0; i < this.manifest.permissions.length; i += 1) name = this.manifest.permissions[i], 
+    channels.indexOf(name) < 0 && 0 === name.indexOf("core.") && (channels.push(name), 
+    dep = new fdom.port.Provider(fdom.apis.get(name).definition), fdom.apis.getCore(name, this).then(finishLink.bind(this, dep)), 
+    this.emit(this.controlChannel, {
+        type: "Link to " + name,
+        request: "link",
+        name: name,
+        to: dep
+    }));
+    // Note that messages can be synchronous, so some ports may already be bound.
+    for (this.manifest.dependencies && fdom.util.eachProp(this.manifest.dependencies, function(desc, name) {
+        channels.indexOf(name) < 0 && channels.push(name), fdom.resources.get(this.manifestId, desc.url).then(function(url) {
+            var dep = new fdom.port.Module(url, this.lineage);
+            dep.once("manifest", this.updateEnv.bind(this, name)), this.emit(this.controlChannel, {
+                type: "Link to " + name,
+                request: "link",
+                name: name,
+                to: dep
+            });
+        }.bind(this));
+    }.bind(this)), i = 0; i < channels.length; i += 1) this.externalPortMap[channels[i]] = this.externalPortMap[channels[i]] || !1, 
+    this.internalPortMap[channels[i]] = !1;
+}, /**
  * Update the module environment with information about a dependent manifest.
  * @method updateEnv
  * @param {String} dep The dependency
  * @param {Object} manifest The manifest of the dependency
  */
 fdom.port.Module.prototype.updateEnv = function(dep, manifest) {
-  if (!manifest) {
-    return;
-  }
-  if (!this.modInternal) {
-    this.once('modInternal', this.updateEnv.bind(this, dep, manifest));
-  }
-  // Decide if/what other properties should be exported.
-  var metadata = {
-    name: manifest.name,
-    icon: manifest.icon,
-    description: manifest.description
-  };
-  
-  this.port.onMessage(this.modInternal, {
-    type: 'manifest',
-    name: dep,
-    manifest: metadata
-  });
-};
-
-fdom.port.Module.prototype.serialize = function() {
-  return JSON.serialize({
-    manifestId: this.manifestId,
-    externalPortMap: this.externalPortMap,
-    internalPortMap: this.internalPortMap,
-    manifest: this.manifest,
-    controlChannel: this.controlChannel
-  });
-};
-
-/*globals fdom:true, Promise */
-/* indent:2,white:true,node:true,sloppy:true */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
-fdom.port = fdom.port || {};
-
-/**
+    if (manifest) {
+        this.modInternal || this.once("modInternal", this.updateEnv.bind(this, dep, manifest));
+        // Decide if/what other properties should be exported.
+        var metadata = {
+            name: manifest.name,
+            icon: manifest.icon,
+            description: manifest.description
+        };
+        this.port.onMessage(this.modInternal, {
+            type: "manifest",
+            name: dep,
+            manifest: metadata
+        });
+    }
+}, fdom.port.Module.prototype.serialize = function() {
+    return JSON.serialize({
+        manifestId: this.manifestId,
+        externalPortMap: this.externalPortMap,
+        internalPortMap: this.internalPortMap,
+        manifest: this.manifest,
+        controlChannel: this.controlChannel
+    });
+}, /*globals fdom:true, Promise */
+"undefined" == typeof fdom && (fdom = {}), fdom.port = fdom.port || {}, /**
  * The internal logic for module setup, which makes sure the public
  * facing exports have appropriate properties, and load user scripts.
  * @class ModuleInternal
@@ -2166,18 +1345,9 @@ fdom.port = fdom.port || {};
  * @constructor
  */
 fdom.port.ModuleInternal = function(manager) {
-  this.config = {};
-  this.manager = manager;
-  this.manifests = {};
-  
-  this.id = 'ModuleInternal-' + Math.random();
-  this.pendingPorts = 0;
-  this.requests = {};
-
-  fdom.util.handleEvents(this);
-};
-
-/**
+    this.config = {}, this.manager = manager, this.manifests = {}, this.id = "ModuleInternal-" + Math.random(), 
+    this.pendingPorts = 0, this.requests = {}, fdom.util.handleEvents(this);
+}, /**
  * Message handler for this port.
  * This port only handles two messages:
  * The first is its setup from the manager, which it uses for configuration.
@@ -2188,41 +1358,24 @@ fdom.port.ModuleInternal = function(manager) {
  * @param {Object} message The message.
  */
 fdom.port.ModuleInternal.prototype.onMessage = function(flow, message) {
-  if (flow === 'control') {
-    if (!this.controlChannel && message.channel) {
-      this.controlChannel = message.channel;
-      fdom.util.mixin(this.config, message.config);
+    if ("control" === flow) !this.controlChannel && message.channel && (this.controlChannel = message.channel, 
+    fdom.util.mixin(this.config, message.config)); else if ("default" !== flow || this.appId) "default" === flow && this.requests[message.id] ? (this.requests[message.id](message.data), 
+    delete this.requests[message.id]) : "default" === flow && "manifest" === message.type && this.updateManifest(message.name, message.manifest); else {
+        // Recover the ID of this module:
+        this.port = this.manager.hub.getDestination(message.channel), this.externalChannel = message.channel, 
+        this.appId = message.appId, this.lineage = message.lineage;
+        var objects = this.mapProxies(message.manifest);
+        this.once("start", this.loadScripts.bind(this, message.id, message.manifest.app.script)), 
+        this.loadLinks(objects);
     }
-  } else if (flow === 'default' && !this.appId) {
-    // Recover the ID of this module:
-    this.port = this.manager.hub.getDestination(message.channel);
-    this.externalChannel = message.channel;
-    this.appId = message.appId;
-    this.lineage = message.lineage;
-
-    var objects = this.mapProxies(message.manifest);
-
-    this.once('start', this.loadScripts.bind(this, message.id,
-        message.manifest.app.script));
-    this.loadLinks(objects);
-  } else if (flow === 'default' && this.requests[message.id]) {
-    this.requests[message.id](message.data);
-    delete this.requests[message.id];
-  } else if (flow === 'default' && message.type === 'manifest') {
-    this.updateManifest(message.name, message.manifest);
-  }
-};
-
-/**
+}, /**
  * Get a textual description of this Port.
  * @method toString
  * @return {String} a description of this Port.
  */
 fdom.port.ModuleInternal.prototype.toString = function() {
-  return "[Module Environment Helper]";
-};
-
-/**
+    return "[Module Environment Helper]";
+}, /**
  * Attach a proxy to the externally visible namespace.
  * @method attach
  * @param {String} name The name of the proxy.
@@ -2231,25 +1384,11 @@ fdom.port.ModuleInternal.prototype.toString = function() {
  * @private.
  */
 fdom.port.ModuleInternal.prototype.attach = function(name, proxy, api) {
-  var exp = this.config.global.freedom;
-
-  if (!exp[name]) {
-    exp[name] = proxy.getProxyInterface();
-    if (api) {
-      exp[name].api = api;
-    }
-    if (this.manifests[name]) {
-      exp[name].manifest = this.manifests[name];
-    }
-  }
-
-  this.pendingPorts -= 1;
-  if (this.pendingPorts === 0) {
-    this.emit('start');
-  }
-};
-
-/**
+    var exp = this.config.global.freedom;
+    exp[name] || (exp[name] = proxy.getProxyInterface(), api && (exp[name].api = api), 
+    this.manifests[name] && (exp[name].manifest = this.manifests[name])), this.pendingPorts -= 1, 
+    0 === this.pendingPorts && this.emit("start");
+}, /**
  * Request a set of proxy interfaces, and bind them to the external
  * namespace.
  * @method loadLinks
@@ -2257,65 +1396,31 @@ fdom.port.ModuleInternal.prototype.attach = function(name, proxy, api) {
  * @private
  */
 fdom.port.ModuleInternal.prototype.loadLinks = function(items) {
-  var i, proxy, provider, core, api;
-  for (i = 0; i < items.length; i += 1) {
-    api = undefined;
-    if (items[i].def) {
-      api = items[i].def.name;
-      if (items[i].provides) {
-        proxy = new fdom.port.Provider(items[i].def.definition);
-      } else {
-        proxy = new fdom.port.Proxy(fdom.proxy.ApiInterface.bind({},
-            items[i].def.definition));
-      }
-    } else {
-      proxy = new fdom.port.Proxy(fdom.proxy.EventInterface);
-    }
-    
-    proxy.once('start', this.attach.bind(this, items[i].name, proxy, api));
-    this.manager.createLink(this.port, items[i].name, proxy);
+    var i, proxy, provider, core, api;
+    for (i = 0; i < items.length; i += 1) api = void 0, items[i].def ? (api = items[i].def.name, 
+    proxy = items[i].provides ? new fdom.port.Provider(items[i].def.definition) : new fdom.port.Proxy(fdom.proxy.ApiInterface.bind({}, items[i].def.definition))) : proxy = new fdom.port.Proxy(fdom.proxy.EventInterface), 
+    proxy.once("start", this.attach.bind(this, items[i].name, proxy, api)), this.manager.createLink(this.port, items[i].name, proxy), 
     this.pendingPorts += 1;
-  }
-  
-  // Allow resolution of files by parent.
-  fdom.resources.addResolver(function(manifest, url, resolve) {
-    var id = Math.random();
-    this.requests[id] = resolve;
-    this.emit(this.externalChannel, {
-      type: 'resolve',
-      id: id,
-      data: url
-    });
-    return true;
-  }.bind(this));
-
-  // Attach Core.
-  this.pendingPorts += 1;
-
-  core = fdom.apis.get('core').definition;
-  provider = new fdom.port.Provider(core);
-  this.manager.getCore(function(CoreProv) {
-    new CoreProv(this.manager).setId(this.lineage);
-    provider.getInterface().provideAsynchronous(CoreProv);
-  }.bind(this));
-
-  this.emit(this.controlChannel, {
-    type: 'Link to core',
-    request: 'link',
-    name: 'core',
-    to: provider
-  });
-
-  proxy = new fdom.port.Proxy(fdom.proxy.ApiInterface.bind({}, core));
-  this.manager.createLink(provider, 'default', proxy);
-  this.attach('core', proxy);
-
-  if (this.pendingPorts === 0) {
-    this.emit('start');
-  }
-};
-
-/**
+    // Allow resolution of files by parent.
+    fdom.resources.addResolver(function(manifest, url, resolve) {
+        var id = Math.random();
+        return this.requests[id] = resolve, this.emit(this.externalChannel, {
+            type: "resolve",
+            id: id,
+            data: url
+        }), !0;
+    }.bind(this)), // Attach Core.
+    this.pendingPorts += 1, core = fdom.apis.get("core").definition, provider = new fdom.port.Provider(core), 
+    this.manager.getCore(function(CoreProv) {
+        new CoreProv(this.manager).setId(this.lineage), provider.getInterface().provideAsynchronous(CoreProv);
+    }.bind(this)), this.emit(this.controlChannel, {
+        type: "Link to core",
+        request: "link",
+        name: "core",
+        to: provider
+    }), proxy = new fdom.port.Proxy(fdom.proxy.ApiInterface.bind({}, core)), this.manager.createLink(provider, "default", proxy), 
+    this.attach("core", proxy), 0 === this.pendingPorts && this.emit("start");
+}, /**
  * Update the exported manifest of a dependency.
  * Sets it internally if not yet exported, or attaches the property if it
  * is loaded after the module has started (we don't delay start to retreive
@@ -2325,127 +1430,57 @@ fdom.port.ModuleInternal.prototype.loadLinks = function(items) {
  * @param {Object} manifest The manifest of the dependency
  */
 fdom.port.ModuleInternal.prototype.updateManifest = function(name, manifest) {
-  var exp = this.config.global.freedom;
-
-  if (exp[name]) {
-    exp[name].manifest = manifest;
-  } else {
-    this.manifests[name] = manifest;
-  }
-};
-
-/**
+    var exp = this.config.global.freedom;
+    exp[name] ? exp[name].manifest = manifest : this.manifests[name] = manifest;
+}, /**
  * Determine which proxy ports should be exposed by this module.
  * @method mapProxies
  * @param {Object} manifest the module JSON manifest.
  * @return {Object[]} proxy descriptors defined in the manifest.
  */
 fdom.port.ModuleInternal.prototype.mapProxies = function(manifest) {
-  var proxies = [], seen = ['core'], i, obj;
-  
-  if (manifest.permissions) {
-    for (i = 0; i < manifest.permissions.length; i += 1) {
-      obj = {
+    var i, obj, proxies = [], seen = [ "core" ];
+    if (manifest.permissions) for (i = 0; i < manifest.permissions.length; i += 1) obj = {
         name: manifest.permissions[i],
-        def: undefined
-      };
-      obj.def = fdom.apis.get(obj.name);
-      if (seen.indexOf(obj.name) < 0 && obj.def) {
-        proxies.push(obj);
-        seen.push(obj.name);
-      }
-    }
-  }
-  
-  if (manifest.dependencies) {
-    fdom.util.eachProp(manifest.dependencies, function(desc, name) {
-      obj = {
-        name: name
-      };
-      if (seen.indexOf(name) < 0) {
-        if (desc.api) {
-          obj.def = fdom.apis.get(desc.api);
-        }
-        proxies.push(obj);
-        seen.push(name);
-      }
-    });
-  }
-  
-  if (manifest.provides) {
-    for (i = 0; i < manifest.provides.length; i += 1) {
-      obj = {
+        def: void 0
+    }, obj.def = fdom.apis.get(obj.name), seen.indexOf(obj.name) < 0 && obj.def && (proxies.push(obj), 
+    seen.push(obj.name));
+    if (manifest.dependencies && fdom.util.eachProp(manifest.dependencies, function(desc, name) {
+        obj = {
+            name: name
+        }, seen.indexOf(name) < 0 && (desc.api && (obj.def = fdom.apis.get(desc.api)), proxies.push(obj), 
+        seen.push(name));
+    }), manifest.provides) for (i = 0; i < manifest.provides.length; i += 1) obj = {
         name: manifest.provides[i],
-        def: undefined,
-        provides: true
-      };
-      obj.def = fdom.apis.get(obj.name);
-      if (seen.indexOf(obj.name) < 0 && obj.def) {
-        proxies.push(obj);
-        seen.push(obj.name);
-      }
-    }
-  }
-
-  return proxies;
-};
-
-/**
+        def: void 0,
+        provides: !0
+    }, obj.def = fdom.apis.get(obj.name), seen.indexOf(obj.name) < 0 && obj.def && (proxies.push(obj), 
+    seen.push(obj.name));
+    return proxies;
+}, /**
  * Load external scripts into this namespace.
  * @method loadScripts
  * @param {String} from The URL of this modules's manifest.
  * @param {String[]} scripts The URLs of the scripts to load.
  */
 fdom.port.ModuleInternal.prototype.loadScripts = function(from, scripts) {
-  var i = 0,
-      safe = true,
-      importer = function importScripts(script, resolve) {
-        this.config.global.importScripts(script);
-        resolve();
-      }.bind(this),
-      urls = [],
-      outstanding = 0,
-      load = function(url) {
-        urls.push(url);
-        outstanding -= 1;
-        if (outstanding === 0) {
-          if (safe) {
+    var i = 0, safe = !0, importer = function(script, resolve) {
+        this.config.global.importScripts(script), resolve();
+    }.bind(this), urls = [], outstanding = 0, load = function(url) {
+        urls.push(url), outstanding -= 1, 0 === outstanding && (safe ? (this.emit(this.externalChannel, {
+            type: "ready"
+        }), this.tryLoad(importer, urls)) : this.tryLoad(importer, urls).then(function() {
             this.emit(this.externalChannel, {
-              type: 'ready'
+                type: "ready"
             });
-            this.tryLoad(importer, urls);
-          } else {
-            this.tryLoad(importer, urls).then(function() {
-              this.emit(this.externalChannel, {
-                type: 'ready'
-              });
-            }.bind(this));
-          }
-        }
-      }.bind(this);
-
-  if (!this.config.global.importScripts) {
-    safe = false;
-    importer = function(url, resolve) {
-      var script = this.config.global.document.createElement('script');
-      script.src = url;
-      script.addEventListener('load', resolve, true);
-      this.config.global.document.body.appendChild(script);
+        }.bind(this)));
     }.bind(this);
-  }
-
-  if (typeof scripts === 'string') {
-    outstanding = 1;
-    fdom.resources.get(from, scripts).then(load);
-  } else {
-    outstanding = scripts.length;
-    for (i = 0; i < scripts.length; i += 1) {
-      fdom.resources.get(from, scripts[i]).then(load);
-    }
-  }
-};
-
-/**
+    if (this.config.global.importScripts || (safe = !1, importer = function(url, resolve) {
+        var script = this.config.global.document.createElement("script");
+        script.src = url, script.addEventListener("load", resolve, !0), this.config.global.document.body.appendChild(script);
+    }.bind(this)), "string" == typeof scripts) outstanding = 1, fdom.resources.get(from, scripts).then(load); else for (outstanding = scripts.length, 
+    i = 0; i < scripts.length; i += 1) fdom.resources.get(from, scripts[i]).then(load);
+}, /**
  * Attempt to load resolved scripts into the namespace.
  * @method tryLoad
  * @private
@@ -2454,29 +1489,15 @@ fdom.port.ModuleInternal.prototype.loadScripts = function(from, scripts) {
  * @returns {Promise} completion of load
  */
 fdom.port.ModuleInternal.prototype.tryLoad = function(importer, urls) {
-  var i,
-      promises = [];
-  try {
-    for (i = 0; i < urls.length; i += 1) {
-      promises.push(new Promise(importer.bind({}, urls[i])));
+    var i, promises = [];
+    try {
+        for (i = 0; i < urls.length; i += 1) promises.push(new Promise(importer.bind({}, urls[i])));
+    } catch (e) {
+        fdom.debug.warn(e.stack), fdom.debug.error("Error loading " + urls[i], e), fdom.debug.error("If the stack trace is not useful, see https://github.com/UWNetworksLab/freedom/wiki/Debugging-Script-Parse-Errors");
     }
-  } catch(e) {
-    fdom.debug.warn(e.stack);
-    fdom.debug.error("Error loading " + urls[i], e);
-    fdom.debug.error("If the stack trace is not useful, see https://" +
-        "github.com/UWNetworksLab/freedom/wiki/Debugging-Script-Parse-Errors");
-  }
-  return Promise.all(promises);
-};
-
-/*globals fdom:true */
-/* indent:2, white:true, node:true, sloppy:true, browser:true */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
-fdom.port = fdom.port || {};
-
-/**
+    return Promise.all(promises);
+}, /*globals fdom:true */
+"undefined" == typeof fdom && (fdom = {}), fdom.port = fdom.port || {}, /**
  * A freedom port for a user-accessable provider.
  * @class Provider
  * @extends Port
@@ -2485,92 +1506,51 @@ fdom.port = fdom.port || {};
  * @contructor
  */
 fdom.port.Provider = function(def) {
-  this.id = fdom.port.Proxy.nextId();
-  fdom.util.handleEvents(this);
-  
-  this.definition = def;
-  this.mode = fdom.port.Provider.mode.synchronous;
-  this.iface = null;
-  this.providerCls = null;
-  this.providerInstances = {};
-};
-
-/**
+    this.id = fdom.port.Proxy.nextId(), fdom.util.handleEvents(this), this.definition = def, 
+    this.mode = fdom.port.Provider.mode.synchronous, this.iface = null, this.providerCls = null, 
+    this.providerInstances = {};
+}, /**
  * Provider modes of operation.
  * @property mode
  * @static
  * @type number
  */
 fdom.port.Provider.mode = {
-  synchronous: 0,
-  asynchronous: 1,
-  promises: 2
-};
-
-/**
+    synchronous: 0,
+    asynchronous: 1,
+    promises: 2
+}, /**
  * Receive external messages for the provider.
  * @method onMessage
  * @param {String} source the source identifier of the message.
  * @param {Object} message The received message.
  */
 fdom.port.Provider.prototype.onMessage = function(source, message) {
-  if (source === 'control' && message.reverse) {
-    this.emitChannel = message.channel;
+    if ("control" === source && message.reverse) this.emitChannel = message.channel, 
     this.emit(this.emitChannel, {
-      type: 'channel announcement',
-      channel: message.reverse
-    });
-    this.emit('start');
-  } else if (source === 'control' && message.type === 'setup') {
-    this.controlChannel = message.channel;
-  } else if (source === 'control' && message.type === 'close') {
-    if (message.channel === this.controlChannel) {
-      delete this.controlChannel;
+        type: "channel announcement",
+        channel: message.reverse
+    }), this.emit("start"); else if ("control" === source && "setup" === message.type) this.controlChannel = message.channel; else if ("control" === source && "close" === message.type) message.channel === this.controlChannel && delete this.controlChannel, 
+    this.close(); else if ("default" === source) {
+        if (!this.emitChannel && message.channel) return this.emitChannel = message.channel, 
+        void this.emit("start");
+        if ("close" === message.type && message.to) delete this.providerInstances[message.to]; else if (message.to && this.providerInstances[message.to]) message.message.to = message.to, 
+        this.providerInstances[message.to](message.message); else if (message.to && message.message && "construct" === message.message.type) {
+            var args = fdom.proxy.portableToMessage(this.definition.constructor ? this.definition.constructor.value : [], message.message);
+            this.providerInstances[message.to] = this.getProvider(message.to, args);
+        } else fdom.debug.warn(this.toString() + " dropping message " + JSON.stringify(message));
     }
-    this.close();
-  } else if (source === 'default') {
-    if (!this.emitChannel && message.channel) {
-      this.emitChannel = message.channel;
-      this.emit('start');
-      return;
-    }
-    if (message.type === 'close' && message.to) {
-      delete this.providerInstances[message.to];
-    } else if (message.to && this.providerInstances[message.to]) {
-      message.message.to = message.to;
-      this.providerInstances[message.to](message.message);
-    } else if (message.to && message.message &&
-        message.message.type === 'construct') {
-      var args = fdom.proxy.portableToMessage(
-          this.definition.constructor ? this.definition.constructor.value : [],
-          message.message);
-      this.providerInstances[message.to] = this.getProvider(message.to, args);
-    } else {
-      fdom.debug.warn(this.toString() + ' dropping message ' +
-          JSON.stringify(message));
-    }
-  }
-};
-
-/**
+}, /**
  * Close / teardown the flow this provider terminates.
  * @method close
  */
 fdom.port.Provider.prototype.close = function() {
-  if (this.controlChannel) {
-    this.emit(this.controlChannel, {
-      type: 'Provider Closing',
-      request: 'close'
-    });
-    delete this.controlChannel;
-  }
-  this.emit('close');
-
-  this.providerInstances = {};
-  this.emitChannel = null;
-};
-
-/**
+    this.controlChannel && (this.emit(this.controlChannel, {
+        type: "Provider Closing",
+        request: "close"
+    }), delete this.controlChannel), this.emit("close"), this.providerInstances = {}, 
+    this.emitChannel = null;
+}, /**
  * Get an interface to expose externally representing this port.
  * Providers are registered with the port using either
  * provideSynchronous or provideAsynchronous depending on the desired
@@ -2579,93 +1559,53 @@ fdom.port.Provider.prototype.close = function() {
  * @return {Object} The external interface of this Provider.
  */
 fdom.port.Provider.prototype.getInterface = function() {
-  if (this.iface) {
-    return this.iface;
-  } else {
-    this.iface = {
-      provideSynchronous: function(prov) {
-        this.providerCls = prov;
-        this.mode = fdom.port.Provider.mode.synchronous;
-      }.bind(this),
-      provideAsynchronous: function(prov) {
-        this.providerCls = prov;
-        this.mode = fdom.port.Provider.mode.asynchronous;
-      }.bind(this),
-      providePromises: function(prov) {
-        this.providerCls = prov;
-        this.mode = fdom.port.Provider.mode.promises;
-      }.bind(this),
-      close: function() {
-        this.close();
-      }.bind(this)
-    };
-
-    fdom.util.eachProp(this.definition, function(prop, name) {
-      switch(prop.type) {
-      case "constant":
-        Object.defineProperty(this.iface, name, {
-          value: fdom.proxy.recursiveFreezeObject(prop.value),
-          writable: false
-        });
-        break;
-      }
-    }.bind(this));
-
-    return this.iface;
-  }
-};
-
-/**
+    return this.iface ? this.iface : (this.iface = {
+        provideSynchronous: function(prov) {
+            this.providerCls = prov, this.mode = fdom.port.Provider.mode.synchronous;
+        }.bind(this),
+        provideAsynchronous: function(prov) {
+            this.providerCls = prov, this.mode = fdom.port.Provider.mode.asynchronous;
+        }.bind(this),
+        providePromises: function(prov) {
+            this.providerCls = prov, this.mode = fdom.port.Provider.mode.promises;
+        }.bind(this),
+        close: function() {
+            this.close();
+        }.bind(this)
+    }, fdom.util.eachProp(this.definition, function(prop, name) {
+        switch (prop.type) {
+          case "constant":
+            Object.defineProperty(this.iface, name, {
+                value: fdom.proxy.recursiveFreezeObject(prop.value),
+                writable: !1
+            });
+        }
+    }.bind(this)), this.iface);
+}, /**
  * Create a function that can be used to get interfaces from this provider from
  * a user-visible point.
  * @method getProxyInterface
  */
 fdom.port.Provider.prototype.getProxyInterface = function() {
-  var func = function(p) {
-    return p.getInterface();
-  }.bind({}, this);
-
-  func.close = function(iface) {
-    if (iface) {
-      fdom.util.eachProp(this.ifaces, function(candidate, id) {
-        if (candidate === iface) {
-          this.teardown(id);
-          this.emit(this.emitChannel, {
-            type: 'close',
-            to: id
-          });
-          return true;
-        }
-      }.bind(this));
-    } else {
-      // Close the channel.
-      this.close();
-    }
-  }.bind(this);
-
-  func.onClose = function(iface, handler) {
-    if (typeof iface === 'function' && handler === undefined) {
-      // Add an on-channel-closed handler.
-      this.once('close', iface);
-      return;
-    }
-
-    fdom.util.eachProp(this.ifaces, function(candidate, id) {
-      if (candidate === iface) {
-        if (this.handlers[id]) {
-          this.handlers[id].push(handler);
-        } else {
-          this.handlers[id] = [handler];
-        }
-        return true;
-      }
-    }.bind(this));
-  }.bind(this);
-
-  return func;
-};
-
-/**
+    var func = function(p) {
+        return p.getInterface();
+    }.bind({}, this);
+    return func.close = function(iface) {
+        iface ? fdom.util.eachProp(this.ifaces, function(candidate, id) {
+            return candidate === iface ? (this.teardown(id), this.emit(this.emitChannel, {
+                type: "close",
+                to: id
+            }), !0) : void 0;
+        }.bind(this)) : // Close the channel.
+        this.close();
+    }.bind(this), func.onClose = function(iface, handler) {
+        // Add an on-channel-closed handler.
+        return "function" == typeof iface && void 0 === handler ? void this.once("close", iface) : void fdom.util.eachProp(this.ifaces, function(candidate, id) {
+            return candidate === iface ? (this.handlers[id] ? this.handlers[id].push(handler) : this.handlers[id] = [ handler ], 
+            !0) : void 0;
+        }.bind(this));
+    }.bind(this), func;
+}, /**
  * Get a new instance of the registered provider.
  * @method getProvider
  * @param {String} identifier the messagable address for this provider.
@@ -2673,106 +1613,62 @@ fdom.port.Provider.prototype.getProxyInterface = function() {
  * @return {Function} A function to send messages to the provider.
  */
 fdom.port.Provider.prototype.getProvider = function(identifier, args) {
-  if (!this.providerCls) {
-    fdom.debug.warn('Cannot instantiate provider, since it is not provided');
-    return null;
-  }
-
-  var events = {},
-      dispatchEvent,
-      BoundClass,
-      instance;
-
-  fdom.util.eachProp(this.definition, function(prop, name) {
-    if (prop.type === 'event') {
-      events[name] = prop;
-    }
-  });
-
-  dispatchEvent = function(ev, id, name, value) {
-    if (ev[name]) {
-      var streams = fdom.proxy.messageToPortable(ev[name].value, value);
-      this.emit(this.emitChannel, {
-        type: 'message',
-        to: id,
-        message: {
-          name: name,
-          type: 'event',
-          text: streams.text,
-          binary: streams.binary
-        }
-      });
-    }
-  }.bind(this, events, identifier);
-
-  // this is all to say: new providerCls(dispatchEvent, args[0], args[1],...)
-  BoundClass = this.providerCls.bind.apply(this.providerCls,
-      [this.providerCls, dispatchEvent].concat(args || []));
-  instance = new BoundClass();
-
-  return function(port, msg) {
-    if (msg.action === 'method') {
-      if (typeof this[msg.type] !== 'function') {
-        fdom.debug.warn("Provider does not implement " + msg.type + "()!");
-        return;
-      }
-      var prop = port.definition[msg.type],
-          args = fdom.proxy.portableToMessage(prop.value, msg),
-          ret = function(msg, prop, resolve, reject) {
-            var streams = fdom.proxy.messageToPortable(prop.ret, resolve);
+    if (!this.providerCls) return fdom.debug.warn("Cannot instantiate provider, since it is not provided"), 
+    null;
+    var dispatchEvent, BoundClass, instance, events = {};
+    // this is all to say: new providerCls(dispatchEvent, args[0], args[1],...)
+    return fdom.util.eachProp(this.definition, function(prop, name) {
+        "event" === prop.type && (events[name] = prop);
+    }), dispatchEvent = function(ev, id, name, value) {
+        if (ev[name]) {
+            var streams = fdom.proxy.messageToPortable(ev[name].value, value);
             this.emit(this.emitChannel, {
-              type: 'method',
-              to: msg.to,
-              message: {
-                to: msg.to,
-                type: 'method',
-                reqId: msg.reqId,
-                name: msg.type,
-                text: streams.text,
-                binary: streams.binary,
-                error: reject
-              }
+                type: "message",
+                to: id,
+                message: {
+                    name: name,
+                    type: "event",
+                    text: streams.text,
+                    binary: streams.binary
+                }
             });
-          }.bind(port, msg, prop);
-      if (!Array.isArray(args)) {
-        args = [args];
-      }
-      if (port.mode === fdom.port.Provider.mode.synchronous) {
-        try {
-          ret(this[msg.type].apply(this, args));
-        } catch(e) {
-          ret(undefined, e.message);
         }
-      } else if (port.mode === fdom.port.Provider.mode.asynchronous) {
-        this[msg.type].apply(instance, args.concat(ret));
-      } else if (port.mode === fdom.port.Provider.mode.promises) {
-        this[msg.type].apply(this, args).then(ret, ret.bind({}, undefined));
-      }
-    }
-  }.bind(instance, this);
-};
-
-/**
+    }.bind(this, events, identifier), BoundClass = this.providerCls.bind.apply(this.providerCls, [ this.providerCls, dispatchEvent ].concat(args || [])), 
+    instance = new BoundClass(), function(port, msg) {
+        if ("method" === msg.action) {
+            if ("function" != typeof this[msg.type]) return void fdom.debug.warn("Provider does not implement " + msg.type + "()!");
+            var prop = port.definition[msg.type], args = fdom.proxy.portableToMessage(prop.value, msg), ret = function(msg, prop, resolve, reject) {
+                var streams = fdom.proxy.messageToPortable(prop.ret, resolve);
+                this.emit(this.emitChannel, {
+                    type: "method",
+                    to: msg.to,
+                    message: {
+                        to: msg.to,
+                        type: "method",
+                        reqId: msg.reqId,
+                        name: msg.type,
+                        text: streams.text,
+                        binary: streams.binary,
+                        error: reject
+                    }
+                });
+            }.bind(port, msg, prop);
+            if (Array.isArray(args) || (args = [ args ]), port.mode === fdom.port.Provider.mode.synchronous) try {
+                ret(this[msg.type].apply(this, args));
+            } catch (e) {
+                ret(void 0, e.message);
+            } else port.mode === fdom.port.Provider.mode.asynchronous ? this[msg.type].apply(instance, args.concat(ret)) : port.mode === fdom.port.Provider.mode.promises && this[msg.type].apply(this, args).then(ret, ret.bind({}, void 0));
+        }
+    }.bind(instance, this);
+}, /**
  * Get a textual description of this port.
  * @method toString
  * @return {String} the description of this port.
  */
 fdom.port.Provider.prototype.toString = function() {
-  if (this.emitChannel) {
-    return "[Provider " + this.emitChannel + "]";
-  } else {
-    return "[unbound Provider]";
-  }
-};
-
-/*globals fdom:true */
-/* indent:2, white:true, sloppy:true, browser:true */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
-fdom.port = fdom.port || {};
-
-/**
+    return this.emitChannel ? "[Provider " + this.emitChannel + "]" : "[unbound Provider]";
+}, /*globals fdom:true */
+"undefined" == typeof fdom && (fdom = {}), fdom.port = fdom.port || {}, /**
  * A freedom port for a user-accessable proxy.
  * @class Proxy
  * @extends Port
@@ -2781,65 +1677,35 @@ fdom.port = fdom.port || {};
  * @constructor
  */
 fdom.port.Proxy = function(interfaceCls) {
-  this.id = fdom.port.Proxy.nextId();
-  this.interfaceCls = interfaceCls;
-  fdom.util.handleEvents(this);
-  
-  this.ifaces = {};
-  this.closeHandlers = {};
-  this.errorHandlers = {};
-  this.emits = {};
-};
-
-/**
+    this.id = fdom.port.Proxy.nextId(), this.interfaceCls = interfaceCls, fdom.util.handleEvents(this), 
+    this.ifaces = {}, this.closeHandlers = {}, this.errorHandlers = {}, this.emits = {};
+}, /**
  * Receive incoming messages for this proxy.
  * @method onMessage
  * @param {String} source The source of the message.
  * @param {Object} message The received message.
  */
 fdom.port.Proxy.prototype.onMessage = function(source, message) {
-  if (source === 'control' && message.reverse) {
-    this.emitChannel = message.channel;
+    if ("control" === source && message.reverse) this.emitChannel = message.channel, 
     this.emit(this.emitChannel, {
-      type: 'channel announcement',
-      channel: message.reverse
-    });
-    this.emit('start');
-  } else if (source === 'control' && message.type === 'setup') {
-    this.controlChannel = message.channel;
-  } else if (source === 'control' && message.type === 'close') {
-    delete this.controlChannel;
-    this.doClose();
-  } else {
-    if (!this.emitChannel && message.channel) {
-      this.emitChannel = message.channel;
-      this.emit('start');
-      return;
+        type: "channel announcement",
+        channel: message.reverse
+    }), this.emit("start"); else if ("control" === source && "setup" === message.type) this.controlChannel = message.channel; else if ("control" === source && "close" === message.type) delete this.controlChannel, 
+    this.doClose(); else {
+        if (!this.emitChannel && message.channel) return this.emitChannel = message.channel, 
+        void this.emit("start");
+        if ("close" === message.type && message.to) return void this.teardown(message.to);
+        if ("error" === message.type) return void this.error(message.to, message.message);
+        if (message.to) this.emits[message.to] ? this.emits[message.to]("message", message.message) : fdom.debug.warn("Could not deliver message, no such interface: " + message.to); else {
+            {
+                message.message;
+            }
+            fdom.util.eachProp(this.emits, function(iface) {
+                iface("message", message.message);
+            });
+        }
     }
-    if (message.type === 'close' && message.to) {
-      this.teardown(message.to);
-      return;
-    }
-    if (message.type === 'error') {
-      this.error(message.to, message.message);
-      return;
-    }
-    if (message.to) {
-      if (this.emits[message.to]) {
-        this.emits[message.to]('message', message.message);
-      } else {
-        fdom.debug.warn('Could not deliver message, no such interface: ' + message.to);
-      }
-    } else {
-      var msg = message.message;
-      fdom.util.eachProp(this.emits, function(iface) {
-        iface('message', message.message);
-      });
-    }
-  }
-};
-
-/**
+}, /**
  * Create a proxy.Interface associated with this proxy.
  * An interface is returned, which is supplied with important control of the
  * proxy via constructor arguments: (bound below in getInterfaceConstructor)
@@ -2851,81 +1717,39 @@ fdom.port.Proxy.prototype.onMessage = function(source, message) {
  * @method getInterface
  */
 fdom.port.Proxy.prototype.getInterface = function() {
-  var Iface = this.getInterfaceConstructor(),
-      args = Array.prototype.slice.call(arguments, 0);
-  Iface = Iface.bind.apply(Iface, [Iface].concat(args));
-  return new Iface();
-};
-
-/**
+    var Iface = this.getInterfaceConstructor(), args = Array.prototype.slice.call(arguments, 0);
+    return new (Iface = Iface.bind.apply(Iface, [ Iface ].concat(args)))();
+}, /**
  * Create a function that can be used to get interfaces from this proxy from
  * a user-visible point.
  * @method getProxyInterface
  */
 fdom.port.Proxy.prototype.getProxyInterface = function() {
-  var func = function(p) {
-    var args = Array.prototype.slice.call(arguments, 1);
-    return p.getInterface(args);
-  }.bind({}, this);
-
-  func.close = function(iface) {
-    if (iface) {
-      fdom.util.eachProp(this.ifaces, function(candidate, id) {
-        if (candidate === iface) {
-          this.teardown(id);
-          this.emit(this.emitChannel, {
-            type: 'close',
-            to: id
-          });
-          return true;
-        }
-      }.bind(this));
-    } else {
-      // Close the channel.
-      this.doClose();
-    }
-  }.bind(this);
-
-  func.onClose = function(iface, handler) {
-    if (typeof iface === 'function' && handler === undefined) {
-      // Add an on-channel-closed handler.
-      this.once('close', iface);
-      return;
-    }
-
-    fdom.util.eachProp(this.ifaces, function(candidate, id) {
-      if (candidate === iface) {
-        if (this.closeHandlers[id]) {
-          this.closeHandlers[id].push(handler);
-        } else {
-          this.closeHandlers[id] = [handler];
-        }
-        return true;
-      }
-    }.bind(this));
-  }.bind(this);
-
-  func.onError = function(iface, handler) {
-    if (typeof iface === 'function' && handler === undefined) {
-      this.on('error', iface);
-      return;
-    }
-    fdom.util.eachProp(this.ifaces, function(candidate, id) {
-      if (candidate === iface) {
-        if (this.errorHandlers[id]) {
-          this.errorHandlers[id].push(handler);
-        } else {
-          this.errorHandlers[id] = [handler];
-        }
-        return true;
-      }
-    }.bind(this));
-  }.bind(this);
-  
-  return func;
-};
-
-/**
+    var func = function(p) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        return p.getInterface(args);
+    }.bind({}, this);
+    return func.close = function(iface) {
+        iface ? fdom.util.eachProp(this.ifaces, function(candidate, id) {
+            return candidate === iface ? (this.teardown(id), this.emit(this.emitChannel, {
+                type: "close",
+                to: id
+            }), !0) : void 0;
+        }.bind(this)) : // Close the channel.
+        this.doClose();
+    }.bind(this), func.onClose = function(iface, handler) {
+        // Add an on-channel-closed handler.
+        return "function" == typeof iface && void 0 === handler ? void this.once("close", iface) : void fdom.util.eachProp(this.ifaces, function(candidate, id) {
+            return candidate === iface ? (this.closeHandlers[id] ? this.closeHandlers[id].push(handler) : this.closeHandlers[id] = [ handler ], 
+            !0) : void 0;
+        }.bind(this));
+    }.bind(this), func.onError = function(iface, handler) {
+        return "function" == typeof iface && void 0 === handler ? void this.on("error", iface) : void fdom.util.eachProp(this.ifaces, function(candidate, id) {
+            return candidate === iface ? (this.errorHandlers[id] ? this.errorHandlers[id].push(handler) : this.errorHandlers[id] = [ handler ], 
+            !0) : void 0;
+        }.bind(this));
+    }.bind(this), func;
+}, /**
  * Provides a bound class for creating a proxy.Interface associated
  * with this proxy. This partial level of construction can be used
  * to allow the proxy to be used as a provider for another API.
@@ -2933,14 +1757,11 @@ fdom.port.Proxy.prototype.getProxyInterface = function() {
  * @private
  */
 fdom.port.Proxy.prototype.getInterfaceConstructor = function() {
-  var id = fdom.port.Proxy.nextId();
-  return this.interfaceCls.bind({}, function(id, obj, binder) {
-    this.ifaces[id] = obj;
-    this.emits[id] = binder;
-  }.bind(this, id), this.doEmit.bind(this, id));
-};
-
-/**
+    var id = fdom.port.Proxy.nextId();
+    return this.interfaceCls.bind({}, function(id, obj, binder) {
+        this.ifaces[id] = obj, this.emits[id] = binder;
+    }.bind(this, id), this.doEmit.bind(this, id));
+}, /**
  * Emit a message on the channel once setup is complete.
  * @method doEmit
  * @private
@@ -2949,106 +1770,58 @@ fdom.port.Proxy.prototype.getInterfaceConstructor = function() {
  * @param {Boolean} all Send message to all recipients.
  */
 fdom.port.Proxy.prototype.doEmit = function(to, msg, all) {
-  if (all) {
-    to = false;
-  }
-  if (this.emitChannel) {
-    this.emit(this.emitChannel, {to: to, type:'message', message: msg});
-  } else {
-    this.once('start', this.doEmit.bind(this, to, msg));
-  }
-};
-
-/**
+    all && (to = !1), this.emitChannel ? this.emit(this.emitChannel, {
+        to: to,
+        type: "message",
+        message: msg
+    }) : this.once("start", this.doEmit.bind(this, to, msg));
+}, /**
  * Teardown a single interface of this proxy.
  * @method teardown
  * @param {String} id The id of the interface to tear down.
  */
 fdom.port.Proxy.prototype.teardown = function(id) {
-  delete this.emits[id];
-  if (this.closeHandlers[id]) {
-    fdom.util.eachProp(this.closeHandlers[id], function(prop) {
-      prop();
-    });
-  }
-  delete this.ifaces[id];
-  delete this.closeHandlers[id];
-  delete this.errorHandlers[id];
-};
-
-/**
+    delete this.emits[id], this.closeHandlers[id] && fdom.util.eachProp(this.closeHandlers[id], function(prop) {
+        prop();
+    }), delete this.ifaces[id], delete this.closeHandlers[id], delete this.errorHandlers[id];
+}, /**
  * Handle a message error reported to this proxy.
  * @method error
  * @param {String?} id The id of the interface where the error occured.
  * @param {Object} message The message which failed, if relevant.
  */
 fdom.port.Proxy.prototype.error = function(id, message) {
-  if (id && this.errorHandlers[id]) {
-    fdom.util.eachProp(this.errorHandlers[id], function(prop) {
-      prop(message);
-    });
-  } else if (!id) {
-    this.emit('error', message);
-  }
-};
-
-
-/**
+    id && this.errorHandlers[id] ? fdom.util.eachProp(this.errorHandlers[id], function(prop) {
+        prop(message);
+    }) : id || this.emit("error", message);
+}, /**
  * Close / teardown the flow this proxy terminates.
  * @method doClose
  */
 fdom.port.Proxy.prototype.doClose = function() {
-  if (this.controlChannel) {
-    this.emit(this.controlChannel, {
-      type: 'Channel Closing',
-      request: 'close'
-    });
-  }
-
-  fdom.util.eachProp(this.emits, function(emit, id) {
-    this.teardown(id);
-  }.bind(this));
-
-  this.emit('close');
-  this.off();
-
-  this.emitChannel = null;
-};
-
-/**
+    this.controlChannel && this.emit(this.controlChannel, {
+        type: "Channel Closing",
+        request: "close"
+    }), fdom.util.eachProp(this.emits, function(emit, id) {
+        this.teardown(id);
+    }.bind(this)), this.emit("close"), this.off(), this.emitChannel = null;
+}, /**
  * Get the textual description of this port.
  * @method toString
  * @return The description of this port.
  */
 fdom.port.Proxy.prototype.toString = function() {
-  if (this.emitChannel) {
-    return "[Proxy " + this.emitChannel + "]";
-  } else {
-    return "[unbound Proxy]";
-  }
-};
-
-/**
+    return this.emitChannel ? "[Proxy " + this.emitChannel + "]" : "[unbound Proxy]";
+}, /**
  * Get the next ID for a proxy channel.
  * @method nextId
  * @static
  * @private
  */
 fdom.port.Proxy.nextId = function() {
-  if (!fdom.port.Proxy.id) {
-    fdom.port.Proxy.id = 1;
-  }
-  return (fdom.port.Proxy.id += 1);
-};
-
-/*globals fdom:true, WebSocket */
-/* indent:2, white:true, sloppy:true, browser:true */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
-fdom.port = fdom.port || {};
-
-/**
+    return fdom.port.Proxy.id || (fdom.port.Proxy.id = 1), fdom.port.Proxy.id += 1;
+}, /*globals fdom:true, WebSocket */
+"undefined" == typeof fdom && (fdom = {}), fdom.port = fdom.port || {}, /**
  * A client communication port to a priviledged web-server capable
  * remote instance of freedom.js
  * @class Runtime
@@ -3057,16 +1830,9 @@ fdom.port = fdom.port || {};
  * @constructor
  */
 fdom.port.Runtime = function() {
-  this.id = 'runtime';
-  this.config = {};
-  this.runtimes = {};
-  this.core = null;
-  this.socket = null;
-  this.status = fdom.port.Runtime.status.disconnected;
-  fdom.util.handleEvents(this);
-};
-
-/**
+    this.id = "runtime", this.config = {}, this.runtimes = {}, this.core = null, this.socket = null, 
+    this.status = fdom.port.Runtime.status.disconnected, fdom.util.handleEvents(this);
+}, /**
  * Possible states of the Runtime port. Determines where in the
  * setup process the port is.
  * @property status
@@ -3074,22 +1840,17 @@ fdom.port.Runtime = function() {
  * @static
  */
 fdom.port.Runtime.status = {
-  disconnected: 0,
-  connecting: 1,
-  connected: 2
-};
-
-/**
+    disconnected: 0,
+    connecting: 1,
+    connected: 2
+}, /**
  * Get the textual description of this port.
  * @method toString
  * @returns {String} The description of this port.
  */
 fdom.port.Runtime.prototype.toString = function() {
-  return "[Port to Priviledged Runtime]";
-};
-
-
-/**
+    return "[Port to Priviledged Runtime]";
+}, /**
  * Handle a message from the local freedom environment.
  * The runtime port will strip off the recursive config sent at setup,
  * but otherwise sends messages un-altered.
@@ -3098,30 +1859,17 @@ fdom.port.Runtime.prototype.toString = function() {
  * @param {Object} msg The message to send.
  */
 fdom.port.Runtime.prototype.onMessage = function(source, msg) {
-  if (source === 'control' && msg.type === 'setup') {
-    var config = {};
-    fdom.util.mixin(config, msg.config);
-    delete config.global;
-    //TODO: support long msgs.
-    delete config.src;
-    msg.config = config;
-    this.controlChannel = msg.channel;
-    this.connect();
-    this.emit(this.controlChannel, {
-      type: 'Get Core Provider',
-      request: 'core'
-    });
-  } else if (source === 'control' && msg.type === 'core' && !this.core) {
-    this.core = msg.core;
-  }
-  if (this.status === fdom.port.Runtime.status.connected) {
-    this.socket.send(JSON.stringify([source, msg]));
-  } else {
-    this.once('connected', this.onMessage.bind(this, source, msg));
-  }
-};
-
-/**
+    if ("control" === source && "setup" === msg.type) {
+        var config = {};
+        fdom.util.mixin(config, msg.config), delete config.global, //TODO: support long msgs.
+        delete config.src, msg.config = config, this.controlChannel = msg.channel, this.connect(), 
+        this.emit(this.controlChannel, {
+            type: "Get Core Provider",
+            request: "core"
+        });
+    } else "control" !== source || "core" !== msg.type || this.core || (this.core = msg.core);
+    this.status === fdom.port.Runtime.status.connected ? this.socket.send(JSON.stringify([ source, msg ])) : this.once("connected", this.onMessage.bind(this, source, msg));
+}, /**
  * Attempt to connect to the runtime server.
  * Address / Port to connect to default to 127.0.0.1:9009, but can be overridden
  * by setting 'runtimeHost' and 'runtimePort' configuration options.
@@ -3129,27 +1877,17 @@ fdom.port.Runtime.prototype.onMessage = function(source, msg) {
  * @protected
  */
 fdom.port.Runtime.prototype.connect = function() {
-  var host = this.config.runtimeHost || '127.0.0.1',
-      port = this.config.runtimePort || 9009;
-  if (!this.socket && this.status === fdom.port.Runtime.status.disconnected) {
-    fdom.debug.log("FreeDOM Runtime Link connecting");
-    this.status = fdom.port.Runtime.status.connecting;
-    this.socket = new WebSocket('ws://' + host + ':' + port);
-    this.socket.addEventListener('open', function(msg) {
-      fdom.debug.log("FreeDOM Runtime Link connected");
-      this.status = fdom.port.Runtime.status.connected;
-      this.emit('connected');
-      fdom.apis.register('core.runtime', this.runtime.bind(this, this));
-    }.bind(this), true);
-    this.socket.addEventListener('message', this.message.bind(this), true);
-    this.socket.addEventListener('close', function() {
-      fdom.debug.log("FreeDOM Runtime Link disconnected");
-      this.status = fdom.port.Runtime.status.disconnected;
-    }.bind(this), true);
-  }
-};
-
-/**
+    var host = this.config.runtimeHost || "127.0.0.1", port = this.config.runtimePort || 9009;
+    this.socket || this.status !== fdom.port.Runtime.status.disconnected || (fdom.debug.log("FreeDOM Runtime Link connecting"), 
+    this.status = fdom.port.Runtime.status.connecting, this.socket = new WebSocket("ws://" + host + ":" + port), 
+    this.socket.addEventListener("open", function() {
+        fdom.debug.log("FreeDOM Runtime Link connected"), this.status = fdom.port.Runtime.status.connected, 
+        this.emit("connected"), fdom.apis.register("core.runtime", this.runtime.bind(this, this));
+    }.bind(this), !0), this.socket.addEventListener("message", this.message.bind(this), !0), 
+    this.socket.addEventListener("close", function() {
+        fdom.debug.log("FreeDOM Runtime Link disconnected"), this.status = fdom.port.Runtime.status.disconnected;
+    }.bind(this), !0));
+}, /**
  * Process a message from the freedom.js runtime.
  * Currently, the runtime intercepts two types of messages internally:
  * 1. runtime.load messages are immediately resolved to see if the local context
@@ -3162,33 +1900,23 @@ fdom.port.Runtime.prototype.connect = function() {
  * @protected
  */
 fdom.port.Runtime.prototype.message = function(msg) {
-  try {
-    var data = JSON.parse(msg.data);
-    // Handle runtime support requests.
-    if (data[0] === 'runtime' && data[1].request === 'load') {
-      fdom.resources.getContents(data[1].url).then(function(url, from, data) {
-        this.onMessage('runtime', {
-          response: 'load',
-          file: url,
-          from: from,
-          data: data
-        });
-      }.bind(this, data[1].url, data[1].from));
-      return;
-    } else if (data[0] === 'runtime' && data[1].request === 'message') {
-      if (!this.runtimes[data[1].id]) {
-        fdom.debug.warn('Asked to relay to non-existant runtime:' + data[1].id);
-      }
-      this.runtimes[data[1].id].channel.emit(data[1].data[0], data[1].data[1]);
+    try {
+        var data = JSON.parse(msg.data);
+        // Handle runtime support requests.
+        if ("runtime" === data[0] && "load" === data[1].request) return void fdom.resources.getContents(data[1].url).then(function(url, from, data) {
+            this.onMessage("runtime", {
+                response: "load",
+                file: url,
+                from: from,
+                data: data
+            });
+        }.bind(this, data[1].url, data[1].from));
+        "runtime" === data[0] && "message" === data[1].request && (this.runtimes[data[1].id] || fdom.debug.warn("Asked to relay to non-existant runtime:" + data[1].id), 
+        this.runtimes[data[1].id].channel.emit(data[1].data[0], data[1].data[1])), this.emit(data[0], data[1]);
+    } catch (e) {
+        fdom.debug.warn(e.stack), fdom.debug.warn("Unable to parse runtime message: " + msg);
     }
-    this.emit(data[0], data[1]);
-  } catch(e) {
-    fdom.debug.warn(e.stack);
-    fdom.debug.warn('Unable to parse runtime message: ' + msg);
-  }
-};
-
-/**
+}, /**
  * A Runtime, backing the 'core.runtime' API.
  * The runtime object handles requests by local applications wanting to
  * interact with the freedom.js runtime. Primarily, this is done by
@@ -3199,13 +1927,8 @@ fdom.port.Runtime.prototype.message = function(msg) {
  * @param {App} app The app creating this provider.
  */
 fdom.port.Runtime.prototype.runtime = function(link, app) {
-  this.id = Math.random();
-  this.link = link;
-  this.app = app;
-  this.link.runtimes[this.id] = this;
-};
-
-/**
+    this.id = Math.random(), this.link = link, this.app = app, this.link.runtimes[this.id] = this;
+}, /**
  * Create a remote App with a specified manifest.
  * TODO(willscott): This should probably be refactored to 'connectApp',
  *     Since there shouldn't be a distinction between creation and re-connection.
@@ -3216,35 +1939,27 @@ fdom.port.Runtime.prototype.runtime = function(link, app) {
  * to talk with the created app.
  */
 fdom.port.Runtime.prototype.runtime.prototype.createApp = function(manifest, proxy) {
-  fdom.resources.get(this.app.manifestId, manifest).then(function(url) {
-    this.link.onMessage('runtime', {
-      request: 'createApp',
-      from: this.app.manifestId,
-      to: url,
-      id: this.id
-    });
-    // The created channel gets terminated with the runtime port.
-    // Messages are then tunneled to the runtime.
-    // Messages from the runtime are delivered in Runtime.message.
-    this.link.core.bindChannel(proxy).then(function(iface) {
-      iface.on(function(flow, msg) {
-        this.link.onMessage('runtime', {
-          request: 'message',
-          id: this.id,
-          data: [flow, msg]
-        });
-        return false;
-      }.bind(this));
-      this.channel = iface;
+    fdom.resources.get(this.app.manifestId, manifest).then(function(url) {
+        this.link.onMessage("runtime", {
+            request: "createApp",
+            from: this.app.manifestId,
+            to: url,
+            id: this.id
+        }), // The created channel gets terminated with the runtime port.
+        // Messages are then tunneled to the runtime.
+        // Messages from the runtime are delivered in Runtime.message.
+        this.link.core.bindChannel(proxy).then(function(iface) {
+            iface.on(function(flow, msg) {
+                return this.link.onMessage("runtime", {
+                    request: "message",
+                    id: this.id,
+                    data: [ flow, msg ]
+                }), !1;
+            }.bind(this)), this.channel = iface;
+        }.bind(this));
     }.bind(this));
-  }.bind(this));
-};
-
-/*globals fdom:true, XMLHttpRequest, Promise */
-/* indent:2,white:true,node:true,sloppy:true */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
+}, /*globals fdom:true, XMLHttpRequest, Promise */
+"undefined" == typeof fdom && (fdom = {});
 
 /**
  * The Resource registry for FreeDOM.  Used to look up requested Resources,
@@ -3253,16 +1968,14 @@ if (typeof fdom === 'undefined') {
  * @constructor
  */
 var Resource = function() {
-  this.files = {};
-  this.resolvers = [this.httpResolver, this.nullResolver];
-  this.contentRetreivers = {
-    'http': this.xhrRetriever,
-    'https': this.xhrRetriever,
-    'chrome-extension': this.xhrRetriever,
-    'resource': this.xhrRetriever,
-    'chrome': this.xhrRetriever,
-    'manifest': this.manifestRetriever
-  };
+    this.files = {}, this.resolvers = [ this.httpResolver, this.nullResolver ], this.contentRetreivers = {
+        http: this.xhrRetriever,
+        https: this.xhrRetriever,
+        "chrome-extension": this.xhrRetriever,
+        resource: this.xhrRetriever,
+        chrome: this.xhrRetriever,
+        manifest: this.manifestRetriever
+    };
 };
 
 /**
@@ -3273,46 +1986,27 @@ var Resource = function() {
  * @returns {Promise} A promise for the resource address.
  */
 Resource.prototype.get = function(manifest, url) {
-  var key = JSON.stringify([manifest, url]);
-  
-  return new Promise(function(resolve, reject) {
-    if (this.files[key]) {
-      resolve(this.files[key]);
-    } else {
-      this.resolve(manifest, url).then(function(key, resolve, address) {
-        this.files[key] = address;
-        //fdom.debug.log('Resolved ' + key + ' to ' + address);
-        resolve(address);
-      }.bind(this, key, resolve), reject);
-    }
-  }.bind(this));
-};
-
-/**
+    var key = JSON.stringify([ manifest, url ]);
+    return new Promise(function(resolve, reject) {
+        this.files[key] ? resolve(this.files[key]) : this.resolve(manifest, url).then(function(key, resolve, address) {
+            this.files[key] = address, //fdom.debug.log('Resolved ' + key + ' to ' + address);
+            resolve(address);
+        }.bind(this, key, resolve), reject);
+    }.bind(this));
+}, /**
  * Get the contents of a resource.
  * @method getContents
  * @param {String} url The resource to read.
  * @returns {Promise} A promise for the resource contents.
  */
 Resource.prototype.getContents = function(url) {
-  return new Promise(function(resolve, reject) {
-    var prop;
-    if (!url) {
-      fdom.debug.warn("Asked to get contents of undefined URL.");
-      return reject();
-    }
-    for (prop in this.contentRetreivers) {
-      if (this.contentRetreivers.hasOwnProperty(prop)) {
-        if (url.indexOf(prop + "://") === 0) {
-          return this.contentRetreivers[prop](url, resolve, reject);
-        }
-      }
-    }
-    reject();
-  }.bind(this));
-};
-
-/**
+    return new Promise(function(resolve, reject) {
+        var prop;
+        if (!url) return fdom.debug.warn("Asked to get contents of undefined URL."), reject();
+        for (prop in this.contentRetreivers) if (this.contentRetreivers.hasOwnProperty(prop) && 0 === url.indexOf(prop + "://")) return this.contentRetreivers[prop](url, resolve, reject);
+        reject();
+    }.bind(this));
+}, /**
  * Resolve a resource using known resolvers. Unlike get, resolve does
  * not cache resolved resources.
  * @method resolve
@@ -3322,19 +2016,13 @@ Resource.prototype.getContents = function(url) {
  * @returns {Promise} A promise for the resource address.
  */
 Resource.prototype.resolve = function(manifest, url) {
-  return new Promise(function(resolve, reject) {
-    var promises = [];
-    if (url === undefined) {
-      return reject();
-    }
-    fdom.util.eachReverse(this.resolvers, function(resolver) {
-      promises.push(new Promise(resolver.bind({}, manifest, url)));
+    return new Promise(function(resolve, reject) {
+        var promises = [];
+        return void 0 === url ? reject() : (fdom.util.eachReverse(this.resolvers, function(resolver) {
+            promises.push(new Promise(resolver.bind({}, manifest, url)));
+        }.bind(this)), void Promise.race(promises).then(resolve, reject));
     }.bind(this));
-    Promise.race(promises).then(resolve, reject);
-  }.bind(this));
-};
-
-/**
+}, /**
  * Register resolvers: code that knows how to get resources
  * needed by the runtime. A resolver will be called with four
  * arguments: the absolute manifest of the requester, the
@@ -3344,10 +2032,8 @@ Resource.prototype.resolve = function(manifest, url) {
  * @param {Function} resolver The resolver to add.
  */
 Resource.prototype.addResolver = function(resolver) {
-  this.resolvers.push(resolver);
-};
-
-/**
+    this.resolvers.push(resolver);
+}, /**
  * Register retrievers: code that knows how to load resources
  * needed by the runtime. A retriever will be called with a URL
  * to retrieve with a protocol that it is able to handle.
@@ -3356,14 +2042,8 @@ Resource.prototype.addResolver = function(resolver) {
  * @param {Function} retriever The retriever to add.
  */
 Resource.prototype.addRetriever = function(proto, retriever) {
-  if (this.contentRetreivers[proto]) {
-    fdom.debug.warn("Unwilling to override file retrieval for " + proto);
-    return;
-  }
-  this.contentRetreivers[proto] = retriever;
-};
-
-/**
+    return this.contentRetreivers[proto] ? void fdom.debug.warn("Unwilling to override file retrieval for " + proto) : void (this.contentRetreivers[proto] = retriever);
+}, /**
  * Resolve URLs which can be accessed using standard HTTP requests.
  * @method httpResolver
  * @private
@@ -3373,42 +2053,17 @@ Resource.prototype.addRetriever = function(proto, retriever) {
  * @param {Function} reject The promise to reject.
  * @returns {Boolean} True if the URL could be resolved.
  */
-Resource.prototype.httpResolver = function(manifest, url, resolve, reject) {
-  var protocols = ["http", "https", "chrome", "chrome-extension", "resource"],
-      dirname,
-      i, protocolIdx, pathIdx,
-      path, base;
-  for (i = 0; i < protocols.length; i += 1) {
-    if (url.indexOf(protocols[i] + "://") === 0) {
-      resolve(url);
-      return true;
-    }
-  }
-  
-  if (!manifest) {
-    return false;
-  }
-  for (i = 0; i < protocols.length; i += 1) {
-    if (manifest.indexOf(protocols[i] + "://") === 0 &&
-       url.indexOf("://") === -1) {
-      dirname = manifest.substr(0, manifest.lastIndexOf("/"));
-      protocolIdx = dirname.indexOf("://");
-      pathIdx = protocolIdx + 3 + dirname.substr(protocolIdx + 3).indexOf("/");
-      path = dirname.substr(pathIdx);
-      base = dirname.substr(0, pathIdx);
-      if (url.indexOf("/") === 0) {
-        resolve(base + url);
-      } else {
-        resolve(base + path + "/" + url);
-      }
-      return true;
-    }
-  }
-
-  return false;
-};
-
-/**
+Resource.prototype.httpResolver = function(manifest, url, resolve) {
+    var dirname, i, protocolIdx, pathIdx, path, base, protocols = [ "http", "https", "chrome", "chrome-extension", "resource" ];
+    for (i = 0; i < protocols.length; i += 1) if (0 === url.indexOf(protocols[i] + "://")) return resolve(url), 
+    !0;
+    if (!manifest) return !1;
+    for (i = 0; i < protocols.length; i += 1) if (0 === manifest.indexOf(protocols[i] + "://") && -1 === url.indexOf("://")) return dirname = manifest.substr(0, manifest.lastIndexOf("/")), 
+    protocolIdx = dirname.indexOf("://"), pathIdx = protocolIdx + 3 + dirname.substr(protocolIdx + 3).indexOf("/"), 
+    path = dirname.substr(pathIdx), base = dirname.substr(0, pathIdx), resolve(0 === url.indexOf("/") ? base + url : base + path + "/" + url), 
+    !0;
+    return !1;
+}, /**
  * Resolve URLs which are self-describing.
  * @method nullResolver
  * @private
@@ -3418,18 +2073,12 @@ Resource.prototype.httpResolver = function(manifest, url, resolve, reject) {
  * @param {Function} reject The promise to reject.
  * @returns {Boolean} True if the URL could be resolved.
  */
-Resource.prototype.nullResolver = function(manifest, url, resolve, reject) {
-  var protocols = ["manifest", "data;base64"], i;
-  for (i = 0; i < protocols.length; i += 1) {
-    if (url.indexOf(protocols[i] + "://") === 0) {
-      resolve(url);
-      return true;
-    }
-  }
-  return false;
-};
-
-/**
+Resource.prototype.nullResolver = function(manifest, url, resolve) {
+    var i, protocols = [ "manifest", "data;base64" ];
+    for (i = 0; i < protocols.length; i += 1) if (0 === url.indexOf(protocols[i] + "://")) return resolve(url), 
+    !0;
+    return !1;
+}, /**
  * Retrieve manifest content from a self-descriptive manifest url.
  * These urls are used to reference a manifest without requiring subsequent,
  * potentially non-CORS requests.
@@ -3440,18 +2089,13 @@ Resource.prototype.nullResolver = function(manifest, url, resolve, reject) {
  * @param {Function} reject The promise to reject.
  */
 Resource.prototype.manifestRetriever = function(manifest, resolve, reject) {
-  var data;
-  try {
-    data = manifest.substr(11);
-    JSON.parse(data);
-    resolve(data);
-  } catch(e) {
-    console.warn("Invalid manifest URL referenced:" + manifest);
-    reject();
-  }
-};
-
-/**
+    var data;
+    try {
+        data = manifest.substr(11), JSON.parse(data), resolve(data);
+    } catch (e) {
+        console.warn("Invalid manifest URL referenced:" + manifest), reject();
+    }
+}, /**
  * Retrieve resource contents using an XHR request.
  * @method xhrRetriever
  * @private
@@ -3460,66 +2104,40 @@ Resource.prototype.manifestRetriever = function(manifest, resolve, reject) {
  * @param {Function} reject The promise to reject.
  */
 Resource.prototype.xhrRetriever = function(url, resolve, reject) {
-  var ref = new XMLHttpRequest();
-  ref.addEventListener('readystatechange', function(resolve, reject) {
-    if (ref.readyState === 4 && ref.responseText) {
-      resolve(ref.responseText);
-    } else if (ref.readyState === 4) {
-      console.warn("Failed to load file " + url + ": " + ref.status);
-      reject(ref.status);
-    }
-  }.bind({}, resolve, reject), false);
-  ref.overrideMimeType('application/json');
-  ref.open("GET", url, true);
-  ref.send();
-};
-
-/**
+    var ref = new XMLHttpRequest();
+    ref.addEventListener("readystatechange", function(resolve, reject) {
+        4 === ref.readyState && ref.responseText ? resolve(ref.responseText) : 4 === ref.readyState && (console.warn("Failed to load file " + url + ": " + ref.status), 
+        reject(ref.status));
+    }.bind({}, resolve, reject), !1), ref.overrideMimeType("application/json"), ref.open("GET", url, !0), 
+    ref.send();
+}, /**
  * Defines fdom.resources as a singleton registry for file management.
  */
-fdom.resources = new Resource();
-
-/*globals fdom:true, crypto, freedomcfg, WebKitBlobBuilder, Blob, URL */
+fdom.resources = new Resource(), /*globals fdom:true, crypto, freedomcfg, WebKitBlobBuilder, Blob, URL */
 /*globals webkitURL, Uint8Array */
-/* indent:2,white:true,browser:true,sloppy:true */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
-
-/**
+"undefined" == typeof fdom && (fdom = {}), /**
  * Utility method used within the freedom Library.
  * @class util
  * @static
  */
-fdom.util = {};
-
-
-/**
+fdom.util = {}, /**
  * Helper function for iterating over an array backwards. If the func
  * returns a true value, it will break out of the loop.
  * @method eachReverse
  * @static
  */
 fdom.util.eachReverse = function(ary, func) {
-  if (ary) {
-    var i;
-    for (i = ary.length - 1; i > -1; i -= 1) {
-      if (ary[i] && func(ary[i], i, ary)) {
-        break;
-      }
+    if (ary) {
+        var i;
+        for (i = ary.length - 1; i > -1 && (!ary[i] || !func(ary[i], i, ary)); i -= 1) ;
     }
-  }
-};
-
-/**
+}, /**
  * @method hasProp
  * @static
  */
 fdom.util.hasProp = function(obj, prop) {
-  return Object.prototype.hasOwnProperty.call(obj, prop);
-};
-
-/**
+    return Object.prototype.hasOwnProperty.call(obj, prop);
+}, /**
  * Cycles over properties in an object and calls a function for each
  * property value. If the function returns a truthy value, then the
  * iteration is stopped.
@@ -3527,17 +2145,9 @@ fdom.util.hasProp = function(obj, prop) {
  * @static
  */
 fdom.util.eachProp = function(obj, func) {
-  var prop;
-  for (prop in obj) {
-    if (obj.hasOwnProperty(prop)) {
-      if (func(obj[prop], prop)) {
-        break;
-      }
-    }
-  }
-};
-
-/**
+    var prop;
+    for (prop in obj) if (obj.hasOwnProperty(prop) && func(obj[prop], prop)) break;
+}, /**
  * Simple function to mix in properties from source into target,
  * but only if target does not already have a property of the same name.
  * This is not robust in IE for transferring methods that match
@@ -3547,56 +2157,35 @@ fdom.util.eachProp = function(obj, func) {
  * @static
  */
 fdom.util.mixin = function(target, source, force) {
-  if (source) {
-    fdom.util.eachProp(source, function (value, prop) {
-      if (force || !fdom.util.hasProp(target, prop)) {
-        target[prop] = value;
-      }
-    });
-  }
-  return target;
-};
-
-/**
+    return source && fdom.util.eachProp(source, function(value, prop) {
+        (force || !fdom.util.hasProp(target, prop)) && (target[prop] = value);
+    }), target;
+}, /**
  * Get a unique ID.
  * @method getId
  * @static
  */
 fdom.util.getId = function() {
-  var guid = 'guid',
-      domain = 12,
-      buffer;
-  if (typeof crypto === 'object') {
-    buffer = new Uint8Array(domain);
-    crypto.getRandomValues(buffer);
+    var buffer, guid = "guid", domain = 12;
+    if ("object" == typeof crypto) buffer = new Uint8Array(domain), crypto.getRandomValues(buffer), 
     fdom.util.eachReverse(buffer, function(n) {
-      guid += '-' + n;
-    });
-  } else {
-    while (domain > 0) {
-      guid += '-' + Math.ceil(255 * Math.random());
-      domain -= 1;
-    }
-  }
-
-  return guid;
-};
-
-/**
+        guid += "-" + n;
+    }); else for (;domain > 0; ) guid += "-" + Math.ceil(255 * Math.random()), domain -= 1;
+    return guid;
+}, /**
  * Add 'on' and 'emit' methods to an object, which act as a light weight
  * event handling structure.
  * @class handleEvents
  * @static
  */
 fdom.util.handleEvents = function(obj) {
-  var eventState = {
-    multiple: {},
-    maybemultiple: [],
-    single: {},
-    maybesingle: []
-  }, filter, push;
-
-  /**
+    var filter, push, eventState = {
+        multiple: {},
+        maybemultiple: [],
+        single: {},
+        maybesingle: []
+    };
+    /**
    * Filter a list based on a predicate. The list is filtered in place, with
    * selected items removed and returned by the function.
    * @method
@@ -3604,140 +2193,75 @@ fdom.util.handleEvents = function(obj) {
    * @param {Function} predicate The method to run on each item.
    * @returns {Array} Selected items
    */
-  filter = function(list, predicate) {
-    var ret = [], i;
-
-    if (!list || !list.length) {
-      return [];
-    }
-
-    for (i = list.length - 1; i >= 0; i -= 1) {
-      if (predicate(list[i])) {
-        ret.push(list.splice(i, 1));
-      }
-    }
-    return ret;
-  };
-
-  /**
+    filter = function(list, predicate) {
+        var i, ret = [];
+        if (!list || !list.length) return [];
+        for (i = list.length - 1; i >= 0; i -= 1) predicate(list[i]) && ret.push(list.splice(i, 1));
+        return ret;
+    }, /**
    * Enqueue a handler for a specific type.
    * @method
    * @param {String} to The queue ('single' or 'multiple') to queue on.
    * @param {String} type The type of event to wait for.
    * @param {Function} handler The handler to enqueue.
    */
-  push = function(to, type, handler) {
-    if (typeof type === 'function') {
-      this['maybe' + to].push([type, handler]);
-    } else if (this[to][type]) {
-      this[to][type].push(handler);
-    } else {
-      this[to][type] = [handler];
-    }
-  };
-
-  /**
+    push = function(to, type, handler) {
+        "function" == typeof type ? this["maybe" + to].push([ type, handler ]) : this[to][type] ? this[to][type].push(handler) : this[to][type] = [ handler ];
+    }, /**
    * Register a method to be executed when an event of a specific type occurs.
    * @method on
    * @param {String|Function} type The type of event to register against.
    * @param {Function} handler The handler to run when the event occurs.
    */
-  obj.on = push.bind(eventState, 'multiple');
-
-  /**
+    obj.on = push.bind(eventState, "multiple"), /**
    * Register a method to be execute the next time an event occurs.
    * @method once
    * @param {String|Function} type The type of event to wait for.
    * @param {Function} handler The handler to run the next time a matching event
    *     is raised.
    */
-  obj.once = push.bind(eventState, 'single');
-
-  /**
+    obj.once = push.bind(eventState, "single"), /**
    * Emit an event on this object.
    * @method emit
    * @param {String} type The type of event to raise.
    * @param {Object} data The payload of the event.
    */
-  obj.emit = function(type, data) {
-    var i, queue;
-    if (this.multiple[type]) {
-      for (i = 0; i < this.multiple[type].length; i += 1) {
-        if (this.multiple[type][i](data) === false) {
-          return;
-        }
-      }
-    }
-    if (this.single[type]) {
-      queue = this.single[type];
-      this.single[type] = [];
-      for (i = 0; i < queue.length; i += 1) {
-        queue[i](data);
-      }
-    }
-    for (i = 0; i < this.maybemultiple.length; i += 1) {
-      if (this.maybemultiple[i][0](type, data)) {
-        this.maybemultiple[i][1](data);
-      }
-    }
-    for (i = this.maybesingle.length - 1; i >= 0; i -= 1) {
-      if (this.maybesingle[i][0](type, data)) {
-        queue = this.maybesingle.splice(i, 1);
-        queue[0][1](data);
-      }
-    }
-  }.bind(eventState);
-
-  /**
+    obj.emit = function(type, data) {
+        var i, queue;
+        if (this.multiple[type]) for (i = 0; i < this.multiple[type].length; i += 1) if (this.multiple[type][i](data) === !1) return;
+        if (this.single[type]) for (queue = this.single[type], this.single[type] = [], i = 0; i < queue.length; i += 1) queue[i](data);
+        for (i = 0; i < this.maybemultiple.length; i += 1) this.maybemultiple[i][0](type, data) && this.maybemultiple[i][1](data);
+        for (i = this.maybesingle.length - 1; i >= 0; i -= 1) this.maybesingle[i][0](type, data) && (queue = this.maybesingle.splice(i, 1), 
+        queue[0][1](data));
+    }.bind(eventState), /**
    * Remove an event handler
    * @method off
    * @param {String} type The type of event to remove.
    * @param {Function?} handler The handler to remove.
    */
-  obj.off = function(type, handler) {
-    if (!type) {
-      this.multiple = {};
-      this.maybemultiple = [];
-      this.single = {};
-      this.maybesingle = [];
-      return;
-    }
-
-    if (typeof type === 'function') {
-      filter(this.maybesingle, function(item) {
-        return item[0] === type && (!handler || item[1] === handler);
-      });
-      filter(this.maybemultiple, function(item) {
-        return item[0] === type && (!handler || item[1] === handler);
-      });
-    }
-
-    if (!handler) {
-      delete this.multiple[type];
-      delete this.single[type];
-    } else {
-      filter(this.multiple[type], function(item) {
-        return item === handler;
-      });
-      filter(this.single[type], function(item) {
-        return item === handler;
-      });
-    }
-  }.bind(eventState);
-};
-
-/**
+    obj.off = function(type, handler) {
+        return type ? ("function" == typeof type && (filter(this.maybesingle, function(item) {
+            return item[0] === type && (!handler || item[1] === handler);
+        }), filter(this.maybemultiple, function(item) {
+            return item[0] === type && (!handler || item[1] === handler);
+        })), void (handler ? (filter(this.multiple[type], function(item) {
+            return item === handler;
+        }), filter(this.single[type], function(item) {
+            return item === handler;
+        })) : (delete this.multiple[type], delete this.single[type]))) : (this.multiple = {}, 
+        this.maybemultiple = [], this.single = {}, void (this.maybesingle = []));
+    }.bind(eventState);
+}, /**
  * When run without a window, or specifically requested.
  * Note: Declaration can be redefined in forceAppContext below.
  * @method isAppContext
  * @for util
  * @static
  */
-fdom.util.isAppContext=function() {
-  return (typeof document === 'undefined');
-};
-
-/**
+/*!@preserve StartAppContextDeclaration*/
+fdom.util.isAppContext = function() {
+    return "undefined" == typeof document;
+}, /**
  * Provide a version of src where the 'isAppContext' function will return true.
  * Used for creating app contexts which may not be able to determine that they
  * need to start up as applications by themselves.
@@ -3745,23 +2269,10 @@ fdom.util.isAppContext=function() {
  * @static
  */
 fdom.util.forceAppContext = function(src) {
-  var declaration = fdom.util.isAppContext.name + "=function()",
-      definition = " { return true; }",
-      idx = src.indexOf(declaration),
-      source,
-      blob;
-  if (idx === -1) {
-    fdom.debug.warn('Unable to force App Context, source is in unexpected condition.');
-    return;
-  }
-  source = src.substr(0, idx + declaration.length) + definition +
-      '|| function()' +
-      src.substr(idx + declaration.length);
-  blob = fdom.util.getBlob(source, 'text/javascript');
-  return fdom.util.getURL(blob);
-};
-
-/**
+    var source, blob, definition = "function () { return true; }", idx = src.indexOf("StartAppContextDeclaration"), funcidx = src.indexOf("function", idx);
+    return -1 === idx || -1 === funcidx ? void fdom.debug.error("Unable to force App Context, source is in unexpected condition.") : (source = src.substr(0, funcidx) + definition + " || " + src.substr(funcidx), 
+    blob = fdom.util.getBlob(source, "text/javascript"), fdom.util.getURL(blob));
+}, /**
  * Get a Blob object of a string.
  * Polyfills implementations which don't have a current Blob constructor, like
  * phantomjs.
@@ -3769,16 +2280,14 @@ fdom.util.forceAppContext = function(src) {
  * @static
  */
 fdom.util.getBlob = function(data, type) {
-  if (typeof Blob !== 'function' && typeof WebKitBlobBuilder !== 'undefined') {
-    var builder = new WebKitBlobBuilder();
-    builder.append(data);
-    return builder.getBlob(type);
-  } else {
-    return new Blob([data], {type: type});
-  }
-};
-
-/**
+    if ("function" != typeof Blob && "undefined" != typeof WebKitBlobBuilder) {
+        var builder = new WebKitBlobBuilder();
+        return builder.append(data), builder.getBlob(type);
+    }
+    return new Blob([ data ], {
+        type: type
+    });
+}, /**
  * Get a URL of a blob object for inclusion in a frame.
  * Polyfills implementations which don't have a current URL object, like
  * phantomjs.
@@ -3786,14 +2295,8 @@ fdom.util.getBlob = function(data, type) {
  * @static
  */
 fdom.util.getURL = function(blob) {
-  if (typeof URL !== 'object' && typeof webkitURL !== 'undefined') {
-    return webkitURL.createObjectURL(blob);
-  } else {
-    return URL.createObjectURL(blob);
-  }
-};
-
-/**
+    return "object" != typeof URL && "undefined" != typeof webkitURL ? webkitURL.createObjectURL(blob) : URL.createObjectURL(blob);
+}, /**
  * When running in a priviledged context, honor a global
  * 'freedomcfg' function to allow registration of additional API providers.
  * @method advertise
@@ -3801,36 +2304,17 @@ fdom.util.getURL = function(blob) {
  * @static
  */
 fdom.util.advertise = function(force) {
-  // TODO: Determine a better mechanism than this whitelisting.
-  if (typeof location !== 'undefined') {
-    if ((location.protocol === 'chrome-extension:' ||
-        location.protocol === 'chrome:' ||
-        location.protocol === 'resource:' || force) &&
-        typeof freedomcfg !== "undefined") {
-      freedomcfg(fdom.apis.register.bind(fdom.apis));
-    }
-  } else if (force && typeof freedomcfg !== "undefined") {
-    freedomcfg(fdom.apis.register.bind(fdom.apis));
-  }
-};
-
-/**
+    // TODO: Determine a better mechanism than this whitelisting.
+    "undefined" != typeof location ? "chrome-extension:" !== location.protocol && "chrome:" !== location.protocol && "resource:" !== location.protocol && !force || "undefined" == typeof freedomcfg || freedomcfg(fdom.apis.register.bind(fdom.apis)) : force && "undefined" != typeof freedomcfg && freedomcfg(fdom.apis.register.bind(fdom.apis));
+}, /**
  * Find all scripts on the given page.
  * @method scripts
  * @static
  */
 fdom.util.scripts = function(global) {
-  return global.document.getElementsByTagName('script');
-};
-
-/*globals fdom:true */
-/* indent:2, white:true, node:true, sloppy:true, browser:true */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
-fdom.link = fdom.link || {};
-
-/**
+    return global.document.getElementsByTagName("script");
+}, /*globals fdom:true */
+"undefined" == typeof fdom && (fdom = {}), fdom.link = fdom.link || {}, /**
  * A port providing message transport between two freedom contexts in the same namespace.
  * Note that using a direct link does not provide the isolation that freedom.js
  * encourages. To that end it should be limited to a method for testing and not
@@ -3841,55 +2325,39 @@ fdom.link = fdom.link || {};
  * @constructor
  */
 fdom.link.Direct = function() {
-  fdom.Link.call(this);
-};
-
-/**
+    fdom.Link.call(this);
+}, /**
  * Start this port.
  * @method start
  * @private
  */
 fdom.link.Direct.prototype.start = function() {
-  if (this.config.appContext) {
-    this.config.global.directLink.other = this;
-    this.other = this.config.global.directLink;
-    this.other.emit('started');
-  } else {
-    this.config.global.directLink = this;
-
-    // Keep fdom.debug connected to parent hub.
-    var debug = fdom.debug,
-        child = fdom.setup(this.config.global, undefined, {
-      isApp: true,
-      portType: 'Direct'
-    });
-    fdom.debug = debug;
-    this.config.global.freedom = child;
-  }
-};
-
-/**
+    if (this.config.appContext) this.config.global.directLink.other = this, this.other = this.config.global.directLink, 
+    this.other.emit("started"); else {
+        this.config.global.directLink = this;
+        // Keep fdom.debug connected to parent hub.
+        var debug = fdom.debug, child = fdom.setup(this.config.global, void 0, {
+            isApp: !0,
+            portType: "Direct"
+        });
+        fdom.debug = debug, this.config.global.freedom = child;
+    }
+}, /**
  * Stop this port by deleting the frame.
  * @method stop
  * @private
  */
 fdom.link.Direct.prototype.stop = function() {
-  if (this === this.config.global.directLink) {
-    delete this.config.global.directLink;
-  }
-  delete this.other;
-};
-
-/**
+    this === this.config.global.directLink && delete this.config.global.directLink, 
+    delete this.other;
+}, /**
  * Get the textual description of this port.
  * @method toString
  * @return {String} the description of this port.
  */
 fdom.link.Direct.prototype.toString = function() {
-  return "[Direct" + this.id + "]";
-};
-
-/**
+    return "[Direct" + this.id + "]";
+}, /**
  * Receive messages from the hub to this port.
  * Received messages will be emitted from the other side of the port.
  * @method deliverMessage
@@ -3897,32 +2365,16 @@ fdom.link.Direct.prototype.toString = function() {
  * @param {Object} message The Message.
  */
 fdom.link.Direct.prototype.deliverMessage = function(flow, message) {
-  if (this.other) {
-    /* //- For Debugging Purposes -
+    this.other ? (/* //- For Debugging Purposes -
     if (this === this.config.global.directLink) {
       console.warn('->[' + flow + '] ' + JSON.stringify(message));
     } else {
       console.warn('<-[' + flow + '] ' + JSON.stringify(message));
     }
     */
-    if (flow === 'control') {
-      flow = this.other.controlChannel;
-    }
-    setTimeout(this.other.emit.bind(this.other, flow, message), 0);
-  } else {
-    this.once('started', this.onMessage.bind(this, flow, message));
-  }
-};
-
-
-/*globals fdom:true */
-/* indent:2, white:true, node:true, sloppy:true, browser:true */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
-fdom.link = fdom.link || {};
-
-/**
+    "control" === flow && (flow = this.other.controlChannel), setTimeout(this.other.emit.bind(this.other, flow, message), 0)) : this.once("started", this.onMessage.bind(this, flow, message));
+}, /*globals fdom:true */
+"undefined" == typeof fdom && (fdom = {}), fdom.link = fdom.link || {}, /**
  * A port providing message transport between two freedom contexts via iFrames.
  * @class link.Frame
  * @extends Link
@@ -3930,98 +2382,55 @@ fdom.link = fdom.link || {};
  * @constructor
  */
 fdom.link.Frame = function() {
-  fdom.Link.call(this);
-};
-
-/**
+    fdom.Link.call(this);
+}, /**
  * Start this port by listening or creating a frame.
  * @method start
  * @private
  */
 fdom.link.Frame.prototype.start = function() {
-  if (this.config.appContext) {
-    this.config.global.DEBUG = true;
-    this.setupListener();
-    this.src = 'in';
-  } else {
-    this.setupFrame();
-    this.src = 'out';
-  }
-};
-
-/**
+    this.config.appContext ? (this.config.global.DEBUG = !0, this.setupListener(), this.src = "in") : (this.setupFrame(), 
+    this.src = "out");
+}, /**
  * Stop this port by deleting the frame.
  * @method stop
  * @private
  */
-fdom.link.Frame.prototype.stop = function() {
-  // Function is determined by setupListener or setupFrame as appropriate.
-};
-
-/**
+fdom.link.Frame.prototype.stop = function() {}, /**
  * Get the textual description of this port.
  * @method toString
  * @return {String} the description of this port.
  */
 fdom.link.Frame.prototype.toString = function() {
-  return "[Frame" + this.id + "]";
-};
-
-/**
+    return "[Frame" + this.id + "]";
+}, /**
  * Set up a global listener to handle incoming messages to this
  * freedom.js context.
  * @method setupListener
  */
 fdom.link.Frame.prototype.setupListener = function() {
-  var onMsg = function(msg) {
-    if (msg.data.src !== 'in') {
-      this.emitMessage(msg.data.flow, msg.data.message);
-    }
-  }.bind(this);
-  this.obj = this.config.global;
-  this.obj.addEventListener('message', onMsg, true);
-  this.stop = function() {
-    this.obj.removeEventListener('message', onMsg, true);
-    delete this.obj;
-  };
-  this.emit('started');
-};
-
-/**
+    var onMsg = function(msg) {
+        "in" !== msg.data.src && this.emitMessage(msg.data.flow, msg.data.message);
+    }.bind(this);
+    this.obj = this.config.global, this.obj.addEventListener("message", onMsg, !0), 
+    this.stop = function() {
+        this.obj.removeEventListener("message", onMsg, !0), delete this.obj;
+    }, this.emit("started");
+}, /**
  * Set up an iFrame with an isolated freedom.js context inside.
  * @method setupFrame
  */
 fdom.link.Frame.prototype.setupFrame = function() {
-  var frame, onMsg;
-  frame = this.makeFrame(this.config.src, this.config.inject);
-  
-  if (!document.body) {
-    document.appendChild(document.createElement("body"));
-  }
-  document.body.appendChild(frame);
-
-  onMsg = function(frame, msg) {
-    if (!this.obj) {
-      this.obj = frame;
-      this.emit('started');
-    }
-    if (msg.data.src !== 'out') {
-      this.emitMessage(msg.data.flow, msg.data.message);
-    }
-  }.bind(this, frame.contentWindow);
-
-  frame.contentWindow.addEventListener('message', onMsg, true);
-  this.stop = function() {
-    frame.contentWindow.removeEventListener('message', onMsg, true);
-    if (this.obj) {
-      delete this.obj;
-    }
-    frame.src = "about:blank";
-    document.body.removeChild(frame);
-  };
-};
-
-/**
+    var frame, onMsg;
+    frame = this.makeFrame(this.config.src, this.config.inject), document.body || document.appendChild(document.createElement("body")), 
+    document.body.appendChild(frame), onMsg = function(frame, msg) {
+        this.obj || (this.obj = frame, this.emit("started")), "out" !== msg.data.src && this.emitMessage(msg.data.flow, msg.data.message);
+    }.bind(this, frame.contentWindow), frame.contentWindow.addEventListener("message", onMsg, !0), 
+    this.stop = function() {
+        frame.contentWindow.removeEventListener("message", onMsg, !0), this.obj && delete this.obj, 
+        frame.src = "about:blank", document.body.removeChild(frame);
+    };
+}, /**
  * Make frames to replicate freedom isolation without web-workers.
  * iFrame isolation is non-standardized, and access to the DOM within frames
  * means that they are insecure. However, debugging of webworkers is
@@ -4029,28 +2438,14 @@ fdom.link.Frame.prototype.setupFrame = function() {
  * @method makeFrame
  */
 fdom.link.Frame.prototype.makeFrame = function(src, inject) {
-  var frame = document.createElement('iframe'),
-      extra = '',
-      loader,
-      blob;
-  // TODO(willscott): add sandboxing protection.
-
-  // TODO(willscott): survive name mangling.
-  src = src.replace("'portType': 'Worker'", "'portType': 'Frame'");
-  if (inject) {
-    extra = '<script src="' + inject + '" onerror="' +
-      'throw new Error(\'Injection of ' + inject +' Failed!\');' +
-      '"></script>';
-  }
-  loader = '<html>' + extra + '<script src="' +
-      fdom.util.forceAppContext(src) + '"></script></html>';
-  blob = fdom.util.getBlob(loader, 'text/html');
-  frame.src = fdom.util.getURL(blob);
-
-  return frame;
-};
-
-/**
+    var loader, blob, frame = document.createElement("iframe"), extra = "";
+    // TODO(willscott): add sandboxing protection.
+    // TODO(willscott): survive name mangling.
+    return src = src.replace('portType: "Worker"', 'portType: "Frame"'), inject && (extra = '<script src="' + inject + '" onerror="throw new Error(\'Injection of ' + inject + " Failed!');\"></script>"), 
+    loader = "<html>" + extra + '<script src="' + fdom.util.forceAppContext(src) + '"></script></html>', 
+    blob = fdom.util.getBlob(loader, "text/html"), frame.src = fdom.util.getURL(blob), 
+    frame;
+}, /**
  * Receive messages from the hub to this port.
  * Received messages will be emitted from the other side of the port.
  * @method deliverMessage
@@ -4058,27 +2453,14 @@ fdom.link.Frame.prototype.makeFrame = function(src, inject) {
  * @param {Object} message The Message.
  */
 fdom.link.Frame.prototype.deliverMessage = function(flow, message) {
-  if (this.obj) {
-    //fdom.debug.log('message sent to worker: ', flow, message);
+    this.obj ? //fdom.debug.log('message sent to worker: ', flow, message);
     this.obj.postMessage({
-      src: this.src,
-      flow: flow,
-      message: message
-    }, '*');
-  } else {
-    this.once('started', this.onMessage.bind(this, flow, message));
-  }
-};
-
-
-/*globals fdom:true, Worker */
-/* indent:2, white:true, node:true, sloppy:true, browser:true */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
-fdom.link = fdom.link || {};
-
-/**
+        src: this.src,
+        flow: flow,
+        message: message
+    }, "*") : this.once("started", this.onMessage.bind(this, flow, message));
+}, /*globals fdom:true, Worker */
+"undefined" == typeof fdom && (fdom = {}), fdom.link = fdom.link || {}, /**
  * A port providing message transport between two freedom contexts via Worker.
  * @class Worker
  * @extends Port
@@ -4086,92 +2468,56 @@ fdom.link = fdom.link || {};
  * @constructor
  */
 fdom.link.Worker = function(id) {
-  if (id) {
-    this.manifest = id.substr(id.lastIndexOf('/') + 1);
-  }
-  fdom.Link.call(this);
-};
-
-/**
+    id && (this.manifest = id.substr(id.lastIndexOf("/") + 1)), fdom.Link.call(this);
+}, /**
  * Start this port by listening or creating a worker.
  * @method start
  * @private
  */
 fdom.link.Worker.prototype.start = function() {
-  if (this.config.appContext) {
-    this.setupListener();
-  } else {
-    this.setupWorker();
-  }
-};
-
-/**
+    this.config.appContext ? this.setupListener() : this.setupWorker();
+}, /**
  * Stop this port by destroying the worker.
  * @method stop
  * @private
  */
-fdom.link.Worker.prototype.stop = function() {
-  // Function is determined by setupListener or setupFrame as appropriate.
-};
-
-/**
+fdom.link.Worker.prototype.stop = function() {}, /**
  * Get the textual description of this port.
  * @method toString
  * @return {String} the description of this port.
  */
 fdom.link.Worker.prototype.toString = function() {
-  return "[Worker" + this.id + "]";
-};
-
-/**
+    return "[Worker" + this.id + "]";
+}, /**
  * Set up a global listener to handle incoming messages to this
  * freedom.js context.
  * @method setupListener
  */
 fdom.link.Worker.prototype.setupListener = function() {
-  var onMsg = function(msg) {
-    this.emitMessage(msg.data.flow, msg.data.message);
-  }.bind(this);
-  this.obj = this.config.global;
-  this.obj.addEventListener('message', onMsg, true);
-  this.stop = function() {
-    this.obj.removeEventListener('message', onMsg, true);
-    delete this.obj;
-  };
-  this.emit('started');
-};
-
-/**
+    var onMsg = function(msg) {
+        this.emitMessage(msg.data.flow, msg.data.message);
+    }.bind(this);
+    this.obj = this.config.global, this.obj.addEventListener("message", onMsg, !0), 
+    this.stop = function() {
+        this.obj.removeEventListener("message", onMsg, !0), delete this.obj;
+    }, this.emit("started");
+}, /**
  * Set up a worker with an isolated freedom.js context inside.
  * @method setupWorker
  */
 fdom.link.Worker.prototype.setupWorker = function() {
-  var worker, blob;
-  if (typeof (window.Blob) !== typeof (Function)) {
-    worker = new Worker(this.config.source);
-  } else {
-    blob = new window.Blob([this.config.src], {type: 'text/javascript'});
-    worker = new Worker(window.URL.createObjectURL(blob) + '#' + this.manifest);
-  }
-  worker.addEventListener('error', function(err) {
-    fdom.debug.error(err, this.toString());
-  }, true);
-  worker.addEventListener('message', function(worker, msg) {
-    if (!this.obj) {
-      this.obj = worker;
-      this.emit('started');
-    }
-    this.emitMessage(msg.data.flow, msg.data.message);
-  }.bind(this, worker), true);
-  this.stop = function() {
-    worker.stop();
-    if (this.obj) {
-      delete this.obj;
-    }
-  };
-};
-
-/**
+    var worker, blob;
+    typeof window.Blob != typeof Function ? worker = new Worker(this.config.source) : (blob = new window.Blob([ this.config.src ], {
+        type: "text/javascript"
+    }), worker = new Worker(window.URL.createObjectURL(blob) + "#" + this.manifest)), 
+    worker.addEventListener("error", function(err) {
+        fdom.debug.error(err, this.toString());
+    }, !0), worker.addEventListener("message", function(worker, msg) {
+        this.obj || (this.obj = worker, this.emit("started")), this.emitMessage(msg.data.flow, msg.data.message);
+    }.bind(this, worker), !0), this.stop = function() {
+        worker.stop(), this.obj && delete this.obj;
+    };
+}, /**
  * Receive messages from the hub to this port.
  * Received messages will be emitted from the other side of the port.
  * @method deliverMessage
@@ -4179,123 +2525,61 @@ fdom.link.Worker.prototype.setupWorker = function() {
  * @param {Object} message The Message.
  */
 fdom.link.Worker.prototype.deliverMessage = function(flow, message) {
-  if (flow === 'control' && message.type === 'close' &&
-      message.channel === 'control') {
-    this.stop();
-  } else {
-    if (this.obj) {
-      //fdom.debug.log('message sent to worker: ', flow, message);
-      this.obj.postMessage({
+    "control" === flow && "close" === message.type && "control" === message.channel ? this.stop() : this.obj ? //fdom.debug.log('message sent to worker: ', flow, message);
+    this.obj.postMessage({
         flow: flow,
         message: message
-      });
-    } else {
-      this.once('started', this.onMessage.bind(this, flow, message));
-    }
-  }
-};
+    }) : this.once("started", this.onMessage.bind(this, flow, message));
+}, /*globals fdom:true, Blob, ArrayBuffer, DataView, Promise */
+"undefined" == typeof fdom && (fdom = {}), fdom.proxy = fdom.proxy || {}, fdom.proxy.ApiInterface = function(def, onMsg, emit) {
+    var inflight = {}, events = null, emitter = null, reqId = 0, args = arguments;
+    fdom.util.eachProp(def, function(prop, name) {
+        switch (prop.type) {
+          case "method":
+            this[name] = function() {
+                // Note: inflight should be registered before message is passed
+                // in order to prepare for synchronous in-window pipes.
+                var thisReq = reqId, promise = new Promise(function(resolve, reject) {
+                    inflight[thisReq] = {
+                        resolve: resolve,
+                        reject: reject,
+                        template: prop.ret
+                    };
+                }), streams = fdom.proxy.messageToPortable(prop.value, arguments);
+                return reqId += 1, emit({
+                    action: "method",
+                    type: name,
+                    reqId: thisReq,
+                    text: streams.text,
+                    binary: streams.binary
+                }), promise;
+            };
+            break;
 
+          case "event":
+            events || (fdom.util.handleEvents(this), emitter = this.emit, delete this.emit, 
+            events = {}), events[name] = prop;
+            break;
 
-/*globals fdom:true, Blob, ArrayBuffer, DataView, Promise */
-/* indent:2, white:true, node:true, sloppy:true, browser:true */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
-fdom.proxy = fdom.proxy || {};
-
-fdom.proxy.ApiInterface = function(def, onMsg, emit) {
-  var inflight = {},
-      events = null,
-      emitter = null,
-      reqId = 0,
-      args = arguments;
-
-  fdom.util.eachProp(def, function(prop, name) {
-    switch(prop.type) {
-    case 'method':
-      this[name] = function() {
-        // Note: inflight should be registered before message is passed
-        // in order to prepare for synchronous in-window pipes.
-        var thisReq = reqId,
-            promise = new Promise(function(resolve, reject) {
-              inflight[thisReq] = {
-                resolve:resolve,
-                reject:reject,
-                template: prop.ret
-              };
-            }),
-            streams = fdom.proxy.messageToPortable(prop.value, arguments);
-        reqId += 1;
-        emit({
-          action: 'method',
-          type: name,
-          reqId: thisReq,
-          text: streams.text,
-          binary: streams.binary
-        });
-        return promise;
-      };
-      break;
-    case 'event':
-      if(!events) {
-        fdom.util.handleEvents(this);
-        emitter = this.emit;
-        delete this.emit;
-        events = {};
-      }
-      events[name] = prop;
-      break;
-    case 'constant':
-      Object.defineProperty(this, name, {
-        value: fdom.proxy.recursiveFreezeObject(prop.value),
-        writable: false
-      });
-      break;
-    }
-  }.bind(this));
-
-  onMsg(this, function(type, msg) {
-    if (type === 'close') {
-      this.off();
-      delete this.inflight;
-      return;
-    }
-    if (!msg) {
-      return;
-    }
-    if (msg.type === 'method') {
-      if (inflight[msg.reqId]) {
-        var resolver = inflight[msg.reqId],
-            template = resolver.template;
-        delete inflight[msg.reqId];
-        if (msg.error) {
-          resolver.reject(msg.error);
-        } else {
-          resolver.resolve(fdom.proxy.portableToMessage(template, msg));
+          case "constant":
+            Object.defineProperty(this, name, {
+                value: fdom.proxy.recursiveFreezeObject(prop.value),
+                writable: !1
+            });
         }
-      } else {
-        fdom.debug.warn('Dropped response message with id ' + msg.reqId);
-      }
-    } else if (msg.type === 'event') {
-      if (events[msg.name]) {
-        emitter(msg.name, fdom.proxy.portableToMessage(events[msg.name].value,
-                msg));
-      }
-    }
-  }.bind(this));
-
-  args = fdom.proxy.messageToPortable(
-      def.constructor ? def.constructor.value : [],
-      Array.prototype.slice.call(args, 3));
-
-  emit({
-    type: 'construct',
-    text: args.text,
-    binary: args.binary
-  });
-};
-
-/**
+    }.bind(this)), onMsg(this, function(type, msg) {
+        if ("close" === type) return this.off(), void delete this.inflight;
+        if (msg) if ("method" === msg.type) if (inflight[msg.reqId]) {
+            var resolver = inflight[msg.reqId], template = resolver.template;
+            delete inflight[msg.reqId], msg.error ? resolver.reject(msg.error) : resolver.resolve(fdom.proxy.portableToMessage(template, msg));
+        } else fdom.debug.warn("Dropped response message with id " + msg.reqId); else "event" === msg.type && events[msg.name] && emitter(msg.name, fdom.proxy.portableToMessage(events[msg.name].value, msg));
+    }.bind(this)), args = fdom.proxy.messageToPortable(def.constructor ? def.constructor.value : [], Array.prototype.slice.call(args, 3)), 
+    emit({
+        type: "construct",
+        text: args.text,
+        binary: args.binary
+    });
+}, /**
  * Convert a structured data structure into a message stream conforming to
  * a template and an array of binary data elements.
  * @static
@@ -4305,15 +2589,12 @@ fdom.proxy.ApiInterface = function(def, onMsg, emit) {
  * @return {{text: Object, binary: Array}} Separated data streams.
  */
 fdom.proxy.messageToPortable = function(template, value) {
-  var externals = [],
-      message = fdom.proxy.conform(template, value, externals, true);
-  return {
-    text: message,
-    binary: externals
-  };
-};
-
-/**
+    var externals = [], message = fdom.proxy.conform(template, value, externals, !0);
+    return {
+        text: message,
+        binary: externals
+    };
+}, /**
  * Convert Structured Data streams into a data structure conforming to a
  * template.
  * @static
@@ -4323,10 +2604,8 @@ fdom.proxy.messageToPortable = function(template, value) {
  * @return {Object} The data structure matching the template.
  */
 fdom.proxy.portableToMessage = function(template, streams) {
-  return fdom.proxy.conform(template, streams.text, streams.binary, false);
-};
-
-/**
+    return fdom.proxy.conform(template, streams.text, streams.binary, !1);
+}, /**
  * Force a collection of values to look like the types and length of an API
  * template.
  * @static
@@ -4337,87 +2616,47 @@ fdom.proxy.portableToMessage = function(template, streams) {
  * @param {Boolean} Whether to to separate or combine streams.
  */
 fdom.proxy.conform = function(template, from, externals, separate) {
-  /* jshint -W086 */
-  if (typeof(from) === 'function') {
-    //from = undefined;
+    /* jshint -W086 */
+    if ("function" == typeof from) //from = undefined;
     //throw "Trying to conform a function";
-    return undefined;
-  } else if (typeof(from) === 'undefined' || template === undefined) {
-    return undefined;
-  } else if (from === null) {
-    return null;
-  }
-  switch(template) {
-  case 'string':
-    return String('') + from;
-  case 'number':
-    return Number(1) * from;
-  case 'boolean':
-    return Boolean(from === true);
-  case 'object':
-    // TODO(willscott): Allow removal if sandboxing enforces this.
-    if (typeof from === 'undefined') {
-      return undefined;
-    } else {
-      return JSON.parse(JSON.stringify(from));
-    }
-  case 'blob':
-    if (separate) {
-      if (from instanceof Blob) {
-        externals.push(from);
-        return externals.length - 1;
-      } else {
-        fdom.debug.warn('conform expecting Blob, sees ' + (typeof from));
-        externals.push(new Blob([]));
-        return externals.length - 1;
-      }
-    } else {
-      return externals[from];
-    }
-  case 'buffer':
-    if (separate) {
-      externals.push(fdom.proxy.makeArrayBuffer(from));
-      return externals.length - 1;
-    } else {
-      return fdom.proxy.makeArrayBuffer(externals[from]);
-    }
-  case 'proxy':
-    return from;
-  }
-  var val, i;
-  if (Array.isArray(template) && from !== undefined) {
-    val = [];
-    i = 0;
-    if (template.length === 2 && template[0] === 'array') {
-      //console.log("template is array, value is " + JSON.stringify(value));
-      for (i = 0; i < from.length; i += 1) {
-        val.push(fdom.proxy.conform(template[1], from[i], externals,
-                                    separate));
-      }
-    } else {
-      for (i = 0; i < template.length; i += 1) {
-        if (from[i] !== undefined) {
-          val.push(fdom.proxy.conform(template[i], from[i], externals,
-                                      separate));
-        } else {
-          val.push(undefined);
-        }
-      }
-    }
-    return val;
-  } else if (typeof template === 'object' && from !== undefined) {
-    val = {};
-    fdom.util.eachProp(template, function(prop, name) {
-      if (from[name] !== undefined) {
-        val[name] = fdom.proxy.conform(prop, from[name], externals, separate);
-      }
-    });
-    return val;
-  }
-  fdom.debug.warn('Unknown template type: ' + template);
-};
+    return void 0;
+    if ("undefined" == typeof from || void 0 === template) return void 0;
+    if (null === from) return null;
+    switch (template) {
+      case "string":
+        return String("") + from;
 
-/**
+      case "number":
+        return Number(1) * from;
+
+      case "boolean":
+        return Boolean(from === !0);
+
+      case "object":
+        // TODO(willscott): Allow removal if sandboxing enforces this.
+        // TODO(willscott): Allow removal if sandboxing enforces this.
+        return "undefined" == typeof from ? void 0 : JSON.parse(JSON.stringify(from));
+
+      case "blob":
+        return separate ? from instanceof Blob ? (externals.push(from), externals.length - 1) : (fdom.debug.warn("conform expecting Blob, sees " + typeof from), 
+        externals.push(new Blob([])), externals.length - 1) : externals[from];
+
+      case "buffer":
+        return separate ? (externals.push(fdom.proxy.makeArrayBuffer(from)), externals.length - 1) : fdom.proxy.makeArrayBuffer(externals[from]);
+
+      case "proxy":
+        return from;
+    }
+    var val, i;
+    if (Array.isArray(template) && void 0 !== from) {
+        if (val = [], i = 0, 2 === template.length && "array" === template[0]) //console.log("template is array, value is " + JSON.stringify(value));
+        for (i = 0; i < from.length; i += 1) val.push(fdom.proxy.conform(template[1], from[i], externals, separate)); else for (i = 0; i < template.length; i += 1) val.push(void 0 !== from[i] ? fdom.proxy.conform(template[i], from[i], externals, separate) : void 0);
+        return val;
+    }
+    return "object" == typeof template && void 0 !== from ? (val = {}, fdom.util.eachProp(template, function(prop, name) {
+        void 0 !== from[name] && (val[name] = fdom.proxy.conform(prop, from[name], externals, separate));
+    }), val) : void fdom.debug.warn("Unknown template type: " + template);
+}, /**
  * Make a thing into an Array Buffer
  * @static
  * @method makeArrayBuffer
@@ -4425,25 +2664,9 @@ fdom.proxy.conform = function(template, from, externals, separate) {
  * @return {ArrayBuffer} An Array Buffer
  */
 fdom.proxy.makeArrayBuffer = function(thing) {
-  if (!thing) {
-    return new ArrayBuffer(0);
-  }
-
-  if (thing instanceof ArrayBuffer) {
-    return thing;
-  } else if (thing.constructor.name === "ArrayBuffer" &&
-      typeof thing.prototype === "undefined") {
-    // Workaround for webkit origin ownership issue.
-    // https://github.com/UWNetworksLab/freedom/issues/28
-    return new DataView(thing).buffer;
-  } else {
-    fdom.debug.warn('expecting ArrayBuffer, but saw ' +
-        (typeof thing) + ': ' + JSON.stringify(thing));
-    return new ArrayBuffer(0);
-  }
-};
-
-/**
+    return thing ? thing instanceof ArrayBuffer ? thing : "ArrayBuffer" === thing.constructor.name && "undefined" == typeof thing.prototype ? new DataView(thing).buffer : (fdom.debug.warn("expecting ArrayBuffer, but saw " + typeof thing + ": " + JSON.stringify(thing)), 
+    new ArrayBuffer(0)) : new ArrayBuffer(0);
+}, /**
  * Recursively traverse a [nested] object and freeze its keys from being
  * writable. Note, the result can have new keys added to it, but existing ones
  * cannot be  overwritten. Doesn't do anything for arrays or other collections.
@@ -4454,383 +2677,428 @@ fdom.proxy.makeArrayBuffer = function(thing) {
  * @return {Object} obj
  **/
 fdom.proxy.recursiveFreezeObject = function(obj) {
-  var k, ret = {};
-  if (typeof obj !== 'object') {
-    return obj;
-  }
-  for (k in obj) {
-    if (obj.hasOwnProperty(k)) {
-      Object.defineProperty(ret, k, {
+    var k, ret = {};
+    if ("object" != typeof obj) return obj;
+    for (k in obj) obj.hasOwnProperty(k) && Object.defineProperty(ret, k, {
         value: fdom.proxy.recursiveFreezeObject(obj[k]),
-        writable: false,
-        enumerable: true
-      });
-    }
-  }
-  return ret;
-};
-
-/*globals fdom:true */
-/* indent:2, white:true, node:true, sloppy:true, browser:true */
-if (typeof fdom === 'undefined') {
-  fdom = {};
-}
-fdom.proxy = fdom.proxy || {};
-
-fdom.proxy.EventInterface = function(onMsg, emit) {
-  fdom.util.handleEvents(this);
-  
-  onMsg(this, function(emit, type, msg) {
-    emit(msg.type, msg.message);
-  }.bind(this, this.emit));
-
-  this.emit = function(emitter, type, msg) {
-    emitter({type: type, message: msg}, true);
-  }.bind({}, emit);
-};
-
-/*globals fdom:true */
-/* indent:2,sloppy:true */
-
+        writable: !1,
+        enumerable: !0
+    });
+    return ret;
+}, /*globals fdom:true */
+"undefined" == typeof fdom && (fdom = {}), fdom.proxy = fdom.proxy || {}, fdom.proxy.EventInterface = function(onMsg, emit) {
+    fdom.util.handleEvents(this), onMsg(this, function(emit, type, msg) {
+        emit(msg.type, msg.message);
+    }.bind(this, this.emit)), this.emit = function(emitter, type, msg) {
+        emitter({
+            type: type,
+            message: msg
+        }, !0);
+    }.bind({}, emit);
+}, /*globals fdom:true */
 fdom.apis.set("core", {
-  'createChannel': {type: "method", value: [], ret: {
-    channel: "proxy",
-    identifier: "string"
-  }},
-  'bindChannel': {type: "method", value: ["string"], ret: "proxy"},
-  'getId': {type: "method", value: [], ret: ["array", "string"]}
-});
-
-fdom.apis.set("core.view", {
-  'open': {type: "method", value: ["string", {
-    'file': "string",
-    'code': "string"
-  }]},
-  'show': {type: "method", value: []},
-  'close': {type: "method", value: []},
-  'postMessage': {type: "method", value: ["object"]},
-
-  'message': {type: "event", value: "object"},
-  'onClose': {type: "event", value: []}
-});
-
-fdom.apis.set("core.storage", {
-  'keys': {type: "method", value: [], ret: ["array", "string"]},
-  'get': {type: "method", value: ["string"], ret: "string"},
-  'set': {type: "method", value: ["string", "string"], ret: "string"},
-  'remove': {type: "method", value: ["string"], ret: "string"},
-  'clear': {type: "method", value: []}
-});
-
-// A TCP Socket.
+    createChannel: {
+        type: "method",
+        value: [],
+        ret: {
+            channel: "proxy",
+            identifier: "string"
+        }
+    },
+    bindChannel: {
+        type: "method",
+        value: [ "string" ],
+        ret: "proxy"
+    },
+    getId: {
+        type: "method",
+        value: [],
+        ret: [ "array", "string" ]
+    }
+}), fdom.apis.set("core.view", {
+    open: {
+        type: "method",
+        value: [ "string", {
+            file: "string",
+            code: "string"
+        } ]
+    },
+    show: {
+        type: "method",
+        value: []
+    },
+    close: {
+        type: "method",
+        value: []
+    },
+    postMessage: {
+        type: "method",
+        value: [ "object" ]
+    },
+    message: {
+        type: "event",
+        value: "object"
+    },
+    onClose: {
+        type: "event",
+        value: []
+    }
+}), fdom.apis.set("core.storage", {
+    keys: {
+        type: "method",
+        value: [],
+        ret: [ "array", "string" ]
+    },
+    get: {
+        type: "method",
+        value: [ "string" ],
+        ret: "string"
+    },
+    set: {
+        type: "method",
+        value: [ "string", "string" ],
+        ret: "string"
+    },
+    remove: {
+        type: "method",
+        value: [ "string" ],
+        ret: "string"
+    },
+    clear: {
+        type: "method",
+        value: []
+    }
+}), // A TCP Socket.
 fdom.apis.set("core.tcpsocket", {
-  // Sockets may be constructed bound to a pre-existing id, as in the case of
-  // interacting with a socket accpeted by a server.  If no Id is specified, a
-  // new socket will be created, which can be either connect'ed or listen'ed.
-  'constructor': {
-    value: ["number"]
-  },
-
-  // Get info about a socket.  Tells you whether the socket is active and
-  // available host information.
-  'getInfo': {
-    type: "method",
-    value: [],
-    ret: {
-      "connected": "boolean",
-      "localAddress": "string",
-      "localPort": "number",
-      "peerAddress": "string",
-      "peerPort": "number"
+    // Sockets may be constructed bound to a pre-existing id, as in the case of
+    // interacting with a socket accpeted by a server.  If no Id is specified, a
+    // new socket will be created, which can be either connect'ed or listen'ed.
+    constructor: {
+        value: [ "number" ]
+    },
+    // Get info about a socket.  Tells you whether the socket is active and
+    // available host information.
+    getInfo: {
+        type: "method",
+        value: [],
+        ret: {
+            connected: "boolean",
+            localAddress: "string",
+            localPort: "number",
+            peerAddress: "string",
+            peerPort: "number"
+        }
+    },
+    // Close a socket. Will Fail if the socket is not connected or already
+    // closed.
+    close: {
+        type: "method",
+        value: [],
+        err: {
+            errcode: "string",
+            message: "string"
+        }
+    },
+    // Receive notification that the socket has disconnected.
+    onDisconnect: {
+        type: "event",
+        value: {
+            errcode: "string",
+            message: "string"
+        }
+    },
+    // Connect to a host and port.
+    // Fails with an error if connection fails.
+    connect: {
+        type: "method",
+        value: [ "string", "number" ],
+        err: {
+            errcode: "string",
+            message: "string"
+        }
+    },
+    // Write buffer data to a socket.
+    // Fails with an error if write fails.
+    write: {
+        type: "method",
+        value: [ "buffer" ],
+        err: {
+            errcode: "string",
+            message: "string"
+        }
+    },
+    // Receive data on a connected socket.
+    onData: {
+        type: "event",
+        value: {
+            data: "buffer"
+        }
+    },
+    // Listen as a server at a specified host and port.
+    // After calling listen the client should listen for 'onConnection' events.
+    // Fails with an error if errors occur while binding or listening.
+    listen: {
+        type: "method",
+        value: [ "string", "number" ],
+        err: {
+            errcode: "string",
+            message: "string"
+        }
+    },
+    // Receive a connection.
+    // The socket parameter may be used to construct a new socket.
+    // Host and port information provide information about the remote peer.
+    onConnection: {
+        type: "event",
+        value: {
+            socket: "number",
+            host: "string",
+            port: "number"
+        }
     }
-  },
-
-  // Close a socket. Will Fail if the socket is not connected or already
-  // closed.
-  'close': {
-    type: "method",
-    value: [],
-    err: {
-      "errcode": "string",
-      "message": "string"
-    }
-  },
-
-  // Receive notification that the socket has disconnected.
-  'onDisconnect': {type: "event", value: {
-    "errcode": "string",
-    "message": "string"
-  }},
-  
-  // Connect to a host and port.
-  // Fails with an error if connection fails.
-  'connect': {
-    type: "method",
-    value: ["string", "number"],
-    err: {
-      "errcode": "string",
-      "message": "string"
-    }
-  },
-  
-  // Write buffer data to a socket.
-  // Fails with an error if write fails.
-  'write': {
-    type: "method",
-    value: ["buffer"],
-    err: {
-      "errcode": "string",
-      "message": "string"
-    }
-  },
-
-  // Receive data on a connected socket.
-  'onData': {
-    type: "event",
-    value: {"data": "buffer"}
-  },
-
-  // Listen as a server at a specified host and port.
-  // After calling listen the client should listen for 'onConnection' events.
-  // Fails with an error if errors occur while binding or listening.
-  'listen': {
-    type: "method",
-    value: ["string", "number"],
-    err: {
-      "errcode": "string",
-      "message": "string"
-    }
-  },
-
-  // Receive a connection.
-  // The socket parameter may be used to construct a new socket.
-  // Host and port information provide information about the remote peer.
-  'onConnection': {type: "event", value: {
-    "socket": "number",
-    "host": "string",
-    "port": "number"
-  }}
-});
-
-// A UDP socket.
+}), // A UDP socket.
 // Generally, to use you just need to call bind() at which point onData
 // events will start to flow. Note that bind() should only be called
 // once per instance.
-fdom.apis.set('core.udpsocket', {
-  // Creates a socket, binds it to an interface and port and listens for
-  // messages, dispatching each message as on onData event.
-  // Returns an integer, with zero meaning success and any other value
-  // being implementation-dependant.
-  'bind': {
-    type: 'method',
-    value: [
-      // Interface (address) on which to bind.
-      'string',
-      // Port on which to bind.
-      'number'
-    ],
-    ret: 'number'
-  },
-
-  // Retrieves the state of the socket.
-  // Returns an object with the following properties:
-  //  - localAddress: the socket's local address, if bound
-  //  - localPort: the socket's local port, if bound
-  'getInfo': {type: 'method', value: [], ret: {
-    'localAddress': 'string',
-    'localPort': 'number'
-  }},
-
-  // Sends data to a server.
-  // The socket must be bound.
-  // Returns an integer indicating the number of bytes written, with no
-  // guarantee that the remote side received the data.
-  'sendTo': {
-    type: 'method',
-    value: [
-      // Data to send.
-      'buffer',
-      // Destination address.
-      'string',
-      // Destination port.
-      'number'
-    ],
-    ret: 'number'
-  },
-
-  // Releases all resources associated with this socket.
-  // No-op if the socket is not bound.
-  'destroy': {type: 'method', value: []},
-
-  // Called once for each message received on this socket, once it's
-  // been successfully bound.
-  'onData': {
-    type: 'event',
-    value: {
-      // Zero means success, any other value is implementation-dependent.
-      'resultCode': 'number',
-      // Address from which data was received.
-      'address': 'string',
-      // Port from which data was received.
-      'port': 'number',
-      // Data received.
-      'data': 'buffer'
+fdom.apis.set("core.udpsocket", {
+    // Creates a socket, binds it to an interface and port and listens for
+    // messages, dispatching each message as on onData event.
+    // Returns an integer, with zero meaning success and any other value
+    // being implementation-dependant.
+    bind: {
+        type: "method",
+        value: [ // Interface (address) on which to bind.
+        "string", // Port on which to bind.
+        "number" ],
+        ret: "number"
+    },
+    // Retrieves the state of the socket.
+    // Returns an object with the following properties:
+    //  - localAddress: the socket's local address, if bound
+    //  - localPort: the socket's local port, if bound
+    getInfo: {
+        type: "method",
+        value: [],
+        ret: {
+            localAddress: "string",
+            localPort: "number"
+        }
+    },
+    // Sends data to a server.
+    // The socket must be bound.
+    // Returns an integer indicating the number of bytes written, with no
+    // guarantee that the remote side received the data.
+    sendTo: {
+        type: "method",
+        value: [ // Data to send.
+        "buffer", // Destination address.
+        "string", // Destination port.
+        "number" ],
+        ret: "number"
+    },
+    // Releases all resources associated with this socket.
+    // No-op if the socket is not bound.
+    destroy: {
+        type: "method",
+        value: []
+    },
+    // Called once for each message received on this socket, once it's
+    // been successfully bound.
+    onData: {
+        type: "event",
+        value: {
+            // Zero means success, any other value is implementation-dependent.
+            resultCode: "number",
+            // Address from which data was received.
+            address: "string",
+            // Port from which data was received.
+            port: "number",
+            // Data received.
+            data: "buffer"
+        }
     }
-  }
-});
-
-fdom.apis.set("core.runtime", {
-  'createApp': {type: "method", value: ["string", "proxy"]},
-  'resolve': {type: "method", value: ["string", "string"]},
-  'needFile': {type: 'event', value: ["string", "string"]}
-});
-
-fdom.apis.set('core.echo', {
-  'setup': {type: "method", value: ["string"]},
-  'send': {type: "method", value: ["string"]},
-  'message': {type: "event", value: "string"}
-});
-
-
-fdom.apis.set('core.peerconnection', {
-  // Setup the link to the peer and options for this peer connection.
-  'setup': {
-    type: "method",
-    value: [
-      // The freedom.js channel identifier used to setup a signalling chanel.
-      "string",
-      // The peerName, used debugging and console messages.
-      "string",
-      // The list of STUN servers to use.
-      // The format of a single entry is stun:HOST:PORT, where HOST
-      // and PORT are a stun server hostname and port, respectively.
-      ["array", "string"]
-    ]
-  },
-
-  // Send a message to the peer.
-  'send': {type: "method", value: [{
-    // Data channel id. If provided, will be used as the channel label.
-    // The behavior is undefined if the channel label doesn't exist.
-    "channelLabel": "string",
-    // One of the bellow should be defined; this is the data to send.
-    "text": "string",
-    "binary": "blob",
-    "buffer": "buffer"
-  }]},
-
-  // Called when we get a message from the peer.
-  'onReceived': {type: "event", value: {
-    // The label/id of the data channel.
-    "channelLabel": "string",
-    // One the below will be specified.
-    "text": "string",
-    "binary": "blob",
-    "buffer": "buffer"
-  }},
-
-  // Open the data channel with this label.
-  'openDataChannel': {type: "method", value: ["string"]},
-  // Close the data channel with this label.
-  'closeDataChannel': {type: "method", value: ["string"]},
-
-  // A channel with this id has been opened.
-  'onOpenDataChannel': {type: "event", value: {"channelId": "string"}},
-  // The channale with this id has been closed.
-  'onCloseDataChannel': {type: "event", value: {"channelId": "string"}},
-
-  // Returns the number of bytes that have queued using "send", but not
-  // yet sent out. Currently just exposes:
-  // http://www.w3.org/TR/webrtc/#widl-RTCDataChannel-bufferedAmount
-  "getBufferedAmount": {type: "method",
-                        value: ["string"],
-                        ret: "number"},
-
-  // Close the peer connection.
-  'close': {type: "method", value: []},
-  // The peer connection has been closed.
-  'onClose': {type: "event", value: {}}
-});
-
-fdom.apis.set("core.websocket", {
-  // Constructs new websocket. Errors in construction are passed on
-  // through the onError event.
-  'constructor': {value:
-    // URL to connect through
-    ["string",
-    // Protocols
-    ["array", "string"]]},
-  // Send the data to the other side of this connection. Only one of
-  // the entries in the dictionary that is passed will be sent.
-  'send': {
-    type: "method",
-    value: [{
-      "text": "string",
-      "binary": "blob",
-      "buffer": "buffer"
-    }],
-    err: {
-      "errcode": "string",
-      "message": "string"
+}), fdom.apis.set("core.runtime", {
+    createApp: {
+        type: "method",
+        value: [ "string", "proxy" ]
+    },
+    resolve: {
+        type: "method",
+        value: [ "string", "string" ]
+    },
+    needFile: {
+        type: "event",
+        value: [ "string", "string" ]
     }
-  },
-  'getReadyState': {
-    type: "method",
-    value: [],
-    // 0 -> CONNECTING
-    // 1 -> OPEN
-    // 2 -> CLOSING
-    // 3 -> CLOSED
-    ret: "number"
-  },
-  "getBufferedAmount": {type: "method",
-                        value: ["string"],
-                        ret: "number"},
-  'close': {
-    type: "method",
-    // The first argument is a status code from
-    // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
-    value: ["number", "string"],
-    err: {
-      "errcode": "string",
-      "message": "string"
+}), fdom.apis.set("core.echo", {
+    setup: {
+        type: "method",
+        value: [ "string" ]
+    },
+    send: {
+        type: "method",
+        value: [ "string" ]
+    },
+    message: {
+        type: "event",
+        value: "string"
     }
-  },
-  'onMessage': {
-    type: 'event',
-    // The data will be stored in one of the keys,
-    // corresponding with the type received
-    value: {
-      "text": "string",
-      "binary": "blob",
-      "buffer": "buffer"
+}), fdom.apis.set("core.peerconnection", {
+    // Setup the link to the peer and options for this peer connection.
+    setup: {
+        type: "method",
+        value: [ // The freedom.js channel identifier used to setup a signalling chanel.
+        "string", // The peerName, used debugging and console messages.
+        "string", // The list of STUN servers to use.
+        // The format of a single entry is stun:HOST:PORT, where HOST
+        // and PORT are a stun server hostname and port, respectively.
+        [ "array", "string" ] ]
+    },
+    // Send a message to the peer.
+    send: {
+        type: "method",
+        value: [ {
+            // Data channel id. If provided, will be used as the channel label.
+            // The behavior is undefined if the channel label doesn't exist.
+            channelLabel: "string",
+            // One of the bellow should be defined; this is the data to send.
+            text: "string",
+            binary: "blob",
+            buffer: "buffer"
+        } ]
+    },
+    // Called when we get a message from the peer.
+    onReceived: {
+        type: "event",
+        value: {
+            // The label/id of the data channel.
+            channelLabel: "string",
+            // One the below will be specified.
+            text: "string",
+            binary: "blob",
+            buffer: "buffer"
+        }
+    },
+    // Open the data channel with this label.
+    openDataChannel: {
+        type: "method",
+        value: [ "string" ]
+    },
+    // Close the data channel with this label.
+    closeDataChannel: {
+        type: "method",
+        value: [ "string" ]
+    },
+    // A channel with this id has been opened.
+    onOpenDataChannel: {
+        type: "event",
+        value: {
+            channelId: "string"
+        }
+    },
+    // The channale with this id has been closed.
+    onCloseDataChannel: {
+        type: "event",
+        value: {
+            channelId: "string"
+        }
+    },
+    // Returns the number of bytes that have queued using "send", but not
+    // yet sent out. Currently just exposes:
+    // http://www.w3.org/TR/webrtc/#widl-RTCDataChannel-bufferedAmount
+    getBufferedAmount: {
+        type: "method",
+        value: [ "string" ],
+        ret: "number"
+    },
+    // Close the peer connection.
+    close: {
+        type: "method",
+        value: []
+    },
+    // The peer connection has been closed.
+    onClose: {
+        type: "event",
+        value: {}
     }
-  },
-  'onOpen': {
-    type: 'event',
-    value: []
-  },
-  'onError': {
-    type: 'event',
-    value: {
-      "errcode": "string",
-      "message": "string"
+}), fdom.apis.set("core.websocket", {
+    // Constructs new websocket. Errors in construction are passed on
+    // through the onError event.
+    constructor: {
+        value: // URL to connect through
+        [ "string", // Protocols
+        [ "array", "string" ] ]
+    },
+    // Send the data to the other side of this connection. Only one of
+    // the entries in the dictionary that is passed will be sent.
+    send: {
+        type: "method",
+        value: [ {
+            text: "string",
+            binary: "blob",
+            buffer: "buffer"
+        } ],
+        err: {
+            errcode: "string",
+            message: "string"
+        }
+    },
+    getReadyState: {
+        type: "method",
+        value: [],
+        // 0 -> CONNECTING
+        // 1 -> OPEN
+        // 2 -> CLOSING
+        // 3 -> CLOSED
+        ret: "number"
+    },
+    getBufferedAmount: {
+        type: "method",
+        value: [ "string" ],
+        ret: "number"
+    },
+    close: {
+        type: "method",
+        // The first argument is a status code from
+        // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
+        value: [ "number", "string" ],
+        err: {
+            errcode: "string",
+            message: "string"
+        }
+    },
+    onMessage: {
+        type: "event",
+        // The data will be stored in one of the keys,
+        // corresponding with the type received
+        value: {
+            text: "string",
+            binary: "blob",
+            buffer: "buffer"
+        }
+    },
+    onOpen: {
+        type: "event",
+        value: []
+    },
+    onError: {
+        type: "event",
+        value: {
+            errcode: "string",
+            message: "string"
+        }
+    },
+    onClose: {
+        type: "event",
+        // Values given by WebSockets spec:
+        // http://www.w3.org/TR/websockets/#closeevent
+        value: {
+            code: "number",
+            reason: "string",
+            wasClean: "boolean"
+        }
     }
-  },
-  'onClose': {
-    type: 'event',
-    // Values given by WebSockets spec:
-    // http://www.w3.org/TR/websockets/#closeevent
-    value: {
-      "code": "number",
-      "reason": "string",
-      "wasClean": "boolean"
-    }
-  }
-});
-
-/*globals fdom:true */
-/* indent:2,sloppy:true */
+}), /*globals fdom:true */
 /**
  * SOCIAL API
  *
@@ -4874,46 +3142,47 @@ fdom.apis.set("core.websocket", {
  *   'imageData': 'string', // URI of a profile image.
  * }
  **/
-
-fdom.apis.set('social', {
-  /** 
+fdom.apis.set("social", {
+    /** 
    * error codes and default messages that may be returned on failures.
    */
-  'ERRCODE': {type: 'constant', value: {
-    /** GENERAL **/
-    'SUCCESS': 'Success!',
-    // Unknown
-    'UNKNOWN': 'Unknown error',
-    // User is currently offline
-    'OFFLINE': 'User is currently offline',
-
-    /** LOGIN **/
-    // Error authenticating to the server (e.g. invalid credentials)
-    'LOGIN_BADCREDENTIALS': 'Error authenticating with server',
-    // Error with connecting to the server
-    'LOGIN_FAILEDCONNECTION': 'Error connecting to server',
-    // User is already logged in
-    'LOGIN_ALREADYONLINE': 'User is already logged in',
-
-    /** SENDMESSAGE **/
-    // Message sent to invalid destination (e.g. not in user's roster)
-    'SEND_INVALIDDESTINATION': 'Message sent to an invalid destination'
-  }},
-  
-  /**
+    ERRCODE: {
+        type: "constant",
+        value: {
+            /** GENERAL **/
+            SUCCESS: "Success!",
+            // Unknown
+            UNKNOWN: "Unknown error",
+            // User is currently offline
+            OFFLINE: "User is currently offline",
+            /** LOGIN **/
+            // Error authenticating to the server (e.g. invalid credentials)
+            LOGIN_BADCREDENTIALS: "Error authenticating with server",
+            // Error with connecting to the server
+            LOGIN_FAILEDCONNECTION: "Error connecting to server",
+            // User is already logged in
+            LOGIN_ALREADYONLINE: "User is already logged in",
+            /** SENDMESSAGE **/
+            // Message sent to invalid destination (e.g. not in user's roster)
+            SEND_INVALIDDESTINATION: "Message sent to an invalid destination"
+        }
+    },
+    /**
    * List of possible statuses for <client_state>.status
    **/
-  'STATUS': {type: 'constant', value: {
-    // Not logged in
-    'OFFLINE': 'OFFLINE',
-    // This client runs the same freedom.js app as you and is online
-    'ONLINE': 'ONLINE',
-    // This client is online, but does not run the same app (chat client)
-    // (i.e. can be useful to invite others to your freedom.js app)
-    'ONLINE_WITH_OTHER_APP': 'ONLINE_WITH_OTHER_APP'
-  }},
-
-  /**
+    STATUS: {
+        type: "constant",
+        value: {
+            // Not logged in
+            OFFLINE: "OFFLINE",
+            // This client runs the same freedom.js app as you and is online
+            ONLINE: "ONLINE",
+            // This client is online, but does not run the same app (chat client)
+            // (i.e. can be useful to invite others to your freedom.js app)
+            ONLINE_WITH_OTHER_APP: "ONLINE_WITH_OTHER_APP"
+        }
+    },
+    /**
    * Log into the network (See below for parameters)
    * e.g. social.login(Object options)
    *
@@ -4921,39 +3190,44 @@ fdom.apis.set('social', {
    * @param {Object} loginOptions - See below
    * @return {Object} <client_state>
    **/
-  'login': {
-    type: 'method',
-    value: [{
-      // Optional
-      'agent': 'string',         // Name of the application
-      'version': 'string',       // Version of application
-      'url': 'string',           // URL of application
-      'interactive': 'boolean',  // Allow user interaction from provider.
-                                 // If not set, interpreted as true.
-      'rememberLogin': 'boolean' // Cache login credentials, if not set,
-                                 // interpreted as true.
-    }],
-    ret: {                       // <client_state>, defined above.
-      'userId': 'string',
-      'clientId': 'string',
-      'status': 'string',
-      'timestamp': 'number'
+    login: {
+        type: "method",
+        value: [ {
+            // Optional
+            agent: "string",
+            // Name of the application
+            version: "string",
+            // Version of application
+            url: "string",
+            // URL of application
+            interactive: "boolean",
+            // Allow user interaction from provider.
+            // If not set, interpreted as true.
+            rememberLogin: "boolean"
+        } ],
+        ret: {
+            // <client_state>, defined above.
+            userId: "string",
+            clientId: "string",
+            status: "string",
+            timestamp: "number"
+        },
+        err: {
+            errcode: "string",
+            message: "string"
+        }
     },
-    err: {
-      'errcode': 'string',
-      'message': 'string'
-    }
-  },
-
-  /**
+    /**
    * Clears cached credentials of the provider.
    *
    * @method clearCachedCredentials
    * @return nothing
    **/
-  'clearCachedCredentials': {type: 'method', value: []},
-
-  /**
+    clearCachedCredentials: {
+        type: "method",
+        value: []
+    },
+    /**
    * Get <client_state>s that have been observed.
    * The providers <client_state> may be in this list
    * getClients may not represent an entire roster, since it may not be
@@ -4967,17 +3241,16 @@ fdom.apis.set('social', {
    * } List of <client_state>s indexed by clientId
    *   On failure, rejects with an error code.
    **/
-  'getClients': {
-    type: 'method',
-    value: [],
-    ret: 'object',
-    err: {
-      'errcode': 'string',
-      'message': 'string'
-    }
-  },
-
-  /**
+    getClients: {
+        type: "method",
+        value: [],
+        ret: "object",
+        err: {
+            errcode: "string",
+            message: "string"
+        }
+    },
+    /**
    * Get <user_profile>s that have been observed.
    * The providers <user_profile> may be in this list
    * getUsers may not represent an entire roster, since it may not be
@@ -4991,17 +3264,16 @@ fdom.apis.set('social', {
    * } List of <user_profile>s indexed by userId
    *   On failure, rejects with an error code.
    **/
-  'getUsers': {
-    type: 'method',
-    value: [],
-    ret: 'object',
-    err: {
-      'errcode': 'string',
-      'message': 'string'
-    }
-  },
-
-  /** 
+    getUsers: {
+        type: "method",
+        value: [],
+        ret: "object",
+        err: {
+            errcode: "string",
+            message: "string"
+        }
+    },
+    /** 
    * Send a message.
    * Destination may be a userId or a clientId. If it is a userId, all clients
    * for that user should receive the message.
@@ -5012,69 +3284,73 @@ fdom.apis.set('social', {
    * @return nothing
    *  On failure, rejects with an error code
    **/
-  'sendMessage': {
-    type: 'method',
-    value: ['string', 'string'],
-    err: {
-      'errcode': 'string',
-      'message': 'string'
-    }
-  },
-
-  /**
+    sendMessage: {
+        type: "method",
+        value: [ "string", "string" ],
+        err: {
+            errcode: "string",
+            message: "string"
+        }
+    },
+    /**
    * Logout of the network
    * 
    * @method logout
    * @return nothing
    *  On failure, rejects with an error code
    **/
-  'logout': {
-    type: 'method',
-    value: [],
-    err: {
-      'errcode': 'string',
-      'message': 'string'
-    }
-  },
-
-  /**
+    logout: {
+        type: "method",
+        value: [],
+        err: {
+            errcode: "string",
+            message: "string"
+        }
+    },
+    /**
    * Receive an incoming message.
    **/
-  'onMessage': {type: 'event', value: {
-    'from': {               // <client_state>, defined above.
-      'userId': 'string',
-      'clientId': 'string',
-      'status': 'string',
-      'timestamp': 'number'
+    onMessage: {
+        type: "event",
+        value: {
+            from: {
+                // <client_state>, defined above.
+                userId: "string",
+                clientId: "string",
+                status: "string",
+                timestamp: "number"
+            },
+            message: "string"
+        }
     },
-    'message': 'string'     // message contents
-  }},
-
-  /**
+    /**
    * Receive a change to a <user_profile>.
    **/
-  'onUserProfile': {type: 'event', value: { // <user_profile>, defined above.
-    'userId': 'string',
-    'timestamp': 'number',
-    'name': 'string',
-    'url': 'string',
-    'imageData': 'string'
-  }},
-
-  /**
+    onUserProfile: {
+        type: "event",
+        value: {
+            // <user_profile>, defined above.
+            userId: "string",
+            timestamp: "number",
+            name: "string",
+            url: "string",
+            imageData: "string"
+        }
+    },
+    /**
    * Receive a change to a <client_state>.
    **/
-  'onClientState': {type: 'event', value: { // <client_state>, defined above.
-    'userId': 'string',
-    'clientId': 'string',
-    'status': 'string',
-    'timestamp': 'number'
-  }}
-});
-
-
-/*globals fdom:true */
-/* indent:2,sloppy:true */
+    onClientState: {
+        type: "event",
+        value: {
+            // <client_state>, defined above.
+            userId: "string",
+            clientId: "string",
+            status: "string",
+            timestamp: "number"
+        }
+    }
+}), /*globals fdom:true */
 /**
  * STORAGE API
  *
@@ -5082,40 +3358,46 @@ fdom.apis.set('social', {
  * Exposes a key-value get/put interface
  **/
 fdom.apis.set("storage", {
-  /** 
+    /** 
    * List of scopes that can preferred when accessing storage.
   **/
-  'scope': {type: 'constant', value: {
-    // Storage should only last while the app is active.
-    'SESSION': 0,
-    // Storage should be limited to host the app is bound to.
-    'DEVICE_LOCAL': 1,
-    // Storage should be synchronized between user devices.
-    'USER_LOCAL': 2,
-    // Storage should be synchronized across users.
-    'SHARED': 3
-  }},
-
-  /**
+    scope: {
+        type: "constant",
+        value: {
+            // Storage should only last while the app is active.
+            SESSION: 0,
+            // Storage should be limited to host the app is bound to.
+            DEVICE_LOCAL: 1,
+            // Storage should be synchronized between user devices.
+            USER_LOCAL: 2,
+            // Storage should be synchronized across users.
+            SHARED: 3
+        }
+    },
+    /**
    * Create a storage provider.
    * @param {Object} options
    *    scope {storage.scope} The preferred storage scope.
    * @constructor
    */
-  'constructor': { value: [{
-    'scope': 'number'
-  }]},
-
-  /**
+    constructor: {
+        value: [ {
+            scope: "number"
+        } ]
+    },
+    /**
    * Fetch an array of all keys
    * e.g. storage.keys() => [string]
    *
    * @method keys
    * @return an array with all keys in the store 
    **/
-  'keys': {type: "method", value: [], ret: ["array", "string"]},
-
-  /**
+    keys: {
+        type: "method",
+        value: [],
+        ret: [ "array", "string" ]
+    },
+    /**
    * Fetch a value for a key
    * e.g. storage.get(String key) => string
    *
@@ -5123,9 +3405,12 @@ fdom.apis.set("storage", {
    * @param {String} key - key to fetch
    * @return {String} Returns a string with the value, null if doesn't exist
    **/
-  'get': {type: "method", value: ["string"], ret: "string"},
-
-  /**
+    get: {
+        type: "method",
+        value: [ "string" ],
+        ret: "string"
+    },
+    /**
    * Sets a value to a key
    * e.g. storage.set(String key, String value)
    *
@@ -5134,9 +3419,12 @@ fdom.apis.set("storage", {
    * @param {String} value - value
    * @return {String} previous value of key if there was one.
    **/
-  'set': {type: "method", value: ["string", "string"], ret: "string"},
-  
-  /**
+    set: {
+        type: "method",
+        value: [ "string", "string" ],
+        ret: "string"
+    },
+    /**
    * Removes a single key
    * e.g. storage.remove(String key)
    *
@@ -5144,21 +3432,23 @@ fdom.apis.set("storage", {
    * @param {String} key - key to remove
    * @return {String} previous value of key if there was one.
    **/
-  'remove': {type: "method", value: ["string"], ret: "string"},
-  
-  /**
+    remove: {
+        type: "method",
+        value: [ "string" ],
+        ret: "string"
+    },
+    /**
    * Removes all data from storage
    * e.g. storage.clear()
    *
    * @method clear
    * @return nothing
    **/
-  'clear': {type: "method", value: []}
-
-});
-
-/*globals fdom:true */
-/* indent:2,sloppy:true */
+    clear: {
+        type: "method",
+        value: []
+    }
+}), /*globals fdom:true */
 /**
  * TRANSPORT API
  *
@@ -5166,7 +3456,7 @@ fdom.apis.set("storage", {
  * Useful for sending large binary data between instances
  **/
 fdom.apis.set("transport", {
-  /**
+    /**
    * Prepare a P2P connection with initialization parameters
    * Takes in a signalling pathway (freedom.js channel), which is used
    * by the transport provider to send/receive signalling messages
@@ -5177,9 +3467,11 @@ fdom.apis.set("transport", {
    * @param {proxy} channel - signalling channel
    * @return nothing.
    **/
-  'setup': {type: "method", value: ["string", "proxy"]},
-
-  /**
+    setup: {
+        type: "method",
+        value: [ "string", "proxy" ]
+    },
+    /**
    * Send binary data to the peer
    * All data is labelled with a string tag
    * Any data sent with the same tag is sent in order,
@@ -5190,9 +3482,11 @@ fdom.apis.set("transport", {
    * @param {buffer} data
    * @return nothing
    **/
-  'send': {type: "method", value: ["string", "buffer"]},
-
-  /**
+    send: {
+        type: "method",
+        value: [ "string", "buffer" ]
+    },
+    /**
    * Close the connection. Any data queued for sending, or in the
    * process of sending, may be dropped. If the state of the promse of
    * the send method is "pending" then the data for that send call may
@@ -5201,26 +3495,30 @@ fdom.apis.set("transport", {
    * @method close
    * @return nothing
    **/
-  'close': {type: "method", value: []},
-
-  /**
+    close: {
+        type: "method",
+        value: []
+    },
+    /**
    * Event on incoming data (ArrayBuffer)
    **/
-  'onData': {type: "event", value: {
-    "tag": "string",
-    "data": "buffer"
-  }},
-
-  /**
+    onData: {
+        type: "event",
+        value: {
+            tag: "string",
+            data: "buffer"
+        }
+    },
+    /**
    * Event on successful closing of the connection
    **/
-  'onClose': {type: "event", value: []}
+    onClose: {
+        type: "event",
+        value: []
+    }
 });
 
 /*globals fdom:true */
-/* indent:2,white:true,sloppy:true,sub:true */
-
-
 /**
  * Core freedom services available to all modules.
  * Created by a local manager in response to a 'core' request.
@@ -5229,15 +3527,11 @@ fdom.apis.set("transport", {
  * @param {Port.Manager} manager The manager this core is connected with.
  * @private
  */
-var Core_unprivileged = function(manager, postMessage) {
-  this.manager = manager;
+var Core_unprivileged = function(manager) {
+    this.manager = manager;
 };
 
-Core_unprivileged.unboundChannels = {};
-
-Core_unprivileged.contextId = undefined;
-
-/**
+Core_unprivileged.unboundChannels = {}, Core_unprivileged.contextId = void 0, /**
  * Create a custom channel.
  * Returns the structure {channel: fdom.proxy.Deferred, identifier: Object},
  * where the identifier can be 'redeemed' by another module or provider using
@@ -5247,47 +3541,28 @@ Core_unprivileged.contextId = undefined;
  * @params {Function} continuation Method to call with the cosntructed structure.
  */
 Core_unprivileged.prototype.createChannel = function(continuation) {
-  var proxy = new fdom.port.Proxy(fdom.proxy.EventInterface),
-      id = fdom.util.getId(),
-      chan = this.getChannel(proxy);
-  this.manager.setup(proxy);
-
-  if (this.manager.delegate && this.manager.toDelegate['core']) {
-    this.manager.emit(this.manager.delegate, {
-      type: 'Delegation',
-      request: 'handle',
-      flow: 'core',
-      message: {
-        type: 'register',
-        id: id
-      }
+    var proxy = new fdom.port.Proxy(fdom.proxy.EventInterface), id = fdom.util.getId(), chan = this.getChannel(proxy);
+    this.manager.setup(proxy), this.manager.delegate && this.manager.toDelegate.core && this.manager.emit(this.manager.delegate, {
+        type: "Delegation",
+        request: "handle",
+        flow: "core",
+        message: {
+            type: "register",
+            id: id
+        }
+    }), Core_unprivileged.unboundChannels[id] = {
+        local: !0,
+        proxy: proxy
+    }, proxy.once("start", this.getChannel.bind(this, proxy)), continuation({
+        channel: chan,
+        identifier: id
     });
-  }
-  Core_unprivileged.unboundChannels[id] = {
-    local: true,
-    proxy: proxy
-  };
-
-  proxy.once('start', this.getChannel.bind(this, proxy));
-
-  continuation({
-    channel: chan,
-    identifier: id
-  });
-};
-
-Core_unprivileged.prototype.getChannel = function(proxy) {
-  var iface = proxy.getProxyInterface(),
-      chan = iface();
-  chan.close = iface.close;
-  chan.onClose = iface.onClose;
-  iface.onClose(chan, function() {
-    proxy.doClose();
-  });
-  return chan;
-};
-
-/**
+}, Core_unprivileged.prototype.getChannel = function(proxy) {
+    var iface = proxy.getProxyInterface(), chan = iface();
+    return chan.close = iface.close, chan.onClose = iface.onClose, iface.onClose(chan, function() {
+        proxy.doClose();
+    }), chan;
+}, /**
  * Receive a message from another core instance.
  * Note: Core_unprivileged is not registered on the hub. it is a provider,
  *     as it's location and name would indicate. This function is called by
@@ -5298,22 +3573,12 @@ Core_unprivileged.prototype.getChannel = function(proxy) {
  * @param {Object} msg The messsage from an isolated core provider.
  */
 Core_unprivileged.prototype.onMessage = function(source, msg) {
-  if (msg.type === 'register') {
-    Core_unprivileged.unboundChannels[msg.id] = {
-      remote: true,
-      resolve: msg.reply,
-      source: source
-    };
-  } else if (msg.type === 'clear') {
-    delete Core_unprivileged.unboundChannels[msg.id];
-  } else if (msg.type === 'bind') {
-    if (Core_unprivileged.unboundChannels[msg.id]) {
-      this.bindChannel(msg.id, function() {}, source);
-    }
-  }
-};
-
-/**
+    "register" === msg.type ? Core_unprivileged.unboundChannels[msg.id] = {
+        remote: !0,
+        resolve: msg.reply,
+        source: source
+    } : "clear" === msg.type ? delete Core_unprivileged.unboundChannels[msg.id] : "bind" === msg.type && Core_unprivileged.unboundChannels[msg.id] && this.bindChannel(msg.id, function() {}, source);
+}, /**
  * Bind a custom channel.
  * Creates a proxy interface to the custom channel, which will be bound to
  * the proxy obtained through an earlier createChannel call.
@@ -5323,85 +3588,49 @@ Core_unprivileged.prototype.onMessage = function(source, msg) {
  * @param {Function} continuation A function to be called with the proxy.
  */
 Core_unprivileged.prototype.bindChannel = function(identifier, continuation, source) {
-  var toBind = Core_unprivileged.unboundChannels[identifier],
-      newSource = !source;
-
-  // when bindChannel is called directly, source will be undefined.
-  // When it is propogated by onMessage, a source for binding will already exist.
-  if (newSource) {
-    fdom.debug.log('making local proxy for core binding');
-    source = new fdom.port.Proxy(fdom.proxy.EventInterface);
-    this.manager.setup(source);
-  }
-
-  // If this is a known identifier and is in the same context, binding is easy.
-  if (toBind && toBind.local) {
-    fdom.debug.log('doing local binding with ' + source);
-    this.manager.createLink(source, identifier, toBind.proxy, 'default');
-    delete Core_unprivileged.unboundChannels[identifier];
-    if (this.manager.delegate && this.manager.toDelegate['core']) {
-      this.manager.emit(this.manager.delegate, {
-        type: 'Delegation',
-        request: 'handle',
-        flow: 'core',
+    var toBind = Core_unprivileged.unboundChannels[identifier], newSource = !source;
+    // If this is a known identifier and is in the same context, binding is easy.
+    if (// when bindChannel is called directly, source will be undefined.
+    // When it is propogated by onMessage, a source for binding will already exist.
+    newSource && (fdom.debug.log("making local proxy for core binding"), source = new fdom.port.Proxy(fdom.proxy.EventInterface), 
+    this.manager.setup(source)), toBind && toBind.local) fdom.debug.log("doing local binding with " + source), 
+    this.manager.createLink(source, identifier, toBind.proxy, "default"), delete Core_unprivileged.unboundChannels[identifier], 
+    this.manager.delegate && this.manager.toDelegate.core && this.manager.emit(this.manager.delegate, {
+        type: "Delegation",
+        request: "handle",
+        flow: "core",
         message: {
-          type: 'clear',
-          id: identifier
+            type: "clear",
+            id: identifier
         }
-      });
+    }); else {
+        if (!toBind || !toBind.remote) return this.manager.delegate && this.manager.toDelegate.core ? (fdom.debug.warn("delegating bind request for unseen ID:" + identifier), 
+        this.manager.emit(this.manager.delegate, {
+            type: "Delegation",
+            request: "handle",
+            flow: "core",
+            message: {
+                type: "bind",
+                id: identifier
+            }
+        }), source.once("start", function(p, cb) {
+            cb(this.getChannel(p));
+        }.bind(this, source, continuation)), this.manager.createLink(source, "default", this.manager.hub.getDestination(this.manager.delegate), identifier), 
+        void delete Core_unprivileged.unboundChannels[identifier]) : (fdom.debug.warn("Asked to bind unknown channel: " + identifier), 
+        fdom.debug.log(Core_unprivileged.unboundChannels), void continuation());
+        fdom.debug.log("doing remote binding downward"), this.manager.createLink(source, newSource ? "default" : identifier, toBind.source, identifier), 
+        toBind.resolve({
+            type: "Bind Channel",
+            request: "core",
+            flow: "core",
+            message: {
+                type: "bind",
+                id: identifier
+            }
+        }), delete Core_unprivileged.unboundChannels[identifier];
     }
-  } else if (toBind && toBind.remote) {
-    fdom.debug.log('doing remote binding downward');
-    this.manager.createLink(
-        source,
-        newSource ? 'default' : identifier,
-        toBind.source,
-        identifier);
-    toBind.resolve({
-      type: 'Bind Channel',
-      request:'core',
-      flow: 'core',
-      message: {
-        type: 'bind',
-        id: identifier
-      }
-    });
-    delete Core_unprivileged.unboundChannels[identifier];
-  } else if (this.manager.delegate && this.manager.toDelegate['core']) {
-    fdom.debug.warn('delegating bind request for unseen ID:' + identifier);
-    this.manager.emit(this.manager.delegate, {
-      type: 'Delegation',
-      request: 'handle',
-      flow: 'core',
-      message: {
-        type: 'bind',
-        id: identifier
-      }
-    });
-    source.once('start', function(p, cb) {
-      cb(this.getChannel(p));
-    }.bind(this, source, continuation));
-    this.manager.createLink(source,
-        'default',
-        this.manager.hub.getDestination(this.manager.delegate),
-        identifier);
-    delete Core_unprivileged.unboundChannels[identifier];
-    return;
-  } else {
-    fdom.debug.warn('Asked to bind unknown channel: ' + identifier);
-    fdom.debug.log(Core_unprivileged.unboundChannels);
-    continuation();
-    return;
-  }
-
-  if (source.getInterface) {
-    continuation(this.getChannel(source));
-  } else {
-    continuation();
-  }
-};
-
-/**
+    source.getInterface ? continuation(this.getChannel(source)) : continuation();
+}, /**
  * Get the ID of the current freedom.js context.  Provides an
  * array of module URLs, the lineage of the current context.
  * When not in an application context, the ID is the lineage
@@ -5410,25 +3639,19 @@ Core_unprivileged.prototype.bindChannel = function(identifier, continuation, sou
  * @param {Function} callback The function called with ID information.
  */
 Core_unprivileged.prototype.getId = function(callback) {
-  // TODO: make sure contextID is properly frozen.
-  callback(Core_unprivileged.contextId);
-};
-
-/**
+    // TODO: make sure contextID is properly frozen.
+    callback(Core_unprivileged.contextId);
+}, /**
  * Set the ID of the current freedom.js context.
  * @method setId
  * @private
  * @param {String[]} id The lineage of the current context.
  */
 Core_unprivileged.prototype.setId = function(id) {
-  Core_unprivileged.contextId = id;
-};
-
-fdom.apis.register("core", Core_unprivileged);
+    Core_unprivileged.contextId = id;
+}, fdom.apis.register("core", Core_unprivileged);
 
 /*globals fdom:true, console */
-/* indent:2,white:true,sloppy:true */
-
 /**
  * A minimal provider implementing the core.echo interface for interaction with
  * custom channels.  Primarily used for testing the robustness of the custom
@@ -5438,19 +3661,14 @@ fdom.apis.register("core", Core_unprivileged);
  * @param {Module} mod The module creating this provider.
  */
 var Echo_unprivileged = function(mod, dispatchEvent) {
-  fdom.debug.log('Echo Created!');
-  this.mod = mod;
-  this.dispatchEvent = dispatchEvent;
-  fdom.util.handleEvents(this);
-
-  // The Core object for managing channels.
-  this.mod.once('core', function(Core) {
-    this.core = new Core();
-  }.bind(this));
-  this.mod.emit(this.mod.controlChannel, {
-    type: 'core request delegated to echo',
-    request: 'core'
-  });
+    fdom.debug.log("Echo Created!"), this.mod = mod, this.dispatchEvent = dispatchEvent, 
+    fdom.util.handleEvents(this), // The Core object for managing channels.
+    this.mod.once("core", function(Core) {
+        this.core = new Core();
+    }.bind(this)), this.mod.emit(this.mod.controlChannel, {
+        type: "core request delegated to echo",
+        request: "core"
+    });
 };
 
 /**
@@ -5463,374 +3681,156 @@ var Echo_unprivileged = function(mod, dispatchEvent) {
  * @method setup
  */
 Echo_unprivileged.prototype.setup = function(proxy, continuation) {
-  continuation();
-  if (!this.core) {
-    this.dispatchEvent('message', 'no core available to setup proxy with at echo');
-    return;
-  }
-
-  this.core.bindChannel(proxy, function(chan) {
-    if (this.chan) {
-      this.chan.close();
-    }
-    this.chan = chan;
-    this.chan.onClose(function() {
-      delete this.chan;
-    }.bind(this));
-    this.dispatchEvent('message', 'channel bound to echo');
-    this.chan.on('message', function(m) {
-      this.dispatchEvent('message', 'from custom channel: ' + m);
-    }.bind(this));
-  }.bind(this));
-};
-
-/**
+    return continuation(), this.core ? void this.core.bindChannel(proxy, function(chan) {
+        this.chan && this.chan.close(), this.chan = chan, this.chan.onClose(function() {
+            delete this.chan;
+        }.bind(this)), this.dispatchEvent("message", "channel bound to echo"), this.chan.on("message", function(m) {
+            this.dispatchEvent("message", "from custom channel: " + m);
+        }.bind(this));
+    }.bind(this)) : void this.dispatchEvent("message", "no core available to setup proxy with at echo");
+}, /**
  * Send a message to the bound custom channel.
  * @param {String} str The string to send.
  * @param {Function} continuation Function to call when sending is complete.
  * @method send
  */
 Echo_unprivileged.prototype.send = function(str, continuation) {
-  continuation();
-  if (this.chan) {
-    this.chan.emit('message', str);
-  } else {
-    this.dispatchEvent('message', 'no channel available');
-  }
-};
-
-fdom.apis.register("core.echo", Echo_unprivileged);
+    continuation(), this.chan ? this.chan.emit("message", str) : this.dispatchEvent("message", "no channel available");
+}, fdom.apis.register("core.echo", Echo_unprivileged);
 
 /*globals fdom:true, console, RTCPeerConnection, webkitRTCPeerConnection */
 /*globals mozRTCPeerConnection, RTCSessionDescription, RTCIceCandidate */
 /*globals ArrayBuffer */
-/* indent:2,sloppy:true */
 /**
  * DataPeer - a class that wraps peer connections and data channels.
  */
 // TODO: check that Handling of pranswer is treated appropriately.
 var SimpleDataPeerState = {
-  DISCONNECTED: 'DISCONNECTED',
-  CONNECTING: 'CONNECTING',
-  CONNECTED: 'CONNECTED'
+    DISCONNECTED: "DISCONNECTED",
+    CONNECTING: "CONNECTING",
+    CONNECTED: "CONNECTED"
 };
-
-function SimpleDataPeer(peerName, stunServers, dataChannelCallbacks, mocks) {
-  var RTCPC,
-    constraints,
-    config,
-    i;
-  this.peerName = peerName;
-  this.channels = {};
-  this.dataChannelCallbacks = dataChannelCallbacks;
-
-  if (typeof mocks.RTCPeerConnection !== "undefined") {
-    RTCPC = mocks.RTCPeerConnection;
-  } else if (typeof webkitRTCPeerConnection !== "undefined") {
-    RTCPC = webkitRTCPeerConnection;
-  } else if (typeof mozRTCPeerConnection !== "undefined") {
-    RTCPC = mozRTCPeerConnection;
-  } else {
-    throw new Error("This environment does not seem to support RTCPeerConnection");
-  }
-
-  if (typeof mocks.RTCSessionDescription !== "undefined") {
-    this.RTCSessionDescription = mocks.RTCSessionDescription;
-  } else {
-    this.RTCSessionDescription = RTCSessionDescription;
-  }
-
-  constraints = {
-    optional: [{DtlsSrtpKeyAgreement: true}]
-  };
-  // A way to speak to the peer to send SDP headers etc.
-  this.sendSignalMessage = null;
-
-  this.pc = null;  // The peer connection.
-  // Get TURN servers for the peer connection.
-  config = {iceServers: []};
-  for (i = 0; i < stunServers.length; i += 1) {
-    config.iceServers.push({
-      'url' : stunServers[i]
-    });
-  }
-  this.pc = new RTCPC(config, constraints);
-  // Add basic event handlers.
-  this.pc.addEventListener("icecandidate",
-                            this.onIceCallback.bind(this));
-  this.pc.addEventListener("negotiationneeded",
-                            this.onNegotiationNeeded.bind(this));
-  this.pc.addEventListener("datachannel",
-                            this.onDataChannel.bind(this));
-  this.pc.addEventListener("signalingstatechange", function () {
-    if (this.pc.signalingState === "stable") {
-      this.pcState = SimpleDataPeerState.CONNECTED;
-    }
-  }.bind(this));
-  // This state variable is used to fake offer/answer when they are wrongly
-  // requested and we really just need to reuse what we already have.
-  this.pcState = SimpleDataPeerState.DISCONNECTED;
-
-  // Note: to actually do something with data channels opened by a peer, we
-  // need someone to manage "datachannel" event.
-}
 
 // Queue 'func', a 0-arg closure, for invocation when the TURN server
 // gets back to us, and we have a valid RTCPeerConnection in this.pc.
 // If we already have it, run func immediately.
-SimpleDataPeer.prototype.runWhenReady = function (func) {
-  if (typeof this.pc === "undefined" || this.pc === null) {
-    console.error('SimpleDataPeer: Something is terribly wrong. PeerConnection is null');
-    // we're still waiting.
-  } else {
-    func();
-  }
-};
-
-SimpleDataPeer.prototype.send = function (channelId, message, continuation) {
-  this.channels[channelId].send(message);
-  continuation();
-};
-
-SimpleDataPeer.prototype.openDataChannel = function (channelId, continuation) {
-  this.runWhenReady(function doOpenDataChannel() {
-    var dataChannel = this.pc.createDataChannel(channelId, {});
-    dataChannel.onopen = function () {
-      this.addDataChannel(channelId, dataChannel);
-      continuation();
-    }.bind(this);
-    dataChannel.onerror = function(err) {
-      //@(ryscheng) todo - replace with errors that work across the interface
-      console.error(err);
-      continuation(undefined, err);
-    };
-  }.bind(this));
-};
-
-SimpleDataPeer.prototype.closeChannel = function (channelId) {
-  if (this.channels[channelId] !== undefined) {
-    this.channels[channelId].close();
-    delete this.channels[channelId];
-  }
-};
-
-SimpleDataPeer.prototype.getBufferedAmount = function (channelId,
-                                                       continuation) {
-  if (this.channels[channelId] !== undefined) {
-    var dataChannel = this.channels[channelId];
-    return dataChannel.bufferedAmount;
-  }
-  throw new Error("No channel with id: " + channelId);
-};
-
-SimpleDataPeer.prototype.setSendSignalMessage = function (sendSignalMessageFn) {
-  this.sendSignalMessage = sendSignalMessageFn;
-};
-
-// Handle a message send on the signalling channel to this peer.
-SimpleDataPeer.prototype.handleSignalMessage = function (messageText) {
-  //console.log(this.peerName + ": " + "handleSignalMessage: \n" + messageText);
-  var json = JSON.parse(messageText);
-  this.runWhenReady(function () {
-    // TODO: If we are offering and they are also offerring at the same time,
-    // pick the one who has the lower randomId?
-    // (this.pc.signalingState == "have-local-offer" && json.sdp &&
-    //    json.sdp.type == "offer" && json.sdp.randomId < this.localRandomId)
-    if (json.sdp) {
-      // Set the remote description.
-      this.pc.setRemoteDescription(
-        new this.RTCSessionDescription(json.sdp),
-        // Success
-        function () {
-          //console.log(this.peerName + ": setRemoteDescription succeeded");
-          if (this.pc.remoteDescription.type === "offer") {
-            this.pc.createAnswer(this.onDescription.bind(this));
-          }
-        }.bind(this),
-        // Failure
-        function (e) {
-          console.error(this.peerName + ": " +
-              "setRemoteDescription failed:", e);
-        }.bind(this)
-      );
-    } else if (json.candidate) {
-      // Add remote ice candidate.
-      //console.log(this.peerName + ": Adding ice candidate: " + JSON.stringify(json.candidate));
-      var ice_candidate = new RTCIceCandidate(json.candidate);
-      this.pc.addIceCandidate(ice_candidate);
-    } else {
-      console.warn(this.peerName + ": " +
-          "handleSignalMessage got unexpected message: ", messageText);
+SimpleDataPeer.prototype.runWhenReady = function(func) {
+    "undefined" == typeof this.pc || null === this.pc ? console.error("SimpleDataPeer: Something is terribly wrong. PeerConnection is null") : func();
+}, SimpleDataPeer.prototype.send = function(channelId, message, continuation) {
+    this.channels[channelId].send(message), continuation();
+}, SimpleDataPeer.prototype.openDataChannel = function(channelId, continuation) {
+    this.runWhenReady(function() {
+        var dataChannel = this.pc.createDataChannel(channelId, {});
+        dataChannel.onopen = function() {
+            this.addDataChannel(channelId, dataChannel), continuation();
+        }.bind(this), dataChannel.onerror = function(err) {
+            //@(ryscheng) todo - replace with errors that work across the interface
+            console.error(err), continuation(void 0, err);
+        };
+    }.bind(this));
+}, SimpleDataPeer.prototype.closeChannel = function(channelId) {
+    void 0 !== this.channels[channelId] && (this.channels[channelId].close(), delete this.channels[channelId]);
+}, SimpleDataPeer.prototype.getBufferedAmount = function(channelId) {
+    if (void 0 !== this.channels[channelId]) {
+        var dataChannel = this.channels[channelId];
+        return dataChannel.bufferedAmount;
     }
-  }.bind(this));
-};
-
-// Connect to the peer by the signalling channel.
-SimpleDataPeer.prototype.negotiateConnection = function () {
-  this.pcState = SimpleDataPeerState.CONNECTING;
-  this.runWhenReady(function () {
-    this.pc.createOffer(
-      this.onDescription.bind(this),
-      function (e) {
-        console.error(this.peerName + ": " +
-            "createOffer failed: ", e.toString());
-        this.pcState = SimpleDataPeerState.DISCONNECTED;
-      }.bind(this)
-    );
-  }.bind(this));
-};
-
-SimpleDataPeer.prototype.close = function () {
-  if (this.pc.signalingState !== "closed") {
-    this.pc.close();
-  }
-  //console.log(this.peerName + ": " + "Closed peer connection.");
-};
-
-SimpleDataPeer.prototype.addDataChannel = function (channelId, channel) {
-  var callbacks = this.dataChannelCallbacks;
-  this.channels[channelId] = channel;
-
-  if (channel.readyState === "connecting") {
-    channel.onopen = callbacks.onOpenFn.bind(this, channel, {label: channelId});
-  }
-
-  channel.onclose = callbacks.onCloseFn.bind(this, channel, {label: channelId});
-
-  channel.onmessage = callbacks.onMessageFn.bind(this, channel,
-                                                 {label: channelId});
-
-  channel.onerror = callbacks.onErrorFn.bind(this, channel, {label: channel});
-};
-
-// When we get our description, we set it to be our local description and
+    throw new Error("No channel with id: " + channelId);
+}, SimpleDataPeer.prototype.setSendSignalMessage = function(sendSignalMessageFn) {
+    this.sendSignalMessage = sendSignalMessageFn;
+}, // Handle a message send on the signalling channel to this peer.
+SimpleDataPeer.prototype.handleSignalMessage = function(messageText) {
+    //console.log(this.peerName + ": " + "handleSignalMessage: \n" + messageText);
+    var json = JSON.parse(messageText);
+    this.runWhenReady(function() {
+        // TODO: If we are offering and they are also offerring at the same time,
+        // pick the one who has the lower randomId?
+        // (this.pc.signalingState == "have-local-offer" && json.sdp &&
+        //    json.sdp.type == "offer" && json.sdp.randomId < this.localRandomId)
+        if (json.sdp) // Set the remote description.
+        this.pc.setRemoteDescription(new this.RTCSessionDescription(json.sdp), // Success
+        function() {
+            //console.log(this.peerName + ": setRemoteDescription succeeded");
+            "offer" === this.pc.remoteDescription.type && this.pc.createAnswer(this.onDescription.bind(this));
+        }.bind(this), // Failure
+        function(e) {
+            console.error(this.peerName + ": setRemoteDescription failed:", e);
+        }.bind(this)); else if (json.candidate) {
+            // Add remote ice candidate.
+            //console.log(this.peerName + ": Adding ice candidate: " + JSON.stringify(json.candidate));
+            var ice_candidate = new RTCIceCandidate(json.candidate);
+            this.pc.addIceCandidate(ice_candidate);
+        } else console.warn(this.peerName + ": handleSignalMessage got unexpected message: ", messageText);
+    }.bind(this));
+}, // Connect to the peer by the signalling channel.
+SimpleDataPeer.prototype.negotiateConnection = function() {
+    this.pcState = SimpleDataPeerState.CONNECTING, this.runWhenReady(function() {
+        this.pc.createOffer(this.onDescription.bind(this), function(e) {
+            console.error(this.peerName + ": createOffer failed: ", e.toString()), this.pcState = SimpleDataPeerState.DISCONNECTED;
+        }.bind(this));
+    }.bind(this));
+}, SimpleDataPeer.prototype.close = function() {
+    "closed" !== this.pc.signalingState && this.pc.close();
+}, SimpleDataPeer.prototype.addDataChannel = function(channelId, channel) {
+    var callbacks = this.dataChannelCallbacks;
+    this.channels[channelId] = channel, "connecting" === channel.readyState && (channel.onopen = callbacks.onOpenFn.bind(this, channel, {
+        label: channelId
+    })), channel.onclose = callbacks.onCloseFn.bind(this, channel, {
+        label: channelId
+    }), channel.onmessage = callbacks.onMessageFn.bind(this, channel, {
+        label: channelId
+    }), channel.onerror = callbacks.onErrorFn.bind(this, channel, {
+        label: channel
+    });
+}, // When we get our description, we set it to be our local description and
 // send it to the peer.
-SimpleDataPeer.prototype.onDescription = function (description) {
-  this.runWhenReady(function () {
-    if (this.sendSignalMessage) {
-      this.pc.setLocalDescription(
-        description,
-        function () {
-          //console.log(this.peerName + ": setLocalDescription succeeded");
-          this.sendSignalMessage(JSON.stringify({'sdp': description}));
-        }.bind(this),
-        function (e) {
-          console.error(this.peerName + ": " +
-              "setLocalDescription failed:", e);
-        }.bind(this)
-      );
-    } else {
-      console.error(this.peerName + ": " +
-          "_onDescription: _sendSignalMessage is not set, so we did not " +
-              "set the local description. ");
-    }
-  }.bind(this));
-};
-
-SimpleDataPeer.prototype.onNegotiationNeeded = function (e) {
-  //console.log(this.peerName + ": " + "_onNegotiationNeeded", this._pc, e);
-  if (this.pcState !== SimpleDataPeerState.DISCONNECTED) {
-    // Negotiation messages are falsely requested for new data channels.
-    //   https://code.google.com/p/webrtc/issues/detail?id=2431
-    // This code is a hack to simply reset the same local and remote
-    // description which will trigger the appropriate data channel open event.
-    // TODO: fix/remove this when Chrome issue is fixed.
-    var logSuccess = function (op) {
-      return function () {
-        //console.log(this.peerName + ": " + op + " succeeded ");
-      }.bind(this);
-    }.bind(this),
-      logFail = function (op) {
-        return function (e) {
-          //console.log(this.peerName + ": " + op + " failed: " + e);
+SimpleDataPeer.prototype.onDescription = function(description) {
+    this.runWhenReady(function() {
+        this.sendSignalMessage ? this.pc.setLocalDescription(description, function() {
+            //console.log(this.peerName + ": setLocalDescription succeeded");
+            this.sendSignalMessage(JSON.stringify({
+                sdp: description
+            }));
+        }.bind(this), function(e) {
+            console.error(this.peerName + ": setLocalDescription failed:", e);
+        }.bind(this)) : console.error(this.peerName + ": _onDescription: _sendSignalMessage is not set, so we did not set the local description. ");
+    }.bind(this));
+}, SimpleDataPeer.prototype.onNegotiationNeeded = function() {
+    //console.log(this.peerName + ": " + "_onNegotiationNeeded", this._pc, e);
+    if (this.pcState !== SimpleDataPeerState.DISCONNECTED) {
+        // Negotiation messages are falsely requested for new data channels.
+        //   https://code.google.com/p/webrtc/issues/detail?id=2431
+        // This code is a hack to simply reset the same local and remote
+        // description which will trigger the appropriate data channel open event.
+        // TODO: fix/remove this when Chrome issue is fixed.
+        var logSuccess = function() {
+            return function() {}.bind(this);
+        }.bind(this), logFail = function() {
+            return function() {}.bind(this);
         }.bind(this);
-      }.bind(this);
-    if (this.pc.localDescription && this.pc.remoteDescription &&
-        this.pc.localDescription.type === "offer") {
-      this.pc.setLocalDescription(this.pc.localDescription,
-                                   logSuccess("setLocalDescription"),
-                                   logFail("setLocalDescription"));
-      this.pc.setRemoteDescription(this.pc.remoteDescription,
-                                    logSuccess("setRemoteDescription"),
-                                    logFail("setRemoteDescription"));
-    } else if (this.pc.localDescription && this.pc.remoteDescription &&
-        this.pc.localDescription.type === "answer") {
-      this.pc.setRemoteDescription(this.pc.remoteDescription,
-                                    logSuccess("setRemoteDescription"),
-                                    logFail("setRemoteDescription"));
-      this.pc.setLocalDescription(this.pc.localDescription,
-                                   logSuccess("setLocalDescription"),
-                                   logFail("setLocalDescription"));
+        return void (this.pc.localDescription && this.pc.remoteDescription && "offer" === this.pc.localDescription.type ? (this.pc.setLocalDescription(this.pc.localDescription, logSuccess("setLocalDescription"), logFail("setLocalDescription")), 
+        this.pc.setRemoteDescription(this.pc.remoteDescription, logSuccess("setRemoteDescription"), logFail("setRemoteDescription"))) : this.pc.localDescription && this.pc.remoteDescription && "answer" === this.pc.localDescription.type && (this.pc.setRemoteDescription(this.pc.remoteDescription, logSuccess("setRemoteDescription"), logFail("setRemoteDescription")), 
+        this.pc.setLocalDescription(this.pc.localDescription, logSuccess("setLocalDescription"), logFail("setLocalDescription"))));
     }
-    return;
-  }
-  this.negotiateConnection();
-};
-
-SimpleDataPeer.prototype.onIceCallback = function (event) {
-  if (event.candidate) {
-    // Send IceCandidate to peer.
+    this.negotiateConnection();
+}, SimpleDataPeer.prototype.onIceCallback = function(event) {
+    event.candidate && (// Send IceCandidate to peer.
     //console.log(this.peerName + ": " + "ice callback with candidate", event);
-    if (this.sendSignalMessage) {
-      this.sendSignalMessage(JSON.stringify({'candidate': event.candidate}));
-    } else {
-      console.warn(this.peerName + ": " + "_onDescription: _sendSignalMessage is not set.");
-    }
-  }
-};
-
-SimpleDataPeer.prototype.onSignalingStateChange = function () {
-  //console.log(this.peerName + ": " + "_onSignalingStateChange: ", this._pc.signalingState);
-  if (this.pc.signalingState === "stable") {
-    this.pcState = SimpleDataPeerState.CONNECTED;
-  }
-};
-
-SimpleDataPeer.prototype.onDataChannel = function (event) {
-  this.addDataChannel(event.channel.label, event.channel);
-  // RTCDataChannels created by a RTCDataChannelEvent have an initial
-  // state of open, so the onopen event for the channel will not
-  // fire. We need to fire the onOpenDataChannel event here
-  // http://www.w3.org/TR/webrtc/#idl-def-RTCDataChannelState
-  this.dataChannelCallbacks.onOpenFn(event.channel,
-                                      {label: event.channel.label});
-};
-
-// _signallingChannel is a channel for emitting events back to the freedom Hub.
-function PeerConnection(portModule, dispatchEvent,
-                        RTCPeerConnection, RTCSessionDescription) {
-  // Channel for emitting events to consumer.
-  this.dispatchEvent = dispatchEvent;
-
-  // a (hopefully unique) ID for debugging.
-  this.peerName = "p" + Math.random();
-
-  // This is the portApp (defined in freedom/src/port-app.js). A way to speak
-  // to freedom.
-  this.freedomModule = portModule;
-
-  // For tests we may mock out the PeerConnection and
-  // SessionDescription implementations
-  this.RTCPeerConnection = RTCPeerConnection;
-  this.RTCSessionDescription = RTCSessionDescription;
-
-  // This is the a channel to send signalling messages.
-  this.signallingChannel = null;
-
-  // The DataPeer object for talking to the peer.
-  this.peer = null;
-
-  // The Core object for managing channels.
-  this.freedomModule.once('core', function (Core) {
-    this.core = new Core();
-  }.bind(this));
-  this.freedomModule.emit(this.freedomModule.controlChannel, {
-    type: 'core request delegated to peerconnection',
-    request: 'core'
-  });
-}
-
-// Start a peer connection using the given freedomChannelId as the way to
+    this.sendSignalMessage ? this.sendSignalMessage(JSON.stringify({
+        candidate: event.candidate
+    })) : console.warn(this.peerName + ": _onDescription: _sendSignalMessage is not set."));
+}, SimpleDataPeer.prototype.onSignalingStateChange = function() {
+    //console.log(this.peerName + ": " + "_onSignalingStateChange: ", this._pc.signalingState);
+    "stable" === this.pc.signalingState && (this.pcState = SimpleDataPeerState.CONNECTED);
+}, SimpleDataPeer.prototype.onDataChannel = function(event) {
+    this.addDataChannel(event.channel.label, event.channel), // RTCDataChannels created by a RTCDataChannelEvent have an initial
+    // state of open, so the onopen event for the channel will not
+    // fire. We need to fire the onOpenDataChannel event here
+    // http://www.w3.org/TR/webrtc/#idl-def-RTCDataChannelState
+    this.dataChannelCallbacks.onOpenFn(event.channel, {
+        label: event.channel.label
+    });
+}, // Start a peer connection using the given freedomChannelId as the way to
 // communicate with the peer. The argument |freedomChannelId| is a way to speak
 // to an identity provide to send them SDP headers negotiate the address/port to
 // setup the peer to peerConnection.
@@ -5839,100 +3839,65 @@ function PeerConnection(portModule, dispatchEvent,
 //   peerName: string,   // For pretty printing messages about this peer.
 //   debug: boolean           // should we add extra
 // }
-PeerConnection.prototype.setup = function (signallingChannelId, peerName,
-                                            stunServers, continuation) {
-
-  this.peerName = peerName;
-  var mocks = {RTCPeerConnection: this.RTCPeerConnection,
-               RTCSessionDescription: this.RTCSessionDescription};
-  var self = this;
-  var dataChannelCallbacks = {
-    // onOpenFn is called at the point messages will actually get through.
-    onOpenFn: function (dataChannel, info) {
-      self.dispatchEvent("onOpenDataChannel",
-                         info.label);
-    },
-    onCloseFn: function (dataChannel, info) {
-      self.dispatchEvent("onCloseDataChannel",
-                         { channelId: info.label});
-    },
-    // Default on real message prints it to console.
-    onMessageFn: function (dataChannel, info, event) {
-      if (event.data instanceof ArrayBuffer) {
-        self.dispatchEvent('onReceived', {
-          'channelLabel': info.label,
-          'buffer': event.data
-        });
-      } else if (typeof (event.data) === 'string') {
-        self.dispatchEvent('onReceived', {
-          'channelLabel': info.label,
-          'text': event.data
-        });
-      }
-    },
-    // Default on error, prints it.
-    onErrorFn: function (dataChannel, info, err) {
-      console.error(dataChannel.peerName + ": dataChannel(" +
-                    dataChannel.dataChannel.label + "): error: ", err);
-    }
-  };
-
-  this.peer = new SimpleDataPeer(this.peerName, stunServers,
-                                 dataChannelCallbacks, mocks);
-
-  // Setup link between Freedom messaging and _peer's signalling.
-  // Note: the signalling channel should only be sending receiveing strings.
-  this.core.bindChannel(signallingChannelId, function (channel) {
-    this.signallingChannel = channel;
-    this.peer.setSendSignalMessage(function (msg) {
-      this.signallingChannel.emit('message', msg);
+PeerConnection.prototype.setup = function(signallingChannelId, peerName, stunServers, continuation) {
+    this.peerName = peerName;
+    var mocks = {
+        RTCPeerConnection: this.RTCPeerConnection,
+        RTCSessionDescription: this.RTCSessionDescription
+    }, self = this, dataChannelCallbacks = {
+        // onOpenFn is called at the point messages will actually get through.
+        onOpenFn: function(dataChannel, info) {
+            self.dispatchEvent("onOpenDataChannel", info.label);
+        },
+        onCloseFn: function(dataChannel, info) {
+            self.dispatchEvent("onCloseDataChannel", {
+                channelId: info.label
+            });
+        },
+        // Default on real message prints it to console.
+        onMessageFn: function(dataChannel, info, event) {
+            event.data instanceof ArrayBuffer ? self.dispatchEvent("onReceived", {
+                channelLabel: info.label,
+                buffer: event.data
+            }) : "string" == typeof event.data && self.dispatchEvent("onReceived", {
+                channelLabel: info.label,
+                text: event.data
+            });
+        },
+        // Default on error, prints it.
+        onErrorFn: function(dataChannel, info, err) {
+            console.error(dataChannel.peerName + ": dataChannel(" + dataChannel.dataChannel.label + "): error: ", err);
+        }
+    };
+    this.peer = new SimpleDataPeer(this.peerName, stunServers, dataChannelCallbacks, mocks), 
+    // Setup link between Freedom messaging and _peer's signalling.
+    // Note: the signalling channel should only be sending receiveing strings.
+    this.core.bindChannel(signallingChannelId, function(channel) {
+        this.signallingChannel = channel, this.peer.setSendSignalMessage(function(msg) {
+            this.signallingChannel.emit("message", msg);
+        }.bind(this)), this.signallingChannel.on("message", this.peer.handleSignalMessage.bind(this.peer)), 
+        this.signallingChannel.emit("ready"), continuation();
     }.bind(this));
-    this.signallingChannel.on('message',
-        this.peer.handleSignalMessage.bind(this.peer));
-    this.signallingChannel.emit('ready');
-    continuation();
-  }.bind(this));
-
-};
-
-// TODO: delay continuation until the open callback from _peer is called.
-PeerConnection.prototype.openDataChannel = function (channelId, continuation) {
-  this.peer.openDataChannel(channelId, continuation);
-};
-
-PeerConnection.prototype.closeDataChannel = function (channelId, continuation) {
-  this.peer.closeChannel(channelId);
-  continuation();
-};
-
-// Called to send a message over the given datachannel to a peer. If the data
+}, // TODO: delay continuation until the open callback from _peer is called.
+PeerConnection.prototype.openDataChannel = function(channelId, continuation) {
+    this.peer.openDataChannel(channelId, continuation);
+}, PeerConnection.prototype.closeDataChannel = function(channelId, continuation) {
+    this.peer.closeChannel(channelId), continuation();
+}, // Called to send a message over the given datachannel to a peer. If the data
 // channel doesn't already exist, the DataPeer creates it.
-PeerConnection.prototype.send = function (sendInfo, continuation) {
-  var objToSend = sendInfo.text || sendInfo.buffer || sendInfo.binary;
-  if (typeof objToSend === 'undefined') {
-    console.error("No valid data to send has been provided.", sendInfo);
-    return;
-  }
-  //DEBUG
-  // objToSend = new ArrayBuffer(4);
-  //DEBUG
-  this.peer.send(sendInfo.channelLabel, objToSend, continuation);
-};
-
-PeerConnection.prototype.getBufferedAmount = function (channelId, continuation) {
-  continuation(this.peer.getBufferedAmount(channelId));
-};
-
-PeerConnection.prototype.close = function (continuation) {
-  this.peer.close();
-  continuation();
-  this.dispatchEvent("onClose");
-};
-
-fdom.apis.register('core.peerconnection', PeerConnection);
+PeerConnection.prototype.send = function(sendInfo, continuation) {
+    var objToSend = sendInfo.text || sendInfo.buffer || sendInfo.binary;
+    //DEBUG
+    // objToSend = new ArrayBuffer(4);
+    //DEBUG
+    return "undefined" == typeof objToSend ? void console.error("No valid data to send has been provided.", sendInfo) : void this.peer.send(sendInfo.channelLabel, objToSend, continuation);
+}, PeerConnection.prototype.getBufferedAmount = function(channelId, continuation) {
+    continuation(this.peer.getBufferedAmount(channelId));
+}, PeerConnection.prototype.close = function(continuation) {
+    this.peer.close(), continuation(), this.dispatchEvent("onClose");
+}, fdom.apis.register("core.peerconnection", PeerConnection);
 
 /*globals fdom, localStorage */
-/* indent:2,sloppy:true */
 /**
  * A FreeDOM core.storage provider that depends on localStorage
  * Thus, this only works in the context of a webpage and has
@@ -5944,73 +3909,55 @@ fdom.apis.register('core.peerconnection', PeerConnection);
  * @private
  * @param {App} app The application creating this provider.
  */
-var Storage_unprivileged = function (app, dispatchEvent) {
-  this.app = app;
-  fdom.util.handleEvents(this);
+var Storage_unprivileged = function(app) {
+    this.app = app, fdom.util.handleEvents(this);
 };
 
 /**
  * Lists keys in the storage repository
  * @method keys
  */
-Storage_unprivileged.prototype.keys = function (continuation) {
-  var result = [],
-    i;
-  for (i = 0; i < localStorage.length; i += 1) {
-    result.push(localStorage.key(i));
-  }
-  continuation(result);
-};
-
-/**
+Storage_unprivileged.prototype.keys = function(continuation) {
+    var i, result = [];
+    for (i = 0; i < localStorage.length; i += 1) result.push(localStorage.key(i));
+    continuation(result);
+}, /**
  * Get a key from the storage repository.
  * @param {String} key The item to get from storage.
  * @method get
  */
-Storage_unprivileged.prototype.get = function (key, continuation) {
-  try {
-    var val = localStorage.getItem(key);
-    continuation(val);
-  } catch (e) {
-    continuation(null);
-  }
-};
-
-/**
+Storage_unprivileged.prototype.get = function(key, continuation) {
+    try {
+        var val = localStorage.getItem(key);
+        continuation(val);
+    } catch (e) {
+        continuation(null);
+    }
+}, /**
  * Set a key in the storage repository.
  * @param {String} key The item to save in storage.
  * @param {String} value The value to save in storage.
  * @method set
  */
-Storage_unprivileged.prototype.set = function (key, value, continuation) {
-  localStorage.setItem(key, value);
-  continuation();
-};
-
-/**
+Storage_unprivileged.prototype.set = function(key, value, continuation) {
+    localStorage.setItem(key, value), continuation();
+}, /**
  * Remove a key from the storage repository.
  * @param {String} key The item to remove from storage;
  * @method remove
  */
-Storage_unprivileged.prototype.remove = function (key, continuation) {
-  localStorage.removeItem(key);
-  continuation();
-};
-
-/**
+Storage_unprivileged.prototype.remove = function(key, continuation) {
+    localStorage.removeItem(key), continuation();
+}, /**
  * Reset the contents of the storage repository.
  * @method clear
  */
-Storage_unprivileged.prototype.clear = function (continuation) {
-  localStorage.clear();
-  continuation();
-};
-
-/** REGISTER PROVIDER **/
+Storage_unprivileged.prototype.clear = function(continuation) {
+    localStorage.clear(), continuation();
+}, /** REGISTER PROVIDER **/
 fdom.apis.register("core.storage", Storage_unprivileged);
 
 /*globals fdom, document */
-/* indent:2,sloppy:true */
 /**
  * A FreeDOM view is provided as a core service for displaying some UI.
  * Implementation is currently designed as a sandboxed iFrame that the
@@ -6021,12 +3968,9 @@ fdom.apis.register("core.storage", Storage_unprivileged);
  * @private
  * @param {App} app The application creating this provider.
  */
-var View_unprivileged = function (app, dispatchEvent) {
-  this.dispatchEvent = dispatchEvent;
-  this.host = null;
-  this.win = null;
-  this.app = app;
-  fdom.util.handleEvents(this);
+var View_unprivileged = function(app, dispatchEvent) {
+    this.dispatchEvent = dispatchEvent, this.host = null, this.win = null, this.app = app, 
+    fdom.util.handleEvents(this);
 };
 
 /**
@@ -6037,215 +3981,79 @@ var View_unprivileged = function (app, dispatchEvent) {
  * @param {Object} what What UI to load.
  * @param {Function} continuation Function to call when view is loaded.
  */
-View_unprivileged.prototype.open = function (name, what, continuation) {
-  this.host = document.createElement("div");
-  this.host.style.width = "100%";
-  this.host.style.height = "100%";
-  this.host.style.display = "relative";
-
-  var container = document.body,
-    config = this.app.manifest.views,
-    root,
-    frame;
-  if (config && config[name] && document.getElementById(name)) {
-    container = document.getElementById(name);
-  }
-
-  container.appendChild(this.host);
-  root = this.host;
-  // TODO(willscott): Support shadow root as available.
-  // if (this.host['webkitCreateShadowRoot']) {
-  //   root = this.host['webkitCreateShadowRoot']();
-  // }
-  frame = document.createElement("iframe");
-  frame.setAttribute("sandbox", "allow-scripts allow-forms");
-  if (what.file) {
-    fdom.resources.get(this.app.manifestId, what.file).then(function (fname) {
-      this.finishOpen(root, frame, fname, continuation);
-    }.bind(this));
-  } else if (what.code) {
-    this.finishOpen(root, frame, "data:text/html;charset=utf-8," + what.code, continuation);
-  } else {
-    continuation(false);
-  }
-};
-
-View_unprivileged.prototype.finishOpen = function (root, frame, src, continuation) {
-  frame.src = src;
-  frame.style.width = "100%";
-  frame.style.height = "100%";
-  frame.style.border = "0";
-  frame.style.background = "transparent";
-  root.appendChild(frame);
-
-  this.app.config.global.addEventListener('message', this.onMessage.bind(this), true);
-
-  this.win = frame;
-  continuation({});
-};
-
-View_unprivileged.prototype.show = function (continuation) {
-  continuation();
-};
-
-View_unprivileged.prototype.postMessage = function (args, continuation) {
-  this.win.contentWindow.postMessage(args, '*');
-  continuation();
-};
-
-View_unprivileged.prototype.close = function (continuation) {
-  if (this.host) {
-    this.host.parentNode.removeChild(this.host);
-    this.host = null;
-  }
-  if (this.win) {
-    this.app.config.global.removeEventListener('message', this.onMessage.bind(this), true);
-    this.win = null;
-  }
-  continuation();
-};
-
-View_unprivileged.prototype.onMessage = function (m) {
-  if (m.source === this.win.contentWindow) {
-    this.dispatchEvent('message', m.data);
-  }
-};
-
-fdom.apis.register("core.view", View_unprivileged);
-
-/*globals freedom:true, fdom, WebSocket, DEBUG, console*/
-/* sloppy:true*/
-
-function WS(app, dispatchEvent, url, protocols, testWebSocket) {
-  var WSImplementation;
-  // Sub in a mock WebSocket implementation for unit testing.
-  if (testWebSocket) {
-    WSImplementation = testWebSocket;
-  } else {
-    WSImplementation = WebSocket;
-  }
-
-  this.dispatchEvent = dispatchEvent;
-  try {
-    if (protocols && protocols.length > 0) {
-      this.websocket = new WSImplementation(url, protocols);
-    } else {
-      this.websocket = new WSImplementation(url);
-    }
-  } catch (e) {
-    var error = {};
-    if (e instanceof SyntaxError) {
-      error.errcode = 'SYNTAX';
-    } else {
-      error.errcode = e.name;
-    }
-    error.message = e.message;
-    dispatchEvent('onError', error);
-    return;
-  }
-
-  this.websocket.onopen = this.onOpen.bind(this);
-  this.websocket.onclose = this.onClose.bind(this);
-  this.websocket.onmessage = this.onMessage.bind(this);
-  this.websocket.onerror = this.onError.bind(this);
-}
-
-WS.prototype.send = function(data, continuation) {
-  var toSend = data.text || data.binary || data.buffer;
-  var errcode, message;
-
-  if (toSend) {
-    try {
-      this.websocket.send(toSend);
+View_unprivileged.prototype.open = function(name, what, continuation) {
+    this.host = document.createElement("div"), this.host.style.width = "100%", this.host.style.height = "100%", 
+    this.host.style.display = "relative";
+    var root, frame, container = document.body, config = this.app.manifest.views;
+    config && config[name] && document.getElementById(name) && (container = document.getElementById(name)), 
+    container.appendChild(this.host), root = this.host, // TODO(willscott): Support shadow root as available.
+    // if (this.host['webkitCreateShadowRoot']) {
+    //   root = this.host['webkitCreateShadowRoot']();
+    // }
+    frame = document.createElement("iframe"), frame.setAttribute("sandbox", "allow-scripts allow-forms"), 
+    what.file ? fdom.resources.get(this.app.manifestId, what.file).then(function(fname) {
+        this.finishOpen(root, frame, fname, continuation);
+    }.bind(this)) : what.code ? this.finishOpen(root, frame, "data:text/html;charset=utf-8," + what.code, continuation) : continuation(!1);
+}, View_unprivileged.prototype.finishOpen = function(root, frame, src, continuation) {
+    frame.src = src, frame.style.width = "100%", frame.style.height = "100%", frame.style.border = "0", 
+    frame.style.background = "transparent", root.appendChild(frame), this.app.config.global.addEventListener("message", this.onMessage.bind(this), !0), 
+    this.win = frame, continuation({});
+}, View_unprivileged.prototype.show = function(continuation) {
+    continuation();
+}, View_unprivileged.prototype.postMessage = function(args, continuation) {
+    this.win.contentWindow.postMessage(args, "*"), continuation();
+}, View_unprivileged.prototype.close = function(continuation) {
+    this.host && (this.host.parentNode.removeChild(this.host), this.host = null), this.win && (this.app.config.global.removeEventListener("message", this.onMessage.bind(this), !0), 
+    this.win = null), continuation();
+}, View_unprivileged.prototype.onMessage = function(m) {
+    m.source === this.win.contentWindow && this.dispatchEvent("message", m.data);
+}, fdom.apis.register("core.view", View_unprivileged), WS.prototype.send = function(data, continuation) {
+    var errcode, message, toSend = data.text || data.binary || data.buffer;
+    if (toSend) try {
+        this.websocket.send(toSend);
     } catch (e) {
-      if (e instanceof SyntaxError) {
-        errcode = "SYNTAX";
-      } else {
-        errcode = "INVALID_STATE";
-      }
-      message = e.message;
+        errcode = e instanceof SyntaxError ? "SYNTAX" : "INVALID_STATE", message = e.message;
+    } else errcode = "BAD_SEND", message = "No text, binary, or buffer data found.";
+    errcode ? continuation(void 0, {
+        errcode: errcode,
+        message: message
+    }) : continuation();
+}, WS.prototype.getReadyState = function(continuation) {
+    continuation(this.websocket.readyState);
+}, WS.prototype.getBufferedAmount = function(continuation) {
+    continuation(this.websocket.bufferedAmount);
+}, WS.prototype.close = function(code, reason, continuation) {
+    try {
+        code && reason ? this.websocket.close(code, reason) : this.websocket.close(), continuation();
+    } catch (e) {
+        var errorCode;
+        errorCode = e instanceof SyntaxError ? "SYNTAX" : "INVALID_ACCESS", continuation(void 0, {
+            errcode: errorCode,
+            message: e.message
+        });
     }
-  } else {
-    errcode = "BAD_SEND";
-    message = "No text, binary, or buffer data found.";
-  }
-
-  if (errcode) {
-    continuation(undefined, {
-      errcode: errcode,
-      message: message
+}, WS.prototype.onOpen = function() {
+    this.dispatchEvent("onOpen");
+}, WS.prototype.onMessage = function(event) {
+    var data = {
+        text: void 0,
+        binary: void 0,
+        buffer: void 0
+    };
+    event.data instanceof ArrayBuffer ? data.buffer = data : event.data instanceof Blob ? data.binary = data : "string" == typeof event.data && (data.text = event.data), 
+    this.dispatchEvent("onMessage", data);
+}, WS.prototype.onError = function() {
+    // Nothing to pass on
+    // See: http://stackoverflow.com/a/18804298/300539
+    this.dispatchEvent("onError");
+}, WS.prototype.onClose = function(event) {
+    this.dispatchEvent("onClose", {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean
     });
-  } else {
-    continuation();
-  }
-};
-
-WS.prototype.getReadyState = function(continuation) {
-  continuation(this.websocket.readyState);
-};
-
-WS.prototype.getBufferedAmount = function(continuation) {
-  continuation(this.websocket.bufferedAmount);
-};
-
-WS.prototype.close = function(code, reason, continuation) {
-  try {
-    if (code && reason) {
-      this.websocket.close(code, reason);
-    } else {
-      this.websocket.close();
-    }
-    continuation();
-  } catch (e) {
-    var errorCode;
-    if (e instanceof SyntaxError) {
-      errorCode = "SYNTAX";
-    } else {
-      errorCode = "INVALID_ACCESS";
-    }
-    continuation(undefined,{
-      errcode: errorCode,
-      message: e.message
-    });
-  }
-};
-
-WS.prototype.onOpen = function(event) {
-  this.dispatchEvent('onOpen');
-};
-
-WS.prototype.onMessage = function(event) {
-  var data = {
-    text: undefined,
-    binary: undefined,
-    buffer: undefined
-  };
-  if (event.data instanceof ArrayBuffer) {
-    data.buffer = data;
-  } else if (event.data instanceof Blob) {
-    data.binary = data;
-  } else if (typeof event.data === 'string') {
-    data.text = event.data;
-  }
-  this.dispatchEvent('onMessage', data);
-};
-
-WS.prototype.onError = function(event) {
-  // Nothing to pass on
-  // See: http://stackoverflow.com/a/18804298/300539
-  this.dispatchEvent('onError');
-};
-
-WS.prototype.onClose = function(event) {
-  this.dispatchEvent('onClose',
-                     {code: event.code,
-                      reason: event.reason,
-                      wasClean: event.wasClean});
-};
-
-fdom.apis.register('core.websocket', WS);
-
-
+}, fdom.apis.register("core.websocket", WS);
+//# sourceMappingURL=freedom.map
     // Create default context.
     global['freedom'] = fdom.setup(global, freedom_src);
   })();

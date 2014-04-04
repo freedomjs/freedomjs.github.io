@@ -372,7 +372,8 @@ fdom.util.handleEvents = function(obj) {
  * @for util
  * @static
  */
-fdom.util.isAppContext=function() {
+/*!@preserve StartAppContextDeclaration*/
+fdom.util.isAppContext = function() {
   return (typeof document === &#x27;undefined&#x27;);
 };
 
@@ -384,18 +385,17 @@ fdom.util.isAppContext=function() {
  * @static
  */
 fdom.util.forceAppContext = function(src) {
-  var declaration = fdom.util.isAppContext.name + &quot;=function()&quot;,
-      definition = &quot; { return true; }&quot;,
-      idx = src.indexOf(declaration),
+  var definition = &quot;function () { return true; }&quot;,
+      idx = src.indexOf(&#x27;StartAppContextDeclaration&#x27;),
+      funcidx = src.indexOf(&#x27;function&#x27;, idx),
       source,
       blob;
-  if (idx === -1) {
-    fdom.debug.warn(&#x27;Unable to force App Context, source is in unexpected condition.&#x27;);
+  if (idx === -1 || funcidx === -1) {
+    fdom.debug.error(&#x27;Unable to force App Context, source is in unexpected condition.&#x27;);
     return;
   }
-  source = src.substr(0, idx + declaration.length) + definition +
-      &#x27;|| function()&#x27; +
-      src.substr(idx + declaration.length);
+  source = src.substr(0, funcidx) +  definition + &#x27; || &#x27; +
+      src.substr(funcidx);
   blob = fdom.util.getBlob(source, &#x27;text/javascript&#x27;);
   return fdom.util.getURL(blob);
 };

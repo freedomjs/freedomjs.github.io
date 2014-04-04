@@ -2567,7 +2567,7 @@
         },
         {
             "file": "src/util.js",
-            "line": 259,
+            "line": 260,
             "description": "Provide a version of src where the 'isAppContext' function will return true.\nUsed for creating app contexts which may not be able to determine that they\nneed to start up as applications by themselves.",
             "itemtype": "method",
             "name": "forceAppContext",
