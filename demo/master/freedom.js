@@ -4059,4 +4059,4 @@ View_unprivileged.prototype.open = function(name, what, continuation) {
   })();
 
 })(this);
-
+//# sourceMappingURL=freedom.map
