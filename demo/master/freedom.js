@@ -2028,6 +2028,19 @@ Resource.prototype.addResolver = function(resolver) {
 Resource.prototype.addRetriever = function(proto, retriever) {
     return this.contentRetreivers[proto] ? void fdom.debug.warn("Unwilling to override file retrieval for " + proto) : void (this.contentRetreivers[proto] = retriever);
 }, /**
+ * Determine if a URL is an absolute URL of a given Scheme.
+ * @method hasScheme
+ * @static
+ * @private
+ * @param {String[]} protocols Whitelisted protocols
+ * @param {String} URL the URL to match.
+ * @returns {Boolean} If the URL is an absolute example of one of the schemes.
+ */
+Resource.hasScheme = function(protocols, url) {
+    var i;
+    for (i = 0; i < protocols.length; i += 1) if (0 === url.indexOf(protocols[i] + "://")) return !0;
+    return !1;
+}, /**
  * Resolve URLs which can be accessed using standard HTTP requests.
  * @method httpResolver
  * @private
@@ -2038,15 +2051,11 @@ Resource.prototype.addRetriever = function(proto, retriever) {
  * @returns {Boolean} True if the URL could be resolved.
  */
 Resource.prototype.httpResolver = function(manifest, url, resolve) {
-    var dirname, i, protocolIdx, pathIdx, path, base, protocols = [ "http", "https", "chrome", "chrome-extension", "resource" ];
-    for (i = 0; i < protocols.length; i += 1) if (0 === url.indexOf(protocols[i] + "://")) return resolve(url), 
-    !0;
-    if (!manifest) return !1;
-    for (i = 0; i < protocols.length; i += 1) if (0 === manifest.indexOf(protocols[i] + "://") && -1 === url.indexOf("://")) return dirname = manifest.substr(0, manifest.lastIndexOf("/")), 
+    var dirname, protocolIdx, pathIdx, path, base, protocols = [ "http", "https", "chrome", "chrome-extension", "resource" ];
+    return Resource.hasScheme(protocols, url) ? (resolve(url), !0) : manifest && Resource.hasScheme(protocols, manifest) && -1 === url.indexOf("://") ? (dirname = manifest.substr(0, manifest.lastIndexOf("/")), 
     protocolIdx = dirname.indexOf("://"), pathIdx = protocolIdx + 3 + dirname.substr(protocolIdx + 3).indexOf("/"), 
     path = dirname.substr(pathIdx), base = dirname.substr(0, pathIdx), resolve(0 === url.indexOf("/") ? base + url : base + path + "/" + url), 
-    !0;
-    return !1;
+    !0) : !1;
 }, /**
  * Resolve URLs which are self-describing.
  * @method nullResolver
@@ -2058,10 +2067,8 @@ Resource.prototype.httpResolver = function(manifest, url, resolve) {
  * @returns {Boolean} True if the URL could be resolved.
  */
 Resource.prototype.nullResolver = function(manifest, url, resolve) {
-    var i, protocols = [ "manifest", "data;base64" ];
-    for (i = 0; i < protocols.length; i += 1) if (0 === url.indexOf(protocols[i] + "://")) return resolve(url), 
-    !0;
-    return !1;
+    var protocols = [ "manifest", "data;base64" ];
+    return Resource.hasScheme(protocols, url) ? (resolve(url), !0) : !1;
 }, /**
  * Retrieve manifest content from a self-descriptive manifest url.
  * These urls are used to reference a manifest without requiring subsequent,

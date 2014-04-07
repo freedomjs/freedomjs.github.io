@@ -253,6 +253,15 @@ and provide lookup and migration of resources.</p>
                             </li>
                         
                             <li class="index-item method private">
+                                <a href="#method_hasScheme">hasScheme</a>
+
+                                
+                                    <span class="flag static">static</span>
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method private">
                                 <a href="#method_httpResolver">httpResolver</a>
 
                                 
@@ -745,6 +754,139 @@ to retrieve with a protocol that it is able to handle.</p>
 </div>
 
                 
+                    <div id="method_hasScheme" class="method item private">
+    <h3 class="name"><code>hasScheme</code></h3>
+
+    
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>protocols</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>URL</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+        <span class="returns-inline">
+            <span class="type">Boolean</span>
+        </span>
+    
+
+    
+
+    
+        <span class="flag private">private</span>
+    
+
+    
+
+    
+        <span class="flag static">static</span>
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_resource.js.html#l124"><code>src&#x2F;resource.js:124</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Determine if a URL is an absolute URL of a given Scheme.</p>
+
+    </div>
+
+    
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">protocols</code>
+                        <span class="type">String</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>Whitelisted protocols</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">URL</code>
+                        <span class="type">String</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>the URL to match.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
+    
+
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">Boolean</span>:
+                    
+                    <p>If the URL is an absolute example of one of the schemes.</p>
+
+                
+            </div>
+        </div>
+    
+
+    
+</div>
+
+                
                     <div id="method_httpResolver" class="method item private">
     <h3 class="name"><code>httpResolver</code></h3>
 
@@ -811,7 +953,7 @@ to retrieve with a protocol that it is able to handle.</p>
             
         
         
-        <a href="../files/src_resource.js.html#l124"><code>src&#x2F;resource.js:124</code></a>
+        <a href="../files/src_resource.js.html#l143"><code>src&#x2F;resource.js:143</code></a>
         
         </p>
 
@@ -976,7 +1118,7 @@ to retrieve with a protocol that it is able to handle.</p>
             
         
         
-        <a href="../files/src_resource.js.html#l190"><code>src&#x2F;resource.js:190</code></a>
+        <a href="../files/src_resource.js.html#l200"><code>src&#x2F;resource.js:200</code></a>
         
         </p>
 
@@ -1123,7 +1265,7 @@ potentially non-CORS requests.</p>
             
         
         
-        <a href="../files/src_resource.js.html#l169"><code>src&#x2F;resource.js:169</code></a>
+        <a href="../files/src_resource.js.html#l181"><code>src&#x2F;resource.js:181</code></a>
         
         </p>
 
@@ -1420,7 +1562,7 @@ not cache resolved resources.</p>
             
         
         
-        <a href="../files/src_resource.js.html#l212"><code>src&#x2F;resource.js:212</code></a>
+        <a href="../files/src_resource.js.html#l222"><code>src&#x2F;resource.js:222</code></a>
         
         </p>
 

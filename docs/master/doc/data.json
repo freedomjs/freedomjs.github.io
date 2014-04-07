@@ -2237,6 +2237,34 @@
         {
             "file": "src/resource.js",
             "line": 124,
+            "description": "Determine if a URL is an absolute URL of a given Scheme.",
+            "itemtype": "method",
+            "name": "hasScheme",
+            "static": 1,
+            "access": "private",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "protocols",
+                    "description": "Whitelisted protocols",
+                    "type": "String[]"
+                },
+                {
+                    "name": "URL",
+                    "description": "the URL to match.",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "If the URL is an absolute example of one of the schemes.",
+                "type": "Boolean"
+            },
+            "class": "Resource",
+            "module": "freedom"
+        },
+        {
+            "file": "src/resource.js",
+            "line": 143,
             "description": "Resolve URLs which can be accessed using standard HTTP requests.",
             "itemtype": "method",
             "name": "httpResolver",
@@ -2273,7 +2301,7 @@
         },
         {
             "file": "src/resource.js",
-            "line": 169,
+            "line": 181,
             "description": "Resolve URLs which are self-describing.",
             "itemtype": "method",
             "name": "nullResolver",
@@ -2310,7 +2338,7 @@
         },
         {
             "file": "src/resource.js",
-            "line": 190,
+            "line": 200,
             "description": "Retrieve manifest content from a self-descriptive manifest url.\nThese urls are used to reference a manifest without requiring subsequent,\npotentially non-CORS requests.",
             "itemtype": "method",
             "name": "manifestRetriever",
@@ -2338,7 +2366,7 @@
         },
         {
             "file": "src/resource.js",
-            "line": 212,
+            "line": 222,
             "description": "Retrieve resource contents using an XHR request.",
             "itemtype": "method",
             "name": "xhrRetriever",
@@ -2366,7 +2394,7 @@
         },
         {
             "file": "src/resource.js",
-            "line": 235,
+            "line": 245,
             "description": "Defines fdom.resources as a singleton registry for file management.",
             "class": "Resource",
             "module": "freedom"
@@ -2674,7 +2702,11 @@
         },
         {
             "message": "replacing incorrect tag: returns with return",
-            "line": " src/resource.js:169"
+            "line": " src/resource.js:143"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " src/resource.js:181"
         },
         {
             "message": "replacing incorrect tag: returns with return",
@@ -2698,7 +2730,7 @@
         },
         {
             "message": "Missing item type\nDefines fdom.resources as a singleton registry for file management.",
-            "line": " src/resource.js:235"
+            "line": " src/resource.js:245"
         }
     ]
 }
