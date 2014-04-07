@@ -83,22 +83,6 @@ function PeerConnection(portModule, dispatchEvent, RTCPeerConnection, RTCSession
     });
 }
 
-/*globals freedom:true, fdom, WebSocket, DEBUG, console*/
-function WS(app, dispatchEvent, url, protocols, testWebSocket) {
-    var WSImplementation;
-    // Sub in a mock WebSocket implementation for unit testing.
-    WSImplementation = testWebSocket ? testWebSocket : WebSocket, this.dispatchEvent = dispatchEvent;
-    try {
-        this.websocket = protocols && protocols.length > 0 ? new WSImplementation(url, protocols) : new WSImplementation(url);
-    } catch (e) {
-        var error = {};
-        return error.errcode = e instanceof SyntaxError ? "SYNTAX" : e.name, error.message = e.message, 
-        void dispatchEvent("onError", error);
-    }
-    this.websocket.onopen = this.onOpen.bind(this), this.websocket.onclose = this.onClose.bind(this), 
-    this.websocket.onmessage = this.onMessage.bind(this), this.websocket.onerror = this.onError.bind(this);
-}
-
 !function() {
     var define, requireModule, require, requirejs;
     !function() {
@@ -4007,7 +3991,32 @@ View_unprivileged.prototype.open = function(name, what, continuation) {
     this.win = null), continuation();
 }, View_unprivileged.prototype.onMessage = function(m) {
     m.source === this.win.contentWindow && this.dispatchEvent("message", m.data);
-}, fdom.apis.register("core.view", View_unprivileged), WS.prototype.send = function(data, continuation) {
+}, fdom.apis.register("core.view", View_unprivileged);
+
+/*globals freedom:true, fdom, WebSocket, console*/
+/**
+ * A WebSocket core provider.
+ * @param {port.Module} module The Module requesting this provider
+ * @param {Function} dispatchEvent Function to dispatch events.
+ * @param {String} url The Remote URL to connect with.
+ * @param {String[]} protocols SubProtocols to open.
+ * @param {WebSocket?} socket An alternative socket class to use.
+ */
+var WS = function(module, dispatchEvent, url, protocols, socket) {
+    var WSImplementation = socket || WebSocket;
+    this.dispatchEvent = dispatchEvent;
+    try {
+        this.websocket = protocols ? new WSImplementation(url, protocols) : new WSImplementation(url);
+    } catch (e) {
+        var error = {};
+        return error.errcode = e instanceof SyntaxError ? "SYNTAX" : e.name, error.message = e.message, 
+        void dispatchEvent("onError", error);
+    }
+    this.websocket.onopen = this.onOpen.bind(this), this.websocket.onclose = this.onClose.bind(this), 
+    this.websocket.onmessage = this.onMessage.bind(this), this.websocket.onerror = this.onError.bind(this);
+};
+
+WS.prototype.send = function(data, continuation) {
     var errcode, message, toSend = data.text || data.binary || data.buffer;
     if (toSend) try {
         this.websocket.send(toSend);
@@ -4035,11 +4044,7 @@ View_unprivileged.prototype.open = function(name, what, continuation) {
 }, WS.prototype.onOpen = function() {
     this.dispatchEvent("onOpen");
 }, WS.prototype.onMessage = function(event) {
-    var data = {
-        text: void 0,
-        binary: void 0,
-        buffer: void 0
-    };
+    var data = {};
     event.data instanceof ArrayBuffer ? data.buffer = data : event.data instanceof Blob ? data.binary = data : "string" == typeof event.data && (data.text = event.data), 
     this.dispatchEvent("onMessage", data);
 }, WS.prototype.onError = function() {
