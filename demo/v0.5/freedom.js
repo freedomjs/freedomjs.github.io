@@ -3161,11 +3161,13 @@ fdom.apis.set("core.oauth", {
  *   - Returned in a global list from 'getClients'
  * {
  *   // Mandatory
- *   'userId': 'string',    // Unique ID of user (e.g. alice@gmail.com)
- *   'clientId': 'string',  // Unique ID of client
- *                          // (e.g. alice@gmail.com/Android-23nadsv32f)
- *   'status': 'string',    // Status of the client. 'STATUS' member.
- *   'timestamp': 'number'  // Timestamp of the last seen time of this device.
+ *   'userId': 'string',      // Unique ID of user (e.g. alice@gmail.com)
+ *   'clientId': 'string',    // Unique ID of client
+ *                            // (e.g. alice@gmail.com/Android-23nadsv32f)
+ *   'status': 'string',      // Status of the client. 'STATUS' member.
+ *   'lastUpdated': 'number', // Timestamp of the last time client_state was updated
+ *   'lastSeen': 'number'     // Timestamp of the last seen time of this device.
+ *                            // Note: 'lastSeen' DOES NOT trigger an 'onClientState' event
  * }
  * 
  * A <user_profile>, used in this API, is defined as:
@@ -3176,7 +3178,7 @@ fdom.apis.set("core.oauth", {
  * {
  *   // Mandatory
  *   'userId': 'string',    // Unique ID of user (e.g. alice@gmail.com)
- *   'timestamp': 'number'  // Timestamp of last change to the profile
+ *   'lastUpdated': 'number'  // Timestamp of last change to the profile
  *   // Optional
  *   'name': 'string',      // Name (e.g. Alice)
  *   'url': 'string',       // Homepage URL
@@ -3251,7 +3253,8 @@ fdom.apis.set("social", {
             userId: "string",
             clientId: "string",
             status: "string",
-            timestamp: "number"
+            lastUpdated: "number",
+            lastSeen: "number"
         },
         err: {
             errcode: "string",
@@ -3361,7 +3364,8 @@ fdom.apis.set("social", {
                 userId: "string",
                 clientId: "string",
                 status: "string",
-                timestamp: "number"
+                lastUpdated: "number",
+                lastSeen: "number"
             },
             message: "string"
         }
@@ -3374,7 +3378,7 @@ fdom.apis.set("social", {
         value: {
             // <user_profile>, defined above.
             userId: "string",
-            timestamp: "number",
+            lastUpdated: "number",
             name: "string",
             url: "string",
             imageData: "string"
@@ -3390,7 +3394,8 @@ fdom.apis.set("social", {
             userId: "string",
             clientId: "string",
             status: "string",
-            timestamp: "number"
+            lastUpdated: "number",
+            lastSeen: "number"
         }
     }
 }), /*globals fdom:true */
