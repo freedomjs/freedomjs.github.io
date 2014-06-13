@@ -4214,73 +4214,7 @@ WS.prototype.send = function(data, continuation) {
         reason: event.reason,
         wasClean: event.wasClean
     });
-}, fdom.apis.register("core.websocket", WS), /*globals OAuth, Promise */
-function() {
-    "use strict";
-    /**
-   * Handler for storage events, which relays them to waiting clients.
-   * @param {String} state State provided by the  
-   */
-    function storageListener(state, client, msg) {
-        msg.url.indexOf(state) > -1 && (client.dispatchEvent("oAuthEvent", msg.url), window.removeEventListener("storage", listeners[state], !1), 
-        delete listeners[state]);
-    }
-    var oAuthRedirectId = "freedom.oauth.redirect.handler", listeners = {};
-    /**
-   * If we have a local domain, and freedom.js is loaded at startup, we can use
-   * the local page as a redirect URI.
-   */
-    "undefined" != typeof window && window && window.addEventListener && window.addEventListener("load", function() {
-        var here = window.location.protocol + "//" + window.location.host + window.location.pathname;
-        OAuth.register(function(uris, provider) {
-            if (uris.indexOf(here) > -1) {
-                var id = oAuthRedirectId + Math.random(), listener = storageListener.bind({}, id, provider);
-                return listeners[id] = listener, window.addEventListener("storage", listener, !1), 
-                Promise.resolve(id);
-            }
-            return !1;
-        });
-    }, !1), /**
-   * If there is redirection back to the page, and oAuthRedirectID is set,
-   * then report the auth and close the window.
-   */
-    "undefined" != typeof window && window && window.location && window.localStorage && window.location.href.indexOf(oAuthRedirectId) > 0 && (window.localStorage.setItem(oAuthRedirectId, new Date()), 
-    window.close());
-}(), /*globals OAuth, Promise,global,console */
-function() {
-    "use strict";
-    /**
-   * Listen for messages from a relay iframe.
-   */
-    function monitorFrame(src, oAuth) {
-        return new Promise(function(resolve) {
-            var frame = global.document.createElement("iframe"), state = oAuthRedirectId + Math.random();
-            frame.src = src, frame.style.display = "none", global.document.body.appendChild(frame), 
-            frame.addEventListener("load", function() {
-                resolve({
-                    redirect: src,
-                    state: state
-                }), listeners[state] = function(url) {
-                    this.dispatchEvent("oAuthEvent", url);
-                }.bind(oAuth), frame.contentWindow.postMessage(state, "*");
-            }), window.addEventListener("message", function(frame, msg) {
-                msg.data && msg.data.key && msg.data.url && listeners[msg.data.key] && (listeners[msg.data.key](msg.data.url), 
-                document.body.removeChild(frame));
-            }.bind({}, frame), !1);
-        });
-    }
-    var oAuthRedirectId = "freedom.oauth.redirect.handler", listeners = {};
-    /**
-   * If we have a local domain, and freedom.js is loaded at startup, we can use
-   * the local page as a redirect URI.
-   */
-    "undefined" != typeof global && global && global.document && OAuth.register(function(redirectURIs, instance) {
-        var i, promises = [];
-        for (i = 0; i < redirectURIs.length; i += 1) // TODO: remove restriction on URL pattern match.
-        (0 === redirectURIs[i].indexOf("http://") || 0 === redirectURIs[i].indexOf("https://")) && redirectURIs[i].indexOf("oauth-relay.html") > 0 && promises.push(monitorFrame(redirectURIs[i], instance));
-        return promises.length ? Promise.race(promises) : !1;
-    });
-}();
+}, fdom.apis.register("core.websocket", WS);
 //# sourceMappingURL=freedom.map
     // Create default context.
     global['freedom'] = fdom.setup(global, freedom_src);
