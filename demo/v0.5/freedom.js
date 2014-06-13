@@ -4215,10 +4215,10 @@ WS.prototype.send = function(data, continuation) {
         wasClean: event.wasClean
     });
 }, fdom.apis.register("core.websocket", WS);
-//# sourceMappingURL=freedom.map
+//# sourceMappingURL=freedom.js.map
     // Create default context.
     global['freedom'] = fdom.setup(global, freedom_src);
   })();
 
 })(this);
-//# sourceMappingURL=freedom.map
+//# sourceMappingURL=freedom.map.js
