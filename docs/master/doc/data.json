@@ -2,7 +2,7 @@
     "project": {
         "name": "freedom",
         "description": "Embracing a distributed web",
-        "version": "0.4.4"
+        "version": "0.4.12"
     },
     "files": {
         "src/link/direct.js": {
@@ -84,6 +84,15 @@
             "fors": {},
             "namespaces": {}
         },
+        "src/policy.js": {
+            "name": "src/policy.js",
+            "modules": {},
+            "classes": {
+                "Policy": 1
+            },
+            "fors": {},
+            "namespaces": {}
+        },
         "src/port-debug.js": {
             "name": "src/port-debug.js",
             "modules": {},
@@ -136,16 +145,6 @@
             "fors": {},
             "namespaces": {}
         },
-        "src/port-runtime.js": {
-            "name": "src/port-runtime.js",
-            "modules": {},
-            "classes": {
-                "Runtime": 1,
-                "Runtime.Runtime": 1
-            },
-            "fors": {},
-            "namespaces": {}
-        },
         "src/resource.js": {
             "name": "src/resource.js",
             "modules": {},
@@ -180,13 +179,12 @@
                 "util": 1,
                 "Hub": 1,
                 "Link": 1,
+                "Policy": 1,
                 "Manager": 1,
                 "Module": 1,
                 "ModuleInternal": 1,
                 "Provider": 1,
                 "Proxy": 1,
-                "Runtime": 1,
-                "Runtime.Runtime": 1,
                 "Resource": 1,
                 "handleEvents": 1
             },
@@ -312,6 +310,21 @@
             "line": 7,
             "description": "A link connects two freedom hubs. This is an abstract class\nproviding common functionality of translating control channels,\nand integrating config information.",
             "extends": "Port",
+            "is_constructor": 1
+        },
+        "Policy": {
+            "name": "Policy",
+            "shortname": "Policy",
+            "classitems": [],
+            "plugins": [],
+            "extensions": [],
+            "plugin_for": [],
+            "extension_for": [],
+            "module": "freedom",
+            "namespace": "",
+            "file": "src/policy.js",
+            "line": 7,
+            "description": "The Policy registry for freedom.js.  Used to look up modules and provide\nmigration and coallesing of execution.",
             "is_constructor": 1
         },
         "Manager": {
@@ -440,52 +453,6 @@
             ],
             "is_constructor": 1
         },
-        "Runtime": {
-            "name": "Runtime",
-            "shortname": "Runtime",
-            "classitems": [],
-            "plugins": [],
-            "extensions": [],
-            "plugin_for": [],
-            "extension_for": [],
-            "module": "freedom",
-            "namespace": "",
-            "file": "src/port-runtime.js",
-            "line": 8,
-            "description": "A client communication port to a priviledged web-server capable\nremote instance of freedom.js",
-            "extends": "Port",
-            "uses": [
-                "handleEvents"
-            ],
-            "is_constructor": 1
-        },
-        "Runtime.Runtime": {
-            "name": "Runtime.Runtime",
-            "shortname": "Runtime.Runtime",
-            "classitems": [],
-            "plugins": [],
-            "extensions": [],
-            "plugin_for": [],
-            "extension_for": [],
-            "module": "freedom",
-            "namespace": "",
-            "file": "src/port-runtime.js",
-            "line": 148,
-            "description": "A Runtime, backing the 'core.runtime' API.\nThe runtime object handles requests by local applications wanting to\ninteract with the freedom.js runtime. Primarily, this is done by\nusing 'createApp' to connect with a remote application.",
-            "is_constructor": 1,
-            "params": [
-                {
-                    "name": "link",
-                    "description": "The runtime port associated with this provider.",
-                    "type": "Runtime"
-                },
-                {
-                    "name": "app",
-                    "description": "The app creating this provider.",
-                    "type": "App"
-                }
-            ]
-        },
         "Resource": {
             "name": "Resource",
             "shortname": "Resource",
@@ -513,8 +480,7 @@
                 "link.Frame",
                 "Worker",
                 "Provider",
-                "Proxy",
-                "Runtime"
+                "Proxy"
             ],
             "module": "freedom",
             "namespace": "",
@@ -1188,6 +1154,181 @@
             "module": "freedom"
         },
         {
+            "file": "src/policy.js",
+            "line": 23,
+            "description": "The policy a runtime is expected to have unless it specifies\notherwise.\nTODO: consider making static",
+            "itemtype": "property",
+            "name": "defaultPolicy",
+            "class": "Policy",
+            "module": "freedom"
+        },
+        {
+            "file": "src/policy.js",
+            "line": 35,
+            "description": "The constraints a code modules is expected to have unless it specifies\notherwise.\nTODO: consider making static",
+            "itemtype": "property",
+            "name": "defaultConstraints",
+            "class": "Policy",
+            "module": "freedom"
+        },
+        {
+            "file": "src/policy.js",
+            "line": 47,
+            "description": "Resolve a module from its canonical URL.\nReponds with the promise of a port representing the module,",
+            "itemtype": "method",
+            "name": "get",
+            "params": [
+                {
+                    "name": "lineage",
+                    "description": "The lineage of the requesting module.",
+                    "type": "String[]"
+                },
+                {
+                    "name": "id",
+                    "description": "The canonical ID of the module to get.",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "A promise for the local port towards the module.",
+                "type": "Promise"
+            },
+            "class": "Policy",
+            "module": "freedom"
+        },
+        {
+            "file": "src/policy.js",
+            "line": 80,
+            "description": "Find the runtime destination for a module given its constraints and the\nmodule creating it.",
+            "itemtype": "method",
+            "name": "findDestination",
+            "params": [
+                {
+                    "name": "lineage",
+                    "description": "The identity of the module creating this module.",
+                    "type": "String[]"
+                },
+                {
+                    "name": "{String]",
+                    "description": "id The canonical url of the module"
+                },
+                {
+                    "name": "constraints",
+                    "description": "Constraints for the module.",
+                    "type": "Object"
+                }
+            ],
+            "return": {
+                "description": "The element of this.runtimes where the module should run.",
+                "type": "Object"
+            },
+            "class": "Policy",
+            "module": "freedom"
+        },
+        {
+            "file": "src/policy.js",
+            "line": 117,
+            "description": "Determine if a known runtime is running an appropriate instance of a module.",
+            "itemtype": "method",
+            "name": "isRunning",
+            "params": [
+                {
+                    "name": "runtime",
+                    "description": "The runtime to check.",
+                    "type": "Object"
+                },
+                {
+                    "name": "id",
+                    "description": "The module to look for.",
+                    "type": "String"
+                },
+                {
+                    "name": "from",
+                    "description": "The identifier of the requesting module.",
+                    "type": "String[]"
+                },
+                {
+                    "name": "fullMatch",
+                    "description": "If the module needs to be in the same app.",
+                    "type": "Boolean"
+                }
+            ],
+            "return": {
+                "description": "The Module id if it is running, or false if not.",
+                "type": "String|Boolean"
+            },
+            "class": "Policy",
+            "module": "freedom"
+        },
+        {
+            "file": "src/policy.js",
+            "line": 151,
+            "description": "Get a promise of the manifest for a module ID.",
+            "itemtype": "method",
+            "name": "loadManifest",
+            "params": [
+                {
+                    "name": "manifest",
+                    "description": "The canonical ID of the manifest",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "Promise for the json contents of the manifest.",
+                "type": "Promise"
+            },
+            "class": "Policy",
+            "module": "freedom"
+        },
+        {
+            "file": "src/policy.js",
+            "line": 169,
+            "description": "Add a runtime to keep track of in this policy.",
+            "itemtype": "method",
+            "name": "add",
+            "params": [
+                {
+                    "name": "port",
+                    "description": "The port to use for module lifetime info",
+                    "type": "fdom.port"
+                },
+                {
+                    "name": "policy",
+                    "description": "The policy of the runtime.",
+                    "type": "Object"
+                }
+            ],
+            "class": "Policy",
+            "module": "freedom"
+        },
+        {
+            "file": "src/policy.js",
+            "line": 203,
+            "description": "Overlay a specific policy or constraint instance on default settings.\nTODO: consider making static.",
+            "itemtype": "method",
+            "name": "overlay",
+            "access": "private",
+            "tagname": "",
+            "params": [
+                {
+                    "name": "base",
+                    "description": "The default object",
+                    "type": "Object"
+                },
+                {
+                    "name": "overlay",
+                    "description": "The superceeding object",
+                    "type": "Object"
+                }
+            ],
+            "return": {
+                "description": "A new object with base parameters when not set in overlay.",
+                "type": "Object"
+            },
+            "class": "Policy",
+            "module": "freedom"
+        },
+        {
             "file": "src/port-debug.js",
             "line": 8,
             "description": "A freedom port providing debugging output to the console.",
@@ -1279,7 +1420,7 @@
         },
         {
             "file": "src/port-debug.js",
-            "line": 132,
+            "line": 134,
             "description": "Print a log message to the console.",
             "itemtype": "method",
             "name": "log",
@@ -1288,7 +1429,7 @@
         },
         {
             "file": "src/port-debug.js",
-            "line": 140,
+            "line": 142,
             "description": "Print a warning message to the console.",
             "itemtype": "method",
             "name": "warn",
@@ -1297,7 +1438,7 @@
         },
         {
             "file": "src/port-debug.js",
-            "line": 148,
+            "line": 150,
             "description": "Print an error message to the console.",
             "itemtype": "method",
             "name": "error",
@@ -1341,6 +1482,26 @@
         {
             "file": "src/port-manager.js",
             "line": 133,
+            "description": "Get the port messages will be routed to given its id.",
+            "itemtype": "method",
+            "name": "getPort",
+            "params": [
+                {
+                    "name": "portId",
+                    "description": "The ID of the port.",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "The port with that ID.",
+                "type": "fdom.Port"
+            },
+            "class": "Manager",
+            "module": "freedom"
+        },
+        {
+            "file": "src/port-manager.js",
+            "line": 143,
             "description": "Set up a port with the hub.",
             "itemtype": "method",
             "name": "setup",
@@ -1356,7 +1517,7 @@
         },
         {
             "file": "src/port-manager.js",
-            "line": 171,
+            "line": 185,
             "description": "Tear down a port on the hub.",
             "itemtype": "method",
             "name": "destroy",
@@ -1366,7 +1527,7 @@
         },
         {
             "file": "src/port-manager.js",
-            "line": 196,
+            "line": 214,
             "description": "Create a link between two ports.  Links are created in both directions,\nand a message with those capabilities is sent to the source port.",
             "itemtype": "method",
             "name": "createLink",
@@ -1404,7 +1565,7 @@
         },
         {
             "file": "src/port-manager.js",
-            "line": 253,
+            "line": 271,
             "description": "Remove a link between to ports. The reverse link will also be removed.",
             "itemtype": "method",
             "name": "removeLink",
@@ -1425,7 +1586,7 @@
         },
         {
             "file": "src/port-manager.js",
-            "line": 300,
+            "line": 318,
             "description": "Forget the flow from id with a given name.",
             "itemtype": "method",
             "name": "forgetFlow",
@@ -1448,7 +1609,7 @@
         },
         {
             "file": "src/port-manager.js",
-            "line": 319,
+            "line": 337,
             "description": "Get the core freedom.js API active on the current hub.",
             "itemtype": "method",
             "name": "getCore",
@@ -1487,7 +1648,7 @@
         },
         {
             "file": "src/port-module.js",
-            "line": 92,
+            "line": 114,
             "description": "Clean up after a flow which is no longer used / needed.",
             "itemtype": "method",
             "name": "deregisterFLow",
@@ -1514,7 +1675,7 @@
         },
         {
             "file": "src/port-module.js",
-            "line": 127,
+            "line": 149,
             "description": "Attempt to start the module once the remote freedom context\nexists.",
             "itemtype": "method",
             "name": "start",
@@ -1525,7 +1686,7 @@
         },
         {
             "file": "src/port-module.js",
-            "line": 171,
+            "line": 193,
             "description": "Stop the module when it is no longer needed, and tear-down state.",
             "itemtype": "method",
             "name": "stop",
@@ -1536,7 +1697,7 @@
         },
         {
             "file": "src/port-module.js",
-            "line": 191,
+            "line": 213,
             "description": "Textual Description of the Port",
             "itemtype": "method",
             "name": "toString",
@@ -1549,7 +1710,7 @@
         },
         {
             "file": "src/port-module.js",
-            "line": 204,
+            "line": 222,
             "description": "Intercept messages as they arrive from the module,\nmapping them between internal and external flow names.",
             "itemtype": "method",
             "name": "emitMessage",
@@ -1572,18 +1733,7 @@
         },
         {
             "file": "src/port-module.js",
-            "line": 281,
-            "description": "Load the module description from its manifest.",
-            "itemtype": "method",
-            "name": "loadManifest",
-            "access": "private",
-            "tagname": "",
-            "class": "Module",
-            "module": "freedom"
-        },
-        {
-            "file": "src/port-module.js",
-            "line": 303,
+            "line": 299,
             "description": "Request the external routes used by this module.",
             "itemtype": "method",
             "name": "loadLinks",
@@ -1594,7 +1744,7 @@
         },
         {
             "file": "src/port-module.js",
-            "line": 355,
+            "line": 352,
             "description": "Update the module environment with information about a dependent manifest.",
             "itemtype": "method",
             "name": "updateEnv",
@@ -1615,7 +1765,7 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 28,
+            "line": 29,
             "description": "Message handler for this port.\nThis port only handles two messages:\nThe first is its setup from the manager, which it uses for configuration.\nThe second is from the module controller (fdom.port.Module), which provides\nthe manifest info for the module.",
             "itemtype": "method",
             "name": "onMessage",
@@ -1636,7 +1786,7 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 64,
+            "line": 72,
             "description": "Get a textual description of this Port.",
             "itemtype": "method",
             "name": "toString",
@@ -1649,7 +1799,25 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 73,
+            "line": 81,
+            "description": "Attach the manifest of the active module to the externally visible namespace.",
+            "itemtype": "method",
+            "name": "updateEnv",
+            "params": [
+                {
+                    "name": "manifest",
+                    "description": "The manifest of the module.",
+                    "type": "Object"
+                }
+            ],
+            "access": "private",
+            "tagname": "",
+            "class": "ModuleInternal",
+            "module": "freedom"
+        },
+        {
+            "file": "src/port-moduleinternal.js",
+            "line": 101,
             "description": "Attach a proxy to the externally visible namespace.",
             "itemtype": "method",
             "name": "attach",
@@ -1677,7 +1845,7 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 100,
+            "line": 128,
             "description": "Request a set of proxy interfaces, and bind them to the external\nnamespace.",
             "itemtype": "method",
             "name": "loadLinks",
@@ -1695,7 +1863,7 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 166,
+            "line": 197,
             "description": "Update the exported manifest of a dependency.\nSets it internally if not yet exported, or attaches the property if it\nis loaded after the module has started (we don't delay start to retreive\nthe manifest of the dependency.)",
             "itemtype": "method",
             "name": "updateManifest",
@@ -1716,7 +1884,7 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 185,
+            "line": 216,
             "description": "Determine which proxy ports should be exposed by this module.",
             "itemtype": "method",
             "name": "mapProxies",
@@ -1736,7 +1904,7 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 241,
+            "line": 272,
             "description": "Load external scripts into this namespace.",
             "itemtype": "method",
             "name": "loadScripts",
@@ -1757,7 +1925,7 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 296,
+            "line": 327,
             "description": "Attempt to load resolved scripts into the namespace.",
             "itemtype": "method",
             "name": "tryLoad",
@@ -1784,7 +1952,7 @@
         },
         {
             "file": "src/port-provider.js",
-            "line": 27,
+            "line": 28,
             "description": "Provider modes of operation.",
             "itemtype": "property",
             "name": "mode",
@@ -1795,7 +1963,7 @@
         },
         {
             "file": "src/port-provider.js",
-            "line": 39,
+            "line": 40,
             "description": "Receive external messages for the provider.",
             "itemtype": "method",
             "name": "onMessage",
@@ -1816,7 +1984,7 @@
         },
         {
             "file": "src/port-provider.js",
-            "line": 84,
+            "line": 93,
             "description": "Close / teardown the flow this provider terminates.",
             "itemtype": "method",
             "name": "close",
@@ -1825,7 +1993,7 @@
         },
         {
             "file": "src/port-provider.js",
-            "line": 102,
+            "line": 111,
             "description": "Get an interface to expose externally representing this port.\nProviders are registered with the port using either\nprovideSynchronous or provideAsynchronous depending on the desired\nreturn interface.",
             "itemtype": "method",
             "name": "getInterface",
@@ -1838,7 +2006,7 @@
         },
         {
             "file": "src/port-provider.js",
-            "line": 147,
+            "line": 156,
             "description": "Create a function that can be used to get interfaces from this provider from\na user-visible point.",
             "itemtype": "method",
             "name": "getProxyInterface",
@@ -1847,11 +2015,16 @@
         },
         {
             "file": "src/port-provider.js",
-            "line": 197,
+            "line": 206,
             "description": "Get a new instance of the registered provider.",
             "itemtype": "method",
             "name": "getProvider",
             "params": [
+                {
+                    "name": "source",
+                    "description": "The port this instance is interactign with.",
+                    "type": "String"
+                },
                 {
                     "name": "identifier",
                     "description": "the messagable address for this provider.",
@@ -1872,7 +2045,7 @@
         },
         {
             "file": "src/port-provider.js",
-            "line": 284,
+            "line": 294,
             "description": "Get a textual description of this port.",
             "itemtype": "method",
             "name": "toString",
@@ -2032,100 +2205,6 @@
             "module": "freedom"
         },
         {
-            "file": "src/port-runtime.js",
-            "line": 26,
-            "description": "Possible states of the Runtime port. Determines where in the\nsetup process the port is.",
-            "itemtype": "property",
-            "name": "status",
-            "access": "protected",
-            "tagname": "",
-            "static": 1,
-            "class": "Runtime",
-            "module": "freedom"
-        },
-        {
-            "file": "src/port-runtime.js",
-            "line": 39,
-            "description": "Get the textual description of this port.",
-            "itemtype": "method",
-            "name": "toString",
-            "return": {
-                "description": "The description of this port.",
-                "type": "String"
-            },
-            "class": "Runtime",
-            "module": "freedom"
-        },
-        {
-            "file": "src/port-runtime.js",
-            "line": 49,
-            "description": "Handle a message from the local freedom environment.\nThe runtime port will strip off the recursive config sent at setup,\nbut otherwise sends messages un-altered.",
-            "itemtype": "method",
-            "name": "onMessage",
-            "params": [
-                {
-                    "name": "source",
-                    "description": "The source of the message",
-                    "type": "String"
-                },
-                {
-                    "name": "msg",
-                    "description": "The message to send.",
-                    "type": "Object"
-                }
-            ],
-            "class": "Runtime",
-            "module": "freedom"
-        },
-        {
-            "file": "src/port-runtime.js",
-            "line": 81,
-            "description": "Attempt to connect to the runtime server.\nAddress / Port to connect to default to 127.0.0.1:9009, but can be overridden\nby setting 'runtimeHost' and 'runtimePort' configuration options.",
-            "itemtype": "method",
-            "name": "connect",
-            "access": "protected",
-            "tagname": "",
-            "class": "Runtime",
-            "module": "freedom"
-        },
-        {
-            "file": "src/port-runtime.js",
-            "line": 109,
-            "description": "Process a message from the freedom.js runtime.\nCurrently, the runtime intercepts two types of messages internally:\n1. runtime.load messages are immediately resolved to see if the local context\ncan load the contents of a file, since the remote server may have cross origin\nissues reading a file, or the file may only exist locally.\n2. runtime.message messages are delivered to the appropriate instantiatiation of\na Runtime.Runtime provider, for the core.runtime API.\nOther messages are emitted normally.",
-            "params": [
-                {
-                    "name": "msg",
-                    "description": "The message to process.",
-                    "type": "Object"
-                }
-            ],
-            "access": "protected",
-            "tagname": "",
-            "class": "Runtime",
-            "module": "freedom"
-        },
-        {
-            "file": "src/port-runtime.js",
-            "line": 165,
-            "description": "Create a remote App with a specified manifest.\nTODO(willscott): This should probably be refactored to 'connectApp',\n    Since there shouldn't be a distinction between creation and re-connection.\n    Additionally, the Final API for core.runtime remains undetermined.",
-            "itemtype": "method",
-            "name": "createApp",
-            "params": [
-                {
-                    "name": "manifest",
-                    "description": "The app to start.",
-                    "type": "String"
-                },
-                {
-                    "name": "proxy",
-                    "description": "The identifier of the communication channel to use\nto talk with the created app.",
-                    "type": "Object"
-                }
-            ],
-            "class": "Runtime.Runtime",
-            "module": "freedom"
-        },
-        {
             "file": "src/resource.js",
             "line": 26,
             "description": "Resolve a resurce URL requested from a module.",
@@ -2199,7 +2278,7 @@
         },
         {
             "file": "src/resource.js",
-            "line": 95,
+            "line": 105,
             "description": "Register resolvers: code that knows how to get resources\nneeded by the runtime. A resolver will be called with four\narguments: the absolute manifest of the requester, the\nresource being requested, and a resolve / reject pair to\nfulfill a promise.",
             "itemtype": "method",
             "name": "addResolver",
@@ -2215,7 +2294,7 @@
         },
         {
             "file": "src/resource.js",
-            "line": 108,
+            "line": 118,
             "description": "Register retrievers: code that knows how to load resources\nneeded by the runtime. A retriever will be called with a URL\nto retrieve with a protocol that it is able to handle.",
             "itemtype": "method",
             "name": "addRetriever",
@@ -2236,7 +2315,7 @@
         },
         {
             "file": "src/resource.js",
-            "line": 124,
+            "line": 134,
             "description": "Determine if a URL is an absolute URL of a given Scheme.",
             "itemtype": "method",
             "name": "hasScheme",
@@ -2264,7 +2343,27 @@
         },
         {
             "file": "src/resource.js",
-            "line": 143,
+            "line": 153,
+            "description": "Remove './' and '../' from a URL\nRequired because Chrome Apps for Mobile (cca) doesn't understand\nXHR paths with these relative components in the URL.",
+            "itemtype": "method",
+            "name": "removeRelativePath",
+            "params": [
+                {
+                    "name": "url",
+                    "description": "The URL to modify",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "url without './' and '../'",
+                "type": "String"
+            },
+            "class": "Resource",
+            "module": "freedom"
+        },
+        {
+            "file": "src/resource.js",
+            "line": 194,
             "description": "Resolve URLs which can be accessed using standard HTTP requests.",
             "itemtype": "method",
             "name": "httpResolver",
@@ -2301,7 +2400,7 @@
         },
         {
             "file": "src/resource.js",
-            "line": 181,
+            "line": 235,
             "description": "Resolve URLs which are self-describing.",
             "itemtype": "method",
             "name": "nullResolver",
@@ -2338,7 +2437,7 @@
         },
         {
             "file": "src/resource.js",
-            "line": 200,
+            "line": 255,
             "description": "Retrieve manifest content from a self-descriptive manifest url.\nThese urls are used to reference a manifest without requiring subsequent,\npotentially non-CORS requests.",
             "itemtype": "method",
             "name": "manifestRetriever",
@@ -2366,7 +2465,7 @@
         },
         {
             "file": "src/resource.js",
-            "line": 222,
+            "line": 277,
             "description": "Retrieve resource contents using an XHR request.",
             "itemtype": "method",
             "name": "xhrRetriever",
@@ -2394,7 +2493,7 @@
         },
         {
             "file": "src/resource.js",
-            "line": 245,
+            "line": 300,
             "description": "Defines fdom.resources as a singleton registry for file management.",
             "class": "Resource",
             "module": "freedom"
@@ -2586,9 +2685,9 @@
         {
             "file": "src/util.js",
             "line": 248,
-            "description": "When run without a window, or specifically requested.\nNote: Declaration can be redefined in forceAppContext below.",
+            "description": "When run without a window, or specifically requested.\nNote: Declaration can be redefined in forceModuleContext below.",
             "itemtype": "method",
-            "name": "isAppContext",
+            "name": "isModuleContext",
             "static": 1,
             "class": "util",
             "module": "freedom"
@@ -2596,9 +2695,9 @@
         {
             "file": "src/util.js",
             "line": 260,
-            "description": "Provide a version of src where the 'isAppContext' function will return true.\nUsed for creating app contexts which may not be able to determine that they\nneed to start up as applications by themselves.",
+            "description": "Provide a version of src where the 'isModuleContext' function will return\ntrue. Used for creating module contexts which may not be able to determine\nthat they need to start up in that mode by themselves.",
             "itemtype": "method",
-            "name": "forceAppContext",
+            "name": "forceModuleContext",
             "static": 1,
             "class": "util",
             "module": "freedom"
@@ -2665,24 +2764,44 @@
             "line": " src/apis.js:65"
         },
         {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " src/policy.js:47"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " src/policy.js:80"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " src/policy.js:117"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " src/policy.js:151"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " src/policy.js:203"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " src/port-manager.js:133"
+        },
+        {
             "message": "unknown tag: apram",
-            "line": " src/port-manager.js:171"
+            "line": " src/port-manager.js:185"
         },
         {
             "message": "replacing incorrect tag: returns with return",
-            "line": " src/port-module.js:92"
+            "line": " src/port-module.js:114"
         },
         {
             "message": "replacing incorrect tag: returns with return",
-            "line": " src/port-moduleinternal.js:296"
+            "line": " src/port-moduleinternal.js:327"
         },
         {
             "message": "unknown tag: contructor",
             "line": " src/port-provider.js:8"
-        },
-        {
-            "message": "replacing incorrect tag: returns with return",
-            "line": " src/port-runtime.js:39"
         },
         {
             "message": "replacing incorrect tag: returns with return",
@@ -2698,15 +2817,19 @@
         },
         {
             "message": "replacing incorrect tag: returns with return",
-            "line": " src/resource.js:124"
+            "line": " src/resource.js:134"
         },
         {
             "message": "replacing incorrect tag: returns with return",
-            "line": " src/resource.js:143"
+            "line": " src/resource.js:153"
         },
         {
             "message": "replacing incorrect tag: returns with return",
-            "line": " src/resource.js:181"
+            "line": " src/resource.js:194"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " src/resource.js:235"
         },
         {
             "message": "replacing incorrect tag: returns with return",
@@ -2725,12 +2848,8 @@
             "line": " src/port-debug.js:8"
         },
         {
-            "message": "Missing item type\nProcess a message from the freedom.js runtime.\nCurrently, the runtime intercepts two types of messages internally:\n1. runtime.load messages are immediately resolved to see if the local context\ncan load the contents of a file, since the remote server may have cross origin\nissues reading a file, or the file may only exist locally.\n2. runtime.message messages are delivered to the appropriate instantiatiation of\na Runtime.Runtime provider, for the core.runtime API.\nOther messages are emitted normally.",
-            "line": " src/port-runtime.js:109"
-        },
-        {
             "message": "Missing item type\nDefines fdom.resources as a singleton registry for file management.",
-            "line": " src/resource.js:245"
+            "line": " src/resource.js:300"
         }
     ]
 }

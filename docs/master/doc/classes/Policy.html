@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Hub - freedom</title>
+    <title>Policy - freedom</title>
     <link rel="stylesheet" href="http://yui.yahooapis.com/3.9.1/build/cssgrids/cssgrids-min.css">
     <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
     <link rel="stylesheet" href="../assets/css/main.css" id="site_styles">
@@ -112,7 +112,7 @@
             <div class="apidocs">
                 <div id="docs-main">
                     <div class="content">
-                        <h1>Hub Class</h1>
+                        <h1>Policy Class</h1>
 <div class="box meta">
     
 
@@ -120,7 +120,7 @@
 
     
         <div class="foundat">
-            Defined in: <a href="../files/src_hub.js.html#l7"><code>src&#x2F;hub.js:7</code></a>
+            Defined in: <a href="../files/src_policy.js.html#l7"><code>src&#x2F;policy.js:7</code></a>
         </div>
     
 
@@ -136,16 +136,16 @@
 
 
 <div class="box intro">
-    <p>Defines fdom.Hub, the core message hub between freedom modules.
-Incomming messages from apps are sent to hub.onMessage()</p>
+    <p>The Policy registry for freedom.js.  Used to look up modules and provide
+migration and coallesing of execution.</p>
 
 </div>
 
 
     <div class="constructor">
         <h2>Constructor</h2>
-        <div id="method_Hub" class="method item">
-    <h3 class="name"><code>Hub</code></h3>
+        <div id="method_Policy" class="method item">
+    <h3 class="name"><code>Policy</code></h3>
 
     
         <span class="paren">()</span>
@@ -176,7 +176,7 @@ Incomming messages from apps are sent to hub.onMessage()</p>
             
         
         
-        <a href="../files/src_hub.js.html#l7"><code>src&#x2F;hub.js:7</code></a>
+        <a href="../files/src_policy.js.html#l7"><code>src&#x2F;policy.js:7</code></a>
         
         </p>
 
@@ -208,6 +208,8 @@ Incomming messages from apps are sent to hub.onMessage()</p>
             <li class="api-class-tab methods"><a href="#methods">Methods</a></li>
         
         
+            <li class="api-class-tab properties"><a href="#properties">Properties</a></li>
+        
         
         
     </ul>
@@ -223,56 +225,66 @@ Incomming messages from apps are sent to hub.onMessage()</p>
                     <ul class="index-list methods">
                         
                             <li class="index-item method">
-                                <a href="#method_deregister">deregister</a>
+                                <a href="#method_add">add</a>
+
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method">
+                                <a href="#method_findDestination">findDestination</a>
+
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method">
+                                <a href="#method_get">get</a>
+
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method">
+                                <a href="#method_isRunning">isRunning</a>
+
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method">
+                                <a href="#method_loadManifest">loadManifest</a>
 
                                 
                                 
                             </li>
                         
                             <li class="index-item method private">
-                                <a href="#method_generateRoute">generateRoute</a>
+                                <a href="#method_overlay">overlay</a>
 
                                 
                                 
                             </li>
                         
-                            <li class="index-item method">
-                                <a href="#method_getDestination">getDestination</a>
+                    </ul>
+                </div>
+            
+
+            
+                <div class="index-section properties">
+                    <h3>Properties</h3>
+
+                    <ul class="index-list properties">
+                        
+                            <li class="index-item property">
+                                <a href="#property_defaultConstraints">defaultConstraints</a>
 
                                 
                                 
                             </li>
                         
-                            <li class="index-item method">
-                                <a href="#method_getSource">getSource</a>
-
-                                
-                                
-                            </li>
-                        
-                            <li class="index-item method">
-                                <a href="#method_install">install</a>
-
-                                
-                                
-                            </li>
-                        
-                            <li class="index-item method">
-                                <a href="#method_onMessage">onMessage</a>
-
-                                
-                                
-                            </li>
-                        
-                            <li class="index-item method">
-                                <a href="#method_register">register</a>
-
-                                
-                                
-                            </li>
-                        
-                            <li class="index-item method">
-                                <a href="#method_uninstall">uninstall</a>
+                            <li class="index-item property">
+                                <a href="#property_defaultPolicy">defaultPolicy</a>
 
                                 
                                 
@@ -285,8 +297,6 @@ Incomming messages from apps are sent to hub.onMessage()</p>
             
 
             
-
-            
         </div>
 
         
@@ -294,8 +304,8 @@ Incomming messages from apps are sent to hub.onMessage()</p>
                 <h2 class="off-left">Methods</h2>
 
                 
-                    <div id="method_deregister" class="method item">
-    <h3 class="name"><code>deregister</code></h3>
+                    <div id="method_add" class="method item">
+    <h3 class="name"><code>add</code></h3>
 
     
         <div class="args">
@@ -303,7 +313,130 @@ Incomming messages from apps are sent to hub.onMessage()</p>
             
                 <li class="arg">
                     
-                        <code>app</code>
+                        <code>port</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>policy</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_policy.js.html#l169"><code>src&#x2F;policy.js:169</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Add a runtime to keep track of in this policy.</p>
+
+    </div>
+
+    
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">port</code>
+                        <span class="type">fdom.port</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The port to use for module lifetime info</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">policy</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The policy of the runtime.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
+    
+
+    
+
+    
+</div>
+
+                
+                    <div id="method_findDestination" class="method item">
+    <h3 class="name"><code>findDestination</code></h3>
+
+    
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>lineage</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>{String]</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>constraints</code>
                     
                 </li>
             
@@ -313,7 +446,7 @@ Incomming messages from apps are sent to hub.onMessage()</p>
 
     
         <span class="returns-inline">
-            <span class="type">Boolean</span>
+            <span class="type">Object</span>
         </span>
     
 
@@ -340,7 +473,7 @@ Incomming messages from apps are sent to hub.onMessage()</p>
             
         
         
-        <a href="../files/src_hub.js.html#l111"><code>src&#x2F;hub.js:111</code></a>
+        <a href="../files/src_policy.js.html#l80"><code>src&#x2F;policy.js:80</code></a>
         
         </p>
 
@@ -351,10 +484,8 @@ Incomming messages from apps are sent to hub.onMessage()</p>
     </div>
 
     <div class="description">
-        <p>Deregister a destination for messages with the hub.
-Note: does not remove associated routes. As such, deregistering will
-prevent the installation of new routes, but will not distrupt existing
-hub routes.</p>
+        <p>Find the runtime destination for a module given its constraints and the
+module creating it.</p>
 
     </div>
 
@@ -366,14 +497,46 @@ hub routes.</p>
             
                 <li class="param">
                     
-                        <code class="param-name">app</code>
-                        <span class="type">Port</span>
+                        <code class="param-name">lineage</code>
+                        <span class="type">String</span>
                     
 
                     
 
                     <div class="param-description">
-                        <p>The Port to deregister</p>
+                        <p>The identity of the module creating this module.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">{String]</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>id The canonical url of the module</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">constraints</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>Constraints for the module.</p>
 
                     </div>
 
@@ -391,9 +554,9 @@ hub routes.</p>
             <div class="returns-description">
                 
                     
-                        <span class="type">Boolean</span>:
+                        <span class="type">Object</span>:
                     
-                    <p>Whether the app was deregistered.</p>
+                    <p>The element of this.runtimes where the module should run.</p>
 
                 
             </div>
@@ -404,16 +567,442 @@ hub routes.</p>
 </div>
 
                 
-                    <div id="method_generateRoute" class="method item private">
-    <h3 class="name"><code>generateRoute</code></h3>
+                    <div id="method_get" class="method item">
+    <h3 class="name"><code>get</code></h3>
 
     
-        <span class="paren">()</span>
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>lineage</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>id</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
     
 
     
         <span class="returns-inline">
-            <span class="type">String</span>
+            <span class="type">Promise</span>
+        </span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_policy.js.html#l47"><code>src&#x2F;policy.js:47</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Resolve a module from its canonical URL.
+Reponds with the promise of a port representing the module,</p>
+
+    </div>
+
+    
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">lineage</code>
+                        <span class="type">String</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The lineage of the requesting module.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">id</code>
+                        <span class="type">String</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The canonical ID of the module to get.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
+    
+
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">Promise</span>:
+                    
+                    <p>A promise for the local port towards the module.</p>
+
+                
+            </div>
+        </div>
+    
+
+    
+</div>
+
+                
+                    <div id="method_isRunning" class="method item">
+    <h3 class="name"><code>isRunning</code></h3>
+
+    
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>runtime</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>id</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>from</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>fullMatch</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+        <span class="returns-inline">
+            <span class="type">String | Boolean</span>
+        </span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_policy.js.html#l117"><code>src&#x2F;policy.js:117</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Determine if a known runtime is running an appropriate instance of a module.</p>
+
+    </div>
+
+    
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">runtime</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The runtime to check.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">id</code>
+                        <span class="type">String</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The module to look for.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">from</code>
+                        <span class="type">String</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The identifier of the requesting module.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">fullMatch</code>
+                        <span class="type">Boolean</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>If the module needs to be in the same app.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
+    
+
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">String | Boolean</span>:
+                    
+                    <p>The Module id if it is running, or false if not.</p>
+
+                
+            </div>
+        </div>
+    
+
+    
+</div>
+
+                
+                    <div id="method_loadManifest" class="method item">
+    <h3 class="name"><code>loadManifest</code></h3>
+
+    
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>manifest</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+        <span class="returns-inline">
+            <span class="type">Promise</span>
+        </span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_policy.js.html#l151"><code>src&#x2F;policy.js:151</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Get a promise of the manifest for a module ID.</p>
+
+    </div>
+
+    
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">manifest</code>
+                        <span class="type">String</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The canonical ID of the manifest</p>
+
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
+    
+
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">Promise</span>:
+                    
+                    <p>Promise for the json contents of the manifest.</p>
+
+                
+            </div>
+        </div>
+    
+
+    
+</div>
+
+                
+                    <div id="method_overlay" class="method item private">
+    <h3 class="name"><code>overlay</code></h3>
+
+    
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>base</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>overlay</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+        <span class="returns-inline">
+            <span class="type">Object</span>
         </span>
     
 
@@ -442,7 +1031,7 @@ hub routes.</p>
             
         
         
-        <a href="../files/src_hub.js.html#l187"><code>src&#x2F;hub.js:187</code></a>
+        <a href="../files/src_policy.js.html#l203"><code>src&#x2F;policy.js:203</code></a>
         
         </p>
 
@@ -453,90 +1042,8 @@ hub routes.</p>
     </div>
 
     <div class="description">
-        <p>Generate a unique routing identifier.</p>
-
-    </div>
-
-    
-
-    
-        <div class="returns">
-            <h4>Returns:</h4>
-
-            <div class="returns-description">
-                
-                    
-                        <span class="type">String</span>:
-                    
-                    <p>a routing source identifier.</p>
-
-                
-            </div>
-        </div>
-    
-
-    
-</div>
-
-                
-                    <div id="method_getDestination" class="method item">
-    <h3 class="name"><code>getDestination</code></h3>
-
-    
-        <div class="args">
-            <span class="paren">(</span><ul class="args-list inline commas">
-            
-                <li class="arg">
-                    
-                        <code>source</code>
-                    
-                </li>
-            
-            </ul><span class="paren">)</span>
-        </div>
-    
-
-    
-        <span class="returns-inline">
-            <span class="type">Port</span>
-        </span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/src_hub.js.html#l64"><code>src&#x2F;hub.js:64</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Get the local destination port of a flow.</p>
+        <p>Overlay a specific policy or constraint instance on default settings.
+TODO: consider making static.</p>
 
     </div>
 
@@ -548,397 +1055,30 @@ hub routes.</p>
             
                 <li class="param">
                     
-                        <code class="param-name">source</code>
-                        <span class="type">String</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>The flow to retrieve.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-            </ul>
-        </div>
-    
-
-    
-        <div class="returns">
-            <h4>Returns:</h4>
-
-            <div class="returns-description">
-                
-                    
-                        <span class="type">Port</span>:
-                    
-                    <p>The destination port.</p>
-
-                
-            </div>
-        </div>
-    
-
-    
-</div>
-
-                
-                    <div id="method_getSource" class="method item">
-    <h3 class="name"><code>getSource</code></h3>
-
-    
-        <div class="args">
-            <span class="paren">(</span><ul class="args-list inline commas">
-            
-                <li class="arg">
-                    
-                        <code>source</code>
-                    
-                </li>
-            
-            </ul><span class="paren">)</span>
-        </div>
-    
-
-    
-        <span class="returns-inline">
-            <span class="type">Port</span>
-        </span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/src_hub.js.html#l78"><code>src&#x2F;hub.js:78</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Get the local source port of a flow.</p>
-
-    </div>
-
-    
-        <div class="params">
-            <h4>Parameters:</h4>
-
-            <ul class="params-list">
-            
-                <li class="param">
-                    
-                        <code class="param-name">source</code>
-                        <span class="type">Port</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>The flow identifier to retrieve.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-            </ul>
-        </div>
-    
-
-    
-        <div class="returns">
-            <h4>Returns:</h4>
-
-            <div class="returns-description">
-                
-                    
-                        <span class="type">Port</span>:
-                    
-                    <p>The source port.</p>
-
-                
-            </div>
-        </div>
-    
-
-    
-</div>
-
-                
-                    <div id="method_install" class="method item">
-    <h3 class="name"><code>install</code></h3>
-
-    
-        <div class="args">
-            <span class="paren">(</span><ul class="args-list inline commas">
-            
-                <li class="arg">
-                    
-                        <code>source</code>
-                    
-                </li>
-            
-                <li class="arg">
-                    
-                        <code>destination</code>
-                    
-                </li>
-            
-                <li class="arg">
-                    
-                        <code>flow</code>
-                    
-                </li>
-            
-            </ul><span class="paren">)</span>
-        </div>
-    
-
-    
-        <span class="returns-inline">
-            <span class="type">String</span>
-        </span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/src_hub.js.html#l128"><code>src&#x2F;hub.js:128</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Install a new route in the hub.</p>
-
-    </div>
-
-    
-        <div class="params">
-            <h4>Parameters:</h4>
-
-            <ul class="params-list">
-            
-                <li class="param">
-                    
-                        <code class="param-name">source</code>
-                        <span class="type">Port</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>The source of the route.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-                <li class="param">
-                    
-                        <code class="param-name">destination</code>
-                        <span class="type">Port</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>The destination of the route.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-                <li class="param">
-                    
-                        <code class="param-name">flow</code>
-                        <span class="type">String</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>The flow where the destination will receive messages.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-            </ul>
-        </div>
-    
-
-    
-        <div class="returns">
-            <h4>Returns:</h4>
-
-            <div class="returns-description">
-                
-                    
-                        <span class="type">String</span>:
-                    
-                    <p>A routing source identifier for sending messages.</p>
-
-                
-            </div>
-        </div>
-    
-
-    
-</div>
-
-                
-                    <div id="method_onMessage" class="method item">
-    <h3 class="name"><code>onMessage</code></h3>
-
-    
-        <div class="args">
-            <span class="paren">(</span><ul class="args-list inline commas">
-            
-                <li class="arg">
-                    
-                        <code>source</code>
-                    
-                </li>
-            
-                <li class="arg">
-                    
-                        <code>message</code>
-                    
-                </li>
-            
-            </ul><span class="paren">)</span>
-        </div>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/src_hub.js.html#l26"><code>src&#x2F;hub.js:26</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Handle an incoming message from a freedom app.</p>
-
-    </div>
-
-    
-        <div class="params">
-            <h4>Parameters:</h4>
-
-            <ul class="params-list">
-            
-                <li class="param">
-                    
-                        <code class="param-name">source</code>
-                        <span class="type">String</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>The identifiying source of the message.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-                <li class="param">
-                    
-                        <code class="param-name">message</code>
+                        <code class="param-name">base</code>
                         <span class="type">Object</span>
                     
 
                     
 
                     <div class="param-description">
-                        <p>The sent message.</p>
+                        <p>The default object</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">overlay</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The superceeding object</p>
 
                     </div>
 
@@ -950,43 +1090,36 @@ hub routes.</p>
     
 
     
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">Object</span>:
+                    
+                    <p>A new object with base parameters when not set in overlay.</p>
+
+                
+            </div>
+        </div>
+    
 
     
 </div>
 
                 
-                    <div id="method_register" class="method item">
-    <h3 class="name"><code>register</code></h3>
+            </div>
+        
 
-    
-        <div class="args">
-            <span class="paren">(</span><ul class="args-list inline commas">
-            
-                <li class="arg">
-                    
-                        <code>app</code>
-                    
-                </li>
-            
-                <li class="arg">
-                    
-                        <code class="optional">[force]</code>
-                    
-                </li>
-            
-            </ul><span class="paren">)</span>
-        </div>
-    
+        
+            <div id="properties" class="api-class-tabpanel">
+                <h2 class="off-left">Properties</h2>
 
-    
-        <span class="returns-inline">
-            <span class="type">Boolean</span>
-        </span>
-    
-
-    
-
-    
+                
+                    <div id="property_defaultConstraints" class="property item">
+    <h3 class="name"><code>defaultConstraints</code></h3>
+    <span class="type">Unknown</span>
 
     
 
@@ -1007,10 +1140,9 @@ hub routes.</p>
             
         
         
-        <a href="../files/src_hub.js.html#l95"><code>src&#x2F;hub.js:95</code></a>
+        <a href="../files/src_policy.js.html#l35"><code>src&#x2F;policy.js:35</code></a>
         
         </p>
-
 
         
 
@@ -1018,105 +1150,23 @@ hub routes.</p>
     </div>
 
     <div class="description">
-        <p>Register a destination for messages with this hub.</p>
+        <p>The constraints a code modules is expected to have unless it specifies
+otherwise.
+TODO: consider making static</p>
 
     </div>
 
     
-        <div class="params">
-            <h4>Parameters:</h4>
 
-            <ul class="params-list">
-            
-                <li class="param">
-                    
-                        <code class="param-name">app</code>
-                        <span class="type">Port</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>The Port to register.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-                <li class="param">
-                    
-                        <code class="param-name optional">[force]</code>
-                        <span class="type">Boolean</span>
-                        <span class="flag optional" title="This parameter is optional.">optional</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>Whether to override an existing port.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-            </ul>
-        </div>
-    
-
-    
-        <div class="returns">
-            <h4>Returns:</h4>
-
-            <div class="returns-description">
-                
-                    
-                        <span class="type">Boolean</span>:
-                    
-                    <p>Whether the app was registered.</p>
-
-                
-            </div>
-        </div>
     
 
     
 </div>
 
                 
-                    <div id="method_uninstall" class="method item">
-    <h3 class="name"><code>uninstall</code></h3>
-
-    
-        <div class="args">
-            <span class="paren">(</span><ul class="args-list inline commas">
-            
-                <li class="arg">
-                    
-                        <code>source</code>
-                    
-                </li>
-            
-                <li class="arg">
-                    
-                        <code>flow</code>
-                    
-                </li>
-            
-            </ul><span class="paren">)</span>
-        </div>
-    
-
-    
-        <span class="returns-inline">
-            <span class="type">Boolean</span>
-        </span>
-    
-
-    
-
-    
+                    <div id="property_defaultPolicy" class="property item">
+    <h3 class="name"><code>defaultPolicy</code></h3>
+    <span class="type">Unknown</span>
 
     
 
@@ -1137,10 +1187,9 @@ hub routes.</p>
             
         
         
-        <a href="../files/src_hub.js.html#l159"><code>src&#x2F;hub.js:159</code></a>
+        <a href="../files/src_policy.js.html#l23"><code>src&#x2F;policy.js:23</code></a>
         
         </p>
-
 
         
 
@@ -1148,66 +1197,14 @@ hub routes.</p>
     </div>
 
     <div class="description">
-        <p>Uninstall a hub route.</p>
+        <p>The policy a runtime is expected to have unless it specifies
+otherwise.
+TODO: consider making static</p>
 
     </div>
 
     
-        <div class="params">
-            <h4>Parameters:</h4>
 
-            <ul class="params-list">
-            
-                <li class="param">
-                    
-                        <code class="param-name">source</code>
-                        <span class="type">Port</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>The source of the route.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-                <li class="param">
-                    
-                        <code class="param-name">flow</code>
-                        <span class="type">String</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>The route to uninstall.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-            </ul>
-        </div>
-    
-
-    
-        <div class="returns">
-            <h4>Returns:</h4>
-
-            <div class="returns-description">
-                
-                    
-                        <span class="type">Boolean</span>:
-                    
-                    <p>Whether the route was able to be uninstalled.</p>
-
-                
-            </div>
-        </div>
     
 
     
@@ -1215,8 +1212,6 @@ hub routes.</p>
 
                 
             </div>
-        
-
         
 
         

@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.4</em>
+            <em>API Docs for: 0.4.12</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -59,15 +59,13 @@
             
                 <li><a href="../classes/ModuleInternal.html">ModuleInternal</a></li>
             
+                <li><a href="../classes/Policy.html">Policy</a></li>
+            
                 <li><a href="../classes/Provider.html">Provider</a></li>
             
                 <li><a href="../classes/Proxy.html">Proxy</a></li>
             
                 <li><a href="../classes/Resource.html">Resource</a></li>
-            
-                <li><a href="../classes/Runtime.html">Runtime</a></li>
-            
-                <li><a href="../classes/Runtime.Runtime.html">Runtime.Runtime</a></li>
             
                 <li><a href="../classes/util.html">util</a></li>
             
@@ -142,7 +140,7 @@ fdom.link.Frame = function() {
  * @private
  */
 fdom.link.Frame.prototype.start = function() {
-  if (this.config.appContext) {
+  if (this.config.moduleContext) {
     this.config.global.DEBUG = true;
     this.setupListener();
     this.src = &#x27;in&#x27;;
@@ -246,7 +244,7 @@ fdom.link.Frame.prototype.makeFrame = function(src, inject) {
       &#x27;&quot;&gt;&lt;/script&gt;&#x27;;
   }
   loader = &#x27;&lt;html&gt;&#x27; + extra + &#x27;&lt;script src=&quot;&#x27; +
-      fdom.util.forceAppContext(src) + &#x27;&quot;&gt;&lt;/script&gt;&lt;/html&gt;&#x27;;
+      fdom.util.forceModuleContext(src) + &#x27;&quot;&gt;&lt;/script&gt;&lt;/html&gt;&#x27;;
   blob = fdom.util.getBlob(loader, &#x27;text/html&#x27;);
   frame.src = fdom.util.getURL(blob);
 

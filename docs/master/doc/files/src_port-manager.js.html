@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.4</em>
+            <em>API Docs for: 0.4.12</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -59,15 +59,13 @@
             
                 <li><a href="../classes/ModuleInternal.html">ModuleInternal</a></li>
             
+                <li><a href="../classes/Policy.html">Policy</a></li>
+            
                 <li><a href="../classes/Provider.html">Provider</a></li>
             
                 <li><a href="../classes/Proxy.html">Proxy</a></li>
             
                 <li><a href="../classes/Resource.html">Resource</a></li>
-            
-                <li><a href="../classes/Runtime.html">Runtime</a></li>
-            
-                <li><a href="../classes/Runtime.Runtime.html">Runtime.Runtime</a></li>
             
                 <li><a href="../classes/util.html">util</a></li>
             
@@ -251,6 +249,16 @@ fdom.port.Manager.prototype.onMessage = function(flow, message) {
 };
 
 /**
+ * Get the port messages will be routed to given its id.
+ * @method getPort
+ * @param {String} portId The ID of the port.
+ * @returns {fdom.Port} The port with that ID.
+ */
+fdom.port.Manager.prototype.getPort = function(portId) {
+  return this.hub.getDestination(this.controlFlows[portId]);
+};
+
+/**
  * Set up a port with the hub.
  * @method setup
  * @param {Port} port The port to register.
@@ -279,6 +287,10 @@ fdom.port.Manager.prototype.setup = function(port) {
   this.reverseFlowMap[flow] = reverse;
   this.reverseFlowMap[reverse] = flow;
 
+  if (port.lineage) {
+    this.emit(&#x27;moduleAdd&#x27;, {id: port.id, lineage: port.lineage});
+  }
+  
   this.hub.onMessage(flow, {
     type: &#x27;setup&#x27;,
     channel: reverse,
@@ -297,6 +309,10 @@ fdom.port.Manager.prototype.destroy = function(port) {
   if (!port.id) {
     fdom.debug.warn(&quot;Unable to tear down unidentified port&quot;);
     return false;
+  }
+
+  if (port.lineage) {
+    this.emit(&#x27;moduleRemove&#x27;, {id: port.id, lineage: port.lineage});
   }
 
   // Remove the port.

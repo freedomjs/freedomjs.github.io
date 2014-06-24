@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.4</em>
+            <em>API Docs for: 0.4.12</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -59,15 +59,13 @@
             
                 <li><a href="../classes/ModuleInternal.html">ModuleInternal</a></li>
             
+                <li><a href="../classes/Policy.html">Policy</a></li>
+            
                 <li><a href="../classes/Provider.html">Provider</a></li>
             
                 <li><a href="../classes/Proxy.html">Proxy</a></li>
             
                 <li><a href="../classes/Resource.html">Resource</a></li>
-            
-                <li><a href="../classes/Runtime.html">Runtime</a></li>
-            
-                <li><a href="../classes/Runtime.Runtime.html">Runtime.Runtime</a></li>
             
                 <li><a href="../classes/util.html">util</a></li>
             
@@ -150,7 +148,7 @@ fdom.Hub = function() {
  * @param {Object} message The sent message.
  */
 fdom.Hub.prototype.onMessage = function(source, message) {
-  var destination = this.routes[source];
+  var destination = this.routes[source], type;
   if (!destination || !destination.app) {
     fdom.debug.warn(&quot;Message dropped from unregistered source &quot; + source);
     return;
@@ -162,7 +160,7 @@ fdom.Hub.prototype.onMessage = function(source, message) {
   }
 
   if (!message.quiet) {
-    var type = message.type;
+    type = message.type;
     if (message.type === &#x27;message&#x27; &amp;&amp; message.message &amp;&amp;
         message.message.action === &#x27;method&#x27;) {
       type = &#x27;method.&#x27; + message.message.type;

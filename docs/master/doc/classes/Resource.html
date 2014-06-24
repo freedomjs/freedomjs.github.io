@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.4</em>
+            <em>API Docs for: 0.4.12</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -59,15 +59,13 @@
             
                 <li><a href="../classes/ModuleInternal.html">ModuleInternal</a></li>
             
+                <li><a href="../classes/Policy.html">Policy</a></li>
+            
                 <li><a href="../classes/Provider.html">Provider</a></li>
             
                 <li><a href="../classes/Proxy.html">Proxy</a></li>
             
                 <li><a href="../classes/Resource.html">Resource</a></li>
-            
-                <li><a href="../classes/Runtime.html">Runtime</a></li>
-            
-                <li><a href="../classes/Runtime.Runtime.html">Runtime.Runtime</a></li>
             
                 <li><a href="../classes/util.html">util</a></li>
             
@@ -282,6 +280,13 @@ and provide lookup and migration of resources.</p>
                                 
                             </li>
                         
+                            <li class="index-item method">
+                                <a href="#method_removeRelativePath">removeRelativePath</a>
+
+                                
+                                
+                            </li>
+                        
                             <li class="index-item method private">
                                 <a href="#method_resolve">resolve</a>
 
@@ -354,7 +359,7 @@ and provide lookup and migration of resources.</p>
             
         
         
-        <a href="../files/src_resource.js.html#l95"><code>src&#x2F;resource.js:95</code></a>
+        <a href="../files/src_resource.js.html#l105"><code>src&#x2F;resource.js:105</code></a>
         
         </p>
 
@@ -453,7 +458,7 @@ fulfill a promise.</p>
             
         
         
-        <a href="../files/src_resource.js.html#l108"><code>src&#x2F;resource.js:108</code></a>
+        <a href="../files/src_resource.js.html#l118"><code>src&#x2F;resource.js:118</code></a>
         
         </p>
 
@@ -810,7 +815,7 @@ to retrieve with a protocol that it is able to handle.</p>
             
         
         
-        <a href="../files/src_resource.js.html#l124"><code>src&#x2F;resource.js:124</code></a>
+        <a href="../files/src_resource.js.html#l134"><code>src&#x2F;resource.js:134</code></a>
         
         </p>
 
@@ -953,7 +958,7 @@ to retrieve with a protocol that it is able to handle.</p>
             
         
         
-        <a href="../files/src_resource.js.html#l143"><code>src&#x2F;resource.js:143</code></a>
+        <a href="../files/src_resource.js.html#l194"><code>src&#x2F;resource.js:194</code></a>
         
         </p>
 
@@ -1118,7 +1123,7 @@ to retrieve with a protocol that it is able to handle.</p>
             
         
         
-        <a href="../files/src_resource.js.html#l200"><code>src&#x2F;resource.js:200</code></a>
+        <a href="../files/src_resource.js.html#l255"><code>src&#x2F;resource.js:255</code></a>
         
         </p>
 
@@ -1265,7 +1270,7 @@ potentially non-CORS requests.</p>
             
         
         
-        <a href="../files/src_resource.js.html#l181"><code>src&#x2F;resource.js:181</code></a>
+        <a href="../files/src_resource.js.html#l235"><code>src&#x2F;resource.js:235</code></a>
         
         </p>
 
@@ -1364,6 +1369,115 @@ potentially non-CORS requests.</p>
                         <span class="type">Boolean</span>:
                     
                     <p>True if the URL could be resolved.</p>
+
+                
+            </div>
+        </div>
+    
+
+    
+</div>
+
+                
+                    <div id="method_removeRelativePath" class="method item">
+    <h3 class="name"><code>removeRelativePath</code></h3>
+
+    
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>url</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+        <span class="returns-inline">
+            <span class="type">String</span>
+        </span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_resource.js.html#l153"><code>src&#x2F;resource.js:153</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Remove &#39;./&#39; and &#39;../&#39; from a URL
+Required because Chrome Apps for Mobile (cca) doesn&#39;t understand
+XHR paths with these relative components in the URL.</p>
+
+    </div>
+
+    
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">url</code>
+                        <span class="type">String</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The URL to modify</p>
+
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
+    
+
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">String</span>:
+                    
+                    <p>url without &#39;./&#39; and &#39;../&#39;</p>
 
                 
             </div>
@@ -1562,7 +1676,7 @@ not cache resolved resources.</p>
             
         
         
-        <a href="../files/src_resource.js.html#l222"><code>src&#x2F;resource.js:222</code></a>
+        <a href="../files/src_resource.js.html#l277"><code>src&#x2F;resource.js:277</code></a>
         
         </p>
 

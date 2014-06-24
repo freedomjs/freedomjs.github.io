@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.4</em>
+            <em>API Docs for: 0.4.12</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -59,15 +59,13 @@
             
                 <li><a href="../classes/ModuleInternal.html">ModuleInternal</a></li>
             
+                <li><a href="../classes/Policy.html">Policy</a></li>
+            
                 <li><a href="../classes/Provider.html">Provider</a></li>
             
                 <li><a href="../classes/Proxy.html">Proxy</a></li>
             
                 <li><a href="../classes/Resource.html">Resource</a></li>
-            
-                <li><a href="../classes/Runtime.html">Runtime</a></li>
-            
-                <li><a href="../classes/Runtime.Runtime.html">Runtime.Runtime</a></li>
             
                 <li><a href="../classes/util.html">util</a></li>
             
@@ -194,7 +192,7 @@
                             </li>
                         
                             <li class="index-item method">
-                                <a href="#method_forceAppContext">forceAppContext</a>
+                                <a href="#method_forceModuleContext">forceModuleContext</a>
 
                                 
                                     <span class="flag static">static</span>
@@ -239,7 +237,7 @@
                             </li>
                         
                             <li class="index-item method">
-                                <a href="#method_isAppContext">isAppContext</a>
+                                <a href="#method_isModuleContext">isModuleContext</a>
 
                                 
                                     <span class="flag static">static</span>
@@ -499,8 +497,8 @@ returns a true value, it will break out of the loop.</p>
 </div>
 
                 
-                    <div id="method_forceAppContext" class="method item">
-    <h3 class="name"><code>forceAppContext</code></h3>
+                    <div id="method_forceModuleContext" class="method item">
+    <h3 class="name"><code>forceModuleContext</code></h3>
 
     
         <span class="paren">()</span>
@@ -544,9 +542,9 @@ returns a true value, it will break out of the loop.</p>
     </div>
 
     <div class="description">
-        <p>Provide a version of src where the &#39;isAppContext&#39; function will return true.
-Used for creating app contexts which may not be able to determine that they
-need to start up as applications by themselves.</p>
+        <p>Provide a version of src where the &#39;isModuleContext&#39; function will return
+true. Used for creating module contexts which may not be able to determine
+that they need to start up in that mode by themselves.</p>
 
     </div>
 
@@ -789,8 +787,8 @@ phantomjs.</p>
 </div>
 
                 
-                    <div id="method_isAppContext" class="method item">
-    <h3 class="name"><code>isAppContext</code></h3>
+                    <div id="method_isModuleContext" class="method item">
+    <h3 class="name"><code>isModuleContext</code></h3>
 
     
         <span class="paren">()</span>
@@ -835,7 +833,7 @@ phantomjs.</p>
 
     <div class="description">
         <p>When run without a window, or specifically requested.
-Note: Declaration can be redefined in forceAppContext below.</p>
+Note: Declaration can be redefined in forceModuleContext below.</p>
 
     </div>
 

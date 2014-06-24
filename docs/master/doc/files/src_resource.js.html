@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.4</em>
+            <em>API Docs for: 0.4.12</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -59,15 +59,13 @@
             
                 <li><a href="../classes/ModuleInternal.html">ModuleInternal</a></li>
             
+                <li><a href="../classes/Policy.html">Policy</a></li>
+            
                 <li><a href="../classes/Provider.html">Provider</a></li>
             
                 <li><a href="../classes/Proxy.html">Proxy</a></li>
             
                 <li><a href="../classes/Resource.html">Resource</a></li>
-            
-                <li><a href="../classes/Runtime.html">Runtime</a></li>
-            
-                <li><a href="../classes/Runtime.Runtime.html">Runtime.Runtime</a></li>
             
                 <li><a href="../classes/util.html">util</a></li>
             
@@ -133,7 +131,7 @@ if (typeof fdom === &#x27;undefined&#x27;) {
 var Resource = function() {
   this.files = {};
   this.resolvers = [this.httpResolver, this.nullResolver];
-  this.contentRetreivers = {
+  this.contentRetrievers = {
     &#x27;http&#x27;: this.xhrRetriever,
     &#x27;https&#x27;: this.xhrRetriever,
     &#x27;chrome-extension&#x27;: this.xhrRetriever,
@@ -179,10 +177,10 @@ Resource.prototype.getContents = function(url) {
       fdom.debug.warn(&quot;Asked to get contents of undefined URL.&quot;);
       return reject();
     }
-    for (prop in this.contentRetreivers) {
-      if (this.contentRetreivers.hasOwnProperty(prop)) {
+    for (prop in this.contentRetrievers) {
+      if (this.contentRetrievers.hasOwnProperty(prop)) {
         if (url.indexOf(prop + &quot;://&quot;) === 0) {
-          return this.contentRetreivers[prop](url, resolve, reject);
+          return this.contentRetrievers[prop](url, resolve, reject);
         }
       }
     }
@@ -208,7 +206,17 @@ Resource.prototype.resolve = function(manifest, url) {
     fdom.util.eachReverse(this.resolvers, function(resolver) {
       promises.push(new Promise(resolver.bind({}, manifest, url)));
     }.bind(this));
-    Promise.race(promises).then(resolve, reject);
+    //TODO this would be much cleaner if Promise.any existed
+    Promise.all(promises).then(function(values) {
+      var i;
+      for (i = 0; i &lt; values.length; i += 1) {
+        if (typeof values[i] !== &#x27;undefined&#x27; &amp;&amp; values[i] !== false) {
+          resolve(values[i]);
+          return;
+        }
+      }
+      reject(&#x27;No resolvers to handle url: &#x27; + JSON.stringify([manifest, url]));
+    });
   }.bind(this));
 };
 
@@ -234,11 +242,11 @@ Resource.prototype.addResolver = function(resolver) {
  * @param {Function} retriever The retriever to add.
  */
 Resource.prototype.addRetriever = function(proto, retriever) {
-  if (this.contentRetreivers[proto]) {
+  if (this.contentRetrievers[proto]) {
     fdom.debug.warn(&quot;Unwilling to override file retrieval for &quot; + proto);
     return;
   }
-  this.contentRetreivers[proto] = retriever;
+  this.contentRetrievers[proto] = retriever;
 };
 
 /**
@@ -261,6 +269,47 @@ Resource.hasScheme = function(protocols, url) {
 };
 
 /**
+ * Remove &#x27;./&#x27; and &#x27;../&#x27; from a URL
+ * Required because Chrome Apps for Mobile (cca) doesn&#x27;t understand
+ * XHR paths with these relative components in the URL.
+ * @method removeRelativePath
+ * @param {String} url The URL to modify
+ * @returns {String} url without &#x27;./&#x27; and &#x27;../&#x27;
+ **/
+Resource.removeRelativePath = function(url) {
+  var idx = url.indexOf(&quot;://&quot;) + 3,
+      stack, toRemove,
+      result;
+  // Remove all instances of /./
+  url = url.replace(/\/\.\//g, &quot;/&quot;);
+  //Weird bug where in cca, manifest starts with &#x27;chrome:////&#x27;
+  //This forces there to only be 2 slashes
+  while (url.charAt(idx) === &quot;/&quot;) {
+    url = url.slice(0, idx) + url.slice(idx + 1, url.length);
+  }
+
+  // Advance to next /
+  idx = url.indexOf(&quot;/&quot;, idx);
+  // Removing ../
+  stack = url.substr(idx + 1).split(&quot;/&quot;);
+  while (stack.indexOf(&quot;..&quot;) !== -1) {
+    toRemove = stack.indexOf(&quot;..&quot;);
+    if (toRemove === 0) {
+      stack.shift();
+    } else {
+      stack.splice((toRemove - 1), 2);
+    }
+  }
+  
+  //Rebuild string
+  result = url.substr(0, idx);
+  for (idx = 0; idx &lt; stack.length; idx += 1) {
+    result += &quot;/&quot; + stack[idx];
+  }
+  return result;
+};
+
+/**
  * Resolve URLs which can be accessed using standard HTTP requests.
  * @method httpResolver
  * @private
@@ -272,13 +321,15 @@ Resource.hasScheme = function(protocols, url) {
  */
 Resource.prototype.httpResolver = function(manifest, url, resolve, reject) {
   var protocols = [&quot;http&quot;, &quot;https&quot;, &quot;chrome&quot;, &quot;chrome-extension&quot;, &quot;resource&quot;],
-      dirname, protocolIdx, pathIdx, path, base;
+      dirname, protocolIdx, pathIdx, path, base, result;
+
   if (Resource.hasScheme(protocols, url)) {
-    resolve(url);
+    resolve(Resource.removeRelativePath(url));
     return true;
   }
   
   if (!manifest) {
+    resolve(false);
     return false;
   }
   if (Resource.hasScheme(protocols, manifest) &amp;&amp;
@@ -289,12 +340,13 @@ Resource.prototype.httpResolver = function(manifest, url, resolve, reject) {
     path = dirname.substr(pathIdx);
     base = dirname.substr(0, pathIdx);
     if (url.indexOf(&quot;/&quot;) === 0) {
-      resolve(base + url);
+      resolve(Resource.removeRelativePath(base + url));
     } else {
-      resolve(base + path + &quot;/&quot; + url);
+      resolve(Resource.removeRelativePath(base + path + &quot;/&quot; + url));
     }
     return true;
   }
+  resolve(false);
   return false;
 };
 
@@ -314,6 +366,7 @@ Resource.prototype.nullResolver = function(manifest, url, resolve, reject) {
     resolve(url);
     return true;
   }
+  resolve(false);
   return false;
 };
 
@@ -334,7 +387,7 @@ Resource.prototype.manifestRetriever = function(manifest, resolve, reject) {
     JSON.parse(data);
     resolve(data);
   } catch(e) {
-    console.warn(&quot;Invalid manifest URL referenced:&quot; + manifest);
+    fdom.debug.warn(&quot;Invalid manifest URL referenced:&quot; + manifest);
     reject();
   }
 };
@@ -349,15 +402,15 @@ Resource.prototype.manifestRetriever = function(manifest, resolve, reject) {
  */
 Resource.prototype.xhrRetriever = function(url, resolve, reject) {
   var ref = new XMLHttpRequest();
-  ref.addEventListener(&#x27;readystatechange&#x27;, function(resolve, reject) {
+  ref.addEventListener(&quot;readystatechange&quot;, function(resolve, reject) {
     if (ref.readyState === 4 &amp;&amp; ref.responseText) {
       resolve(ref.responseText);
     } else if (ref.readyState === 4) {
-      console.warn(&quot;Failed to load file &quot; + url + &quot;: &quot; + ref.status);
+      fdom.debug.warn(&quot;Failed to load file &quot; + url + &quot;: &quot; + ref.status);
       reject(ref.status);
     }
   }.bind({}, resolve, reject), false);
-  ref.overrideMimeType(&#x27;application/json&#x27;);
+  ref.overrideMimeType(&quot;application/json&quot;);
   ref.open(&quot;GET&quot;, url, true);
   ref.send();
 };

@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.4</em>
+            <em>API Docs for: 0.4.12</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -59,15 +59,13 @@
             
                 <li><a href="../classes/ModuleInternal.html">ModuleInternal</a></li>
             
+                <li><a href="../classes/Policy.html">Policy</a></li>
+            
                 <li><a href="../classes/Provider.html">Provider</a></li>
             
                 <li><a href="../classes/Proxy.html">Proxy</a></li>
             
                 <li><a href="../classes/Resource.html">Resource</a></li>
-            
-                <li><a href="../classes/Runtime.html">Runtime</a></li>
-            
-                <li><a href="../classes/Runtime.Runtime.html">Runtime.Runtime</a></li>
             
                 <li><a href="../classes/util.html">util</a></li>
             
@@ -236,8 +234,10 @@ fdom.port.Debug.prototype.print = function(message) {
     if (typeof process !== &#x27;undefined&#x27; &amp;&amp; message.source) {
       arr.unshift(&#x27;\x1B[39m&#x27;);
       arr.unshift(&#x27;\x1B[31m&#x27; + message.source);
+    /*jslint nomen: true*/
     } else if (this.console.__mozillaConsole__ &amp;&amp; message.source) {
       arr.unshift(message.source.toUpperCase());
+    /*jslint nomen: false*/
     } else if (message.source) {
       arr.unshift(&#x27;color: red&#x27;);
       arr.unshift(&#x27;%c &#x27; + message.source);
