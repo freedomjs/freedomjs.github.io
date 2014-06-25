@@ -3068,6 +3068,12 @@ fdom.apis.set("core.udpsocket", {
             wasClean: "boolean"
         }
     }
+}), fdom.apis.set("core.keystore", {
+    getPublicKeyFingerprint: {
+        type: "method",
+        value: [],
+        ret: "string"
+    }
 }), /*globals fdom:true */
 /**
  * SOCIAL API
