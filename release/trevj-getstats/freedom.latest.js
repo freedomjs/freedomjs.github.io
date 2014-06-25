@@ -3904,7 +3904,7 @@ PeerConnection.prototype.send = function(sendInfo, continuation) {
     return "undefined" == typeof objToSend ? void console.error("No valid data to send has been provided.", sendInfo) : void this.peer.send(sendInfo.channelLabel, objToSend, continuation);
 }, PeerConnection.prototype.getBufferedAmount = function(channelId, continuation) {
     continuation(this.peer.getBufferedAmount(channelId));
-}, // TODO: handle Firefox's stats
+}, // TODO: handle Firefox stats
 PeerConnection.prototype.getStats = function(continuation) {
     var callback = function(stats) {
         // RTCStatsReport

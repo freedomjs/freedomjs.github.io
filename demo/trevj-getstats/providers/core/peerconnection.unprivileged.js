@@ -483,7 +483,7 @@ PeerConnection.prototype.getBufferedAmount = function (channelId, continuation) 
   continuation(this.peer.getBufferedAmount(channelId));
 };
 
-// TODO: handle Firefox's stats
+// TODO: handle Firefox stats
 PeerConnection.prototype.getStats = function (continuation) {
   var callback = function(stats) { // RTCStatsResponse
     var reports = stats.result(); // RTCStatsReport
