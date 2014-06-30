@@ -1,0 +1,13 @@
+{
+  "name": "About Me",
+  "description": "About Me Sample freedom.js application",
+  "app": {
+    "script": "aboutme.js"
+  },
+  "dependencies": {
+    "identity": {
+      "url": "identity.json",
+      "api": "identity"
+    }
+  }
+}
