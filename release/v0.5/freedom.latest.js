@@ -544,10 +544,16 @@ Api.prototype.set = function(name, definition) {
  * @method register
  * @param {String} name the API name.
  * @param {Function} constructor the function to create a provider for the API.
+ * @param {String?} style The style the provider is written in. Valid styles
+ *   are documented in fdom.port.Provider.prototype.getInterface. Defaults to
+ *   provideAsynchronous
  */
-Api.prototype.register = function(name, constructor) {
+Api.prototype.register = function(name, constructor, style) {
     var i;
-    if (this.providers[name] = constructor, this.waiters[name]) {
+    if (this.providers[name] = {
+        constructor: constructor,
+        style: style || "provideAsynchronous"
+    }, this.waiters[name]) {
         for (i = 0; i < this.waiters[name].length; i += 1) this.waiters[name][i].resolve(constructor.bind({}, this.waiters[name][i].from));
         delete this.waiters[name];
     }
@@ -561,13 +567,24 @@ Api.prototype.register = function(name, constructor) {
  */
 Api.prototype.getCore = function(name, from) {
     return new Promise(function(resolve, reject) {
-        this.apis[name] ? this.providers[name] ? resolve(this.providers[name].bind({}, from)) : (this.waiters[name] || (this.waiters[name] = []), 
+        this.apis[name] ? this.providers[name] ? resolve(this.providers[name].constructor.bind({}, from)) : (this.waiters[name] || (this.waiters[name] = []), 
         this.waiters[name].push({
             resolve: resolve,
             reject: reject,
             from: from
         })) : (fdom.debug.warn("Api.getCore asked for unknown core: " + name), reject(null));
     }.bind(this));
+}, /**
+ * Get the style in which a core API is written.
+ * This method is guaranteed to know the style of a provider returned from
+ * a previous getCore call, and so does not use promises.
+ * @method getInterfaceStyle
+ * @param {String} name The name of the provider.
+ * @returns {String} The coding style, as used by
+ *   fdom.port.Provider.prototype.getInterface.
+ */
+Api.prototype.getInterfaceStyle = function(name) {
+    return this.providers[name] ? this.providers[name].style : void fdom.debug.warn("Api.getInterfaceStyle for unknown provider: " + name);
 }, /**
  * Defines fdom.apis for fdom module registry and core provider registation.
  */
@@ -1330,12 +1347,13 @@ fdom.port.Module.prototype.emitMessage = function(name, message) {
  * @private
  */
 fdom.port.Module.prototype.loadLinks = function() {
-    var i, name, dep, channels = [ "default" ], finishLink = function(dep, provider) {
-        dep.getInterface().provideAsynchronous(provider);
+    var i, name, dep, channels = [ "default" ], finishLink = function(dep, name, provider) {
+        var style = fdom.apis.getInterfaceStyle(name);
+        dep.getInterface()[style](provider);
     };
     if (this.manifest.permissions) for (i = 0; i < this.manifest.permissions.length; i += 1) name = this.manifest.permissions[i], 
     channels.indexOf(name) < 0 && 0 === name.indexOf("core.") && (channels.push(name), 
-    dep = new fdom.port.Provider(fdom.apis.get(name).definition), fdom.apis.getCore(name, this).then(finishLink.bind(this, dep)), 
+    dep = new fdom.port.Provider(fdom.apis.get(name).definition), fdom.apis.getCore(name, this).then(finishLink.bind(this, dep, name)), 
     this.emit(this.controlChannel, {
         type: "Core Link to " + name,
         request: "link",

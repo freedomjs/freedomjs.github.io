@@ -873,13 +873,18 @@
                     "name": "constructor",
                     "description": "the function to create a provider for the API.",
                     "type": "Function"
+                },
+                {
+                    "name": "style",
+                    "description": "The style the provider is written in. Valid styles\n  are documented in fdom.port.Provider.prototype.getInterface. Defaults to\n  provideAsynchronous",
+                    "type": "String?"
                 }
             ],
             "class": "API"
         },
         {
             "file": "src/apis.js",
-            "line": 65,
+            "line": 71,
             "description": "Get a core API connected to a given FreeDOM module.",
             "itemtype": "method",
             "name": "getCore",
@@ -903,7 +908,26 @@
         },
         {
             "file": "src/apis.js",
-            "line": 95,
+            "line": 101,
+            "description": "Get the style in which a core API is written.\nThis method is guaranteed to know the style of a provider returned from\na previous getCore call, and so does not use promises.",
+            "itemtype": "method",
+            "name": "getInterfaceStyle",
+            "params": [
+                {
+                    "name": "name",
+                    "description": "The name of the provider.",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "The coding style, as used by\n  fdom.port.Provider.prototype.getInterface.",
+                "type": "String"
+            },
+            "class": "API"
+        },
+        {
+            "file": "src/apis.js",
+            "line": 119,
             "description": "Defines fdom.apis for fdom module registry and core provider registation.",
             "class": "API"
         },
@@ -1744,7 +1768,7 @@
         },
         {
             "file": "src/port-module.js",
-            "line": 352,
+            "line": 353,
             "description": "Update the module environment with information about a dependent manifest.",
             "itemtype": "method",
             "name": "updateEnv",
@@ -2802,7 +2826,11 @@
         },
         {
             "message": "replacing incorrect tag: returns with return",
-            "line": " src/apis.js:65"
+            "line": " src/apis.js:71"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " src/apis.js:101"
         },
         {
             "message": "replacing incorrect tag: returns with return",
@@ -2882,7 +2910,7 @@
         },
         {
             "message": "Missing item type\nDefines fdom.apis for fdom module registry and core provider registation.",
-            "line": " src/apis.js:95"
+            "line": " src/apis.js:119"
         },
         {
             "message": "Missing item type\nA freedom port providing debugging output to the console.",

@@ -246,6 +246,13 @@ and provides a bridge for core APIs to act like normal APIs.</p>
                             </li>
                         
                             <li class="index-item method">
+                                <a href="#method_getInterfaceStyle">getInterfaceStyle</a>
+
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method">
                                 <a href="#method_makeArrayBuffer">makeArrayBuffer</a>
 
                                 
@@ -628,7 +635,7 @@ template.</p>
             
         
         
-        <a href="../files/src_apis.js.html#l65"><code>src&#x2F;apis.js:65</code></a>
+        <a href="../files/src_apis.js.html#l71"><code>src&#x2F;apis.js:71</code></a>
         
         </p>
 
@@ -696,6 +703,116 @@ template.</p>
                     
                     <p>A promise of a fdom.App look-alike matching
 a local API definition.</p>
+
+                
+            </div>
+        </div>
+    
+
+    
+</div>
+
+                
+                    <div id="method_getInterfaceStyle" class="method item">
+    <h3 class="name"><code>getInterfaceStyle</code></h3>
+
+    
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>name</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+        <span class="returns-inline">
+            <span class="type">String</span>
+        </span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_apis.js.html#l101"><code>src&#x2F;apis.js:101</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Get the style in which a core API is written.
+This method is guaranteed to know the style of a provider returned from
+a previous getCore call, and so does not use promises.</p>
+
+    </div>
+
+    
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">name</code>
+                        <span class="type">String</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The name of the provider.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
+    
+
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">String</span>:
+                    
+                    <p>The coding style, as used by
+  fdom.port.Provider.prototype.getInterface.</p>
 
                 
             </div>
@@ -1210,6 +1327,12 @@ cannot be  overwritten. Doesn&#39;t do anything for arrays or other collections.
                     
                 </li>
             
+                <li class="arg">
+                    
+                        <code>style</code>
+                    
+                </li>
+            
             </ul><span class="paren">)</span>
         </div>
     
@@ -1286,6 +1409,24 @@ cannot be  overwritten. Doesn&#39;t do anything for arrays or other collections.
 
                     <div class="param-description">
                         <p>the function to create a provider for the API.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">style</code>
+                        <span class="type">String?</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The style the provider is written in. Valid styles
+  are documented in fdom.port.Provider.prototype.getInterface. Defaults to
+  provideAsynchronous</p>
 
                     </div>
 
