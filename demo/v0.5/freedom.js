@@ -511,7 +511,7 @@ function PeerConnection(portModule, dispatchEvent, RTCPeerConnection, RTCSession
 "undefined" == typeof fdom && (fdom = {});
 
 /**
- * The API registry for FreeDOM.  Used to look up requested APIs,
+ * The API registry for freedom.js.  Used to look up requested APIs,
  * and provides a bridge for core APIs to act like normal APIs.
  * @Class API
  * @constructor
@@ -548,7 +548,7 @@ Api.prototype.set = function(name, definition) {
 Api.prototype.register = function(name, constructor) {
     var i;
     if (this.providers[name] = constructor, this.waiters[name]) {
-        for (i = 0; i < this.waiters[name].length; i += 1) this.waiters[name][i][0](constructor.bind({}, this.waiters[name][i][2]));
+        for (i = 0; i < this.waiters[name].length; i += 1) this.waiters[name][i].resolve(constructor.bind({}, this.waiters[name][i].from));
         delete this.waiters[name];
     }
 }, /**
@@ -562,8 +562,11 @@ Api.prototype.register = function(name, constructor) {
 Api.prototype.getCore = function(name, from) {
     return new Promise(function(resolve, reject) {
         this.apis[name] ? this.providers[name] ? resolve(this.providers[name].bind({}, from)) : (this.waiters[name] || (this.waiters[name] = []), 
-        this.waiters[name].push([ resolve, reject, from ])) : (fdom.debug.warn("Api.getCore asked for unknown core: " + name), 
-        reject(null));
+        this.waiters[name].push({
+            resolve: resolve,
+            reject: reject,
+            from: from
+        })) : (fdom.debug.warn("Api.getCore asked for unknown core: " + name), reject(null));
     }.bind(this));
 }, /**
  * Defines fdom.apis for fdom module registry and core provider registation.
@@ -3008,13 +3011,19 @@ fdom.apis.set("core.udpsocket", {
             channelId: "string"
         }
     },
-    // Returns the number of bytes that have queued using "send", but not
+    // Returns the number of bytes that have queued using 'send', but not
     // yet sent out. Currently just exposes:
     // http://www.w3.org/TR/webrtc/#widl-RTCDataChannel-bufferedAmount
     getBufferedAmount: {
         type: "method",
         value: [ "string" ],
         ret: "number"
+    },
+    // Returns local SDP headers from createOffer.
+    getInfo: {
+        type: "method",
+        value: [],
+        ret: "string"
     },
     // Close the peer connection.
     close: {
@@ -4221,4 +4230,4 @@ WS.prototype.send = function(data, continuation) {
   })();
 
 })(this);
-//# sourceMappingURL=freedom.map.js
+//# sourceMappingURL=freedom.js.map

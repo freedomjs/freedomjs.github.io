@@ -263,7 +263,7 @@
             "module": "freedom",
             "file": "src/apis.js",
             "line": 7,
-            "description": "The API registry for FreeDOM.  Used to look up requested APIs,\nand provides a bridge for core APIs to act like normal APIs.",
+            "description": "The API registry for freedom.js.  Used to look up requested APIs,\nand provides a bridge for core APIs to act like normal APIs.",
             "is_constructor": 1
         },
         "util": {
@@ -903,7 +903,7 @@
         },
         {
             "file": "src/apis.js",
-            "line": 91,
+            "line": 95,
             "description": "Defines fdom.apis for fdom module registry and core provider registation.",
             "class": "API"
         },
@@ -2882,7 +2882,7 @@
         },
         {
             "message": "Missing item type\nDefines fdom.apis for fdom module registry and core provider registation.",
-            "line": " src/apis.js:91"
+            "line": " src/apis.js:95"
         },
         {
             "message": "Missing item type\nA freedom port providing debugging output to the console.",
