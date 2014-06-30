@@ -3093,6 +3093,22 @@ fdom.apis.set("core.udpsocket", {
         value: [],
         ret: "string"
     },
+    createOffer: {
+        type: "method",
+        value: [ {
+            // Optional :RTCOfferOptions object.
+            offerToReceiveVideo: "number",
+            offerToReceiveAudio: "number",
+            voiceActivityDetection: "boolean",
+            iceRestart: "boolean"
+        } ],
+        ret: {
+            // Fulfills with a :RTCSessionDescription
+            type: "string",
+            // Should always be 'offer'.
+            sdp: "string"
+        }
+    },
     // Close the peer connection.
     close: {
         type: "method",
@@ -3914,7 +3930,11 @@ var SimpleDataPeerState = {
     CONNECTED: "CONNECTED"
 };
 
-SimpleDataPeer.prototype.runWhenConnected = function(func) {
+SimpleDataPeer.prototype.createOffer = function(constaints, continuation) {
+    this.pc.createOffer(continuation, function() {
+        console.error("core.peerconnection createOffer failed.");
+    }, constaints);
+}, SimpleDataPeer.prototype.runWhenConnected = function(func) {
     this.pcState === SimpleDataPeerState.CONNECTED ? func() : this.onConnectedQueue.push(func);
 }, SimpleDataPeer.prototype.send = function(channelId, message, continuation) {
     this.channels[channelId].send(message), continuation();
@@ -4092,6 +4112,8 @@ PeerConnection.prototype.setup = function(signallingChannelId, peerName, stunSer
         }.bind(this);
         this.openDataChannel(channelId, openDataChannelContinuation);
     }
+}, PeerConnection.prototype.createOffer = function(constraints, continuation) {
+    this.peer.createOffer(constraints, continuation);
 }, // TODO: delay continuation until the open callback from _peer is called.
 PeerConnection.prototype.openDataChannel = function(channelId, continuation) {
     this.peer.openDataChannel(channelId, continuation);
