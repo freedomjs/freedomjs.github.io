@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.12</em>
+            <em>API Docs for: 0.5.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -195,7 +195,8 @@ fdom.port.Provider.prototype.onMessage = function(source, message) {
     } else if (message.to &amp;&amp; message.message &amp;&amp;
         message.message.type === &#x27;construct&#x27;) {
       var args = fdom.proxy.portableToMessage(
-          this.definition.constructor ? this.definition.constructor.value : [],
+          (this.definition.constructor &amp;&amp; this.definition.constructor.value) ?
+              this.definition.constructor.value : [],
           message.message);
       if (!this.providerInstances[source]) {
         this.providerInstances[source] = {};

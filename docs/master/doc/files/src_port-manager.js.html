@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.12</em>
+            <em>API Docs for: 0.5.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -196,9 +196,7 @@ fdom.port.Manager.prototype.onMessage = function(flow, message) {
   }
 
   if (message.request === &#x27;debug&#x27;) {
-    if (this.config.debug) {
-      fdom.debug.print(message);
-    }
+    fdom.debug.print(message);
     return;
   }
 

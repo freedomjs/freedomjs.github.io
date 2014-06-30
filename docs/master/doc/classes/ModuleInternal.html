@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.12</em>
+            <em>API Docs for: 0.5.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -268,6 +268,13 @@ facing exports have appropriate properties, and load user scripts.</p>
                             </li>
                         
                             <li class="index-item method private">
+                                <a href="#method_loadLink">loadLink</a>
+
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method private">
                                 <a href="#method_loadLinks">loadLinks</a>
 
                                 
@@ -395,7 +402,7 @@ facing exports have appropriate properties, and load user scripts.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l101"><code>src&#x2F;port-moduleinternal.js:101</code></a>
+        <a href="../files/src_port-moduleinternal.js.html#l102"><code>src&#x2F;port-moduleinternal.js:102</code></a>
         
         </p>
 
@@ -474,6 +481,167 @@ facing exports have appropriate properties, and load user scripts.</p>
 </div>
 
                 
+                    <div id="method_loadLink" class="method item private">
+    <h3 class="name"><code>loadLink</code></h3>
+
+    
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>name</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code class="optional">[definition]</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+
+    
+
+    
+        <span class="flag private">private</span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_port-moduleinternal.js.html#l200"><code>src&#x2F;port-moduleinternal.js:200</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Create a proxy for a single manifest item, and attach it to the global
+context once it is loaded.</p>
+
+    </div>
+
+    
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">name</code>
+                        <span class="type">String</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The name of the link</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name optional">[definition]</code>
+                        <span class="type">Object</span>
+                        <span class="flag optional" title="This parameter is optional.">optional</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The definition of the API to expose.</p>
+
+                    </div>
+
+                    
+                        <ul class="params-list">
+                            
+                            <li class="param">
+                                
+                                    <code class="param-name">name</code>
+                                    <span class="type">String</span>
+                                
+
+                                <div class="param-description">
+                                    <p>The name of the API for the link.</p>
+
+                                </div>
+
+                                
+                            </li>
+                            
+                            <li class="param">
+                                
+                                    <code class="param-name">definition</code>
+                                    <span class="type">Object</span>
+                                
+
+                                <div class="param-description">
+                                    <p>The definition of the API.</p>
+
+                                </div>
+
+                                
+                            </li>
+                            
+                            <li class="param">
+                                
+                                    <code class="param-name">provides</code>
+                                    <span class="type">Boolean</span>
+                                
+
+                                <div class="param-description">
+                                    <p>Whether the link is a provider.</p>
+
+                                </div>
+
+                                
+                            </li>
+                            
+                        </ul>
+                    
+                </li>
+            
+            </ul>
+        </div>
+    
+
+    
+
+    
+</div>
+
+                
                     <div id="method_loadLinks" class="method item private">
     <h3 class="name"><code>loadLinks</code></h3>
 
@@ -518,7 +686,7 @@ facing exports have appropriate properties, and load user scripts.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l128"><code>src&#x2F;port-moduleinternal.js:128</code></a>
+        <a href="../files/src_port-moduleinternal.js.html#l129"><code>src&#x2F;port-moduleinternal.js:129</code></a>
         
         </p>
 
@@ -614,7 +782,7 @@ namespace.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l272"><code>src&#x2F;port-moduleinternal.js:272</code></a>
+        <a href="../files/src_port-moduleinternal.js.html#l316"><code>src&#x2F;port-moduleinternal.js:316</code></a>
         
         </p>
 
@@ -723,7 +891,7 @@ namespace.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l216"><code>src&#x2F;port-moduleinternal.js:216</code></a>
+        <a href="../files/src_port-moduleinternal.js.html#l251"><code>src&#x2F;port-moduleinternal.js:251</code></a>
         
         </p>
 
@@ -935,7 +1103,7 @@ the manifest info for the module.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l72"><code>src&#x2F;port-moduleinternal.js:72</code></a>
+        <a href="../files/src_port-moduleinternal.js.html#l73"><code>src&#x2F;port-moduleinternal.js:73</code></a>
         
         </p>
 
@@ -1026,7 +1194,7 @@ the manifest info for the module.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l327"><code>src&#x2F;port-moduleinternal.js:327</code></a>
+        <a href="../files/src_port-moduleinternal.js.html#l371"><code>src&#x2F;port-moduleinternal.js:371</code></a>
         
         </p>
 
@@ -1147,7 +1315,7 @@ the manifest info for the module.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l81"><code>src&#x2F;port-moduleinternal.js:81</code></a>
+        <a href="../files/src_port-moduleinternal.js.html#l82"><code>src&#x2F;port-moduleinternal.js:82</code></a>
         
         </p>
 
@@ -1242,7 +1410,7 @@ the manifest info for the module.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l197"><code>src&#x2F;port-moduleinternal.js:197</code></a>
+        <a href="../files/src_port-moduleinternal.js.html#l232"><code>src&#x2F;port-moduleinternal.js:232</code></a>
         
         </p>
 

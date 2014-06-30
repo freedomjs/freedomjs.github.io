@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.12</em>
+            <em>API Docs for: 0.5.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -144,7 +144,8 @@ fdom.proxy.ApiInterface = function(def, onMsg, emit) {
                 template: prop.ret
               };
             }),
-            streams = fdom.proxy.messageToPortable(prop.value, arguments);
+            streams = fdom.proxy.messageToPortable(prop.value,
+                Array.prototype.slice.call(arguments, 0));
         reqId += 1;
         emit({
           action: &#x27;method&#x27;,
@@ -205,7 +206,7 @@ fdom.proxy.ApiInterface = function(def, onMsg, emit) {
   }.bind(this));
 
   args = fdom.proxy.messageToPortable(
-      def.constructor ? def.constructor.value : [],
+      (def.constructor &amp;&amp; def.constructor.value) ? def.constructor.value : [],
       Array.prototype.slice.call(args, 3));
 
   emit({
@@ -262,11 +263,15 @@ fdom.proxy.conform = function(template, from, externals, separate) {
     //from = undefined;
     //throw &quot;Trying to conform a function&quot;;
     return undefined;
-  } else if (typeof(from) === &#x27;undefined&#x27; || template === undefined) {
+  } else if (typeof(from) === &#x27;undefined&#x27;) {
     return undefined;
   } else if (from === null) {
     return null;
+  } else if (template === undefined) {
+    fdom.debug.error(&quot;Message discarded for not matching declared type!&quot;, from);
+    return undefined;
   }
+
   switch(template) {
   case &#x27;string&#x27;:
     return String(&#x27;&#x27;) + from;

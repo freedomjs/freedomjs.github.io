@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.12</em>
+            <em>API Docs for: 0.5.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -278,7 +278,7 @@ fdom.Policy.prototype.loadManifest = function(manifest) {
     try {
       return JSON.parse(data);
     } catch(err) {
-      fdom.debug.warn(&quot;Failed to load &quot; + this.manifestId + &quot;: &quot; + err);
+      fdom.debug.warn(&quot;Failed to load &quot; + manifest + &quot;: &quot; + err);
       return {};
     }
   });

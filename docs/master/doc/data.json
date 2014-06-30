@@ -2,7 +2,7 @@
     "project": {
         "name": "freedom",
         "description": "Embracing a distributed web",
-        "version": "0.4.12"
+        "version": "0.5.0"
     },
     "files": {
         "src/link/direct.js": {
@@ -263,7 +263,7 @@
             "module": "freedom",
             "file": "src/apis.js",
             "line": 7,
-            "description": "The API registry for FreeDOM.  Used to look up requested APIs,\nand provides a bridge for core APIs to act like normal APIs.",
+            "description": "The API registry for freedom.js.  Used to look up requested APIs,\nand provides a bridge for core APIs to act like normal APIs.",
             "is_constructor": 1
         },
         "util": {
@@ -601,7 +601,7 @@
         },
         {
             "file": "src/link/frame.js",
-            "line": 136,
+            "line": 137,
             "description": "Receive messages from the hub to this port.\nReceived messages will be emitted from the other side of the port.",
             "itemtype": "method",
             "name": "deliverMessage",
@@ -689,7 +689,7 @@
         },
         {
             "file": "src/proxy/apiInterface.js",
-            "line": 100,
+            "line": 101,
             "description": "Convert a structured data structure into a message stream conforming to\na template and an array of binary data elements.",
             "static": 1,
             "itemtype": "method",
@@ -714,7 +714,7 @@
         },
         {
             "file": "src/proxy/apiInterface.js",
-            "line": 118,
+            "line": 119,
             "description": "Convert Structured Data streams into a data structure conforming to a\ntemplate.",
             "static": 1,
             "itemtype": "method",
@@ -739,7 +739,7 @@
         },
         {
             "file": "src/proxy/apiInterface.js",
-            "line": 131,
+            "line": 132,
             "description": "Force a collection of values to look like the types and length of an API\ntemplate.",
             "static": 1,
             "itemtype": "method",
@@ -770,7 +770,7 @@
         },
         {
             "file": "src/proxy/apiInterface.js",
-            "line": 222,
+            "line": 227,
             "description": "Make a thing into an Array Buffer",
             "static": 1,
             "itemtype": "method",
@@ -790,7 +790,7 @@
         },
         {
             "file": "src/proxy/apiInterface.js",
-            "line": 248,
+            "line": 253,
             "description": "Recursively traverse a [nested] object and freeze its keys from being\nwritable. Note, the result can have new keys added to it, but existing ones\ncannot be  overwritten. Doesn't do anything for arrays or other collections.",
             "itemtype": "method",
             "name": "recursiveFreezeObject",
@@ -873,13 +873,18 @@
                     "name": "constructor",
                     "description": "the function to create a provider for the API.",
                     "type": "Function"
+                },
+                {
+                    "name": "style",
+                    "description": "The style the provider is written in. Valid styles\n  are documented in fdom.port.Provider.prototype.getInterface. Defaults to\n  provideAsynchronous",
+                    "type": "String?"
                 }
             ],
             "class": "API"
         },
         {
             "file": "src/apis.js",
-            "line": 65,
+            "line": 71,
             "description": "Get a core API connected to a given FreeDOM module.",
             "itemtype": "method",
             "name": "getCore",
@@ -903,7 +908,26 @@
         },
         {
             "file": "src/apis.js",
-            "line": 91,
+            "line": 101,
+            "description": "Get the style in which a core API is written.\nThis method is guaranteed to know the style of a provider returned from\na previous getCore call, and so does not use promises.",
+            "itemtype": "method",
+            "name": "getInterfaceStyle",
+            "params": [
+                {
+                    "name": "name",
+                    "description": "The name of the provider.",
+                    "type": "String"
+                }
+            ],
+            "return": {
+                "description": "The coding style, as used by\n  fdom.port.Provider.prototype.getInterface.",
+                "type": "String"
+            },
+            "class": "API"
+        },
+        {
+            "file": "src/apis.js",
+            "line": 119,
             "description": "Defines fdom.apis for fdom module registry and core provider registation.",
             "class": "API"
         },
@@ -1481,7 +1505,7 @@
         },
         {
             "file": "src/port-manager.js",
-            "line": 133,
+            "line": 131,
             "description": "Get the port messages will be routed to given its id.",
             "itemtype": "method",
             "name": "getPort",
@@ -1501,7 +1525,7 @@
         },
         {
             "file": "src/port-manager.js",
-            "line": 143,
+            "line": 141,
             "description": "Set up a port with the hub.",
             "itemtype": "method",
             "name": "setup",
@@ -1517,7 +1541,7 @@
         },
         {
             "file": "src/port-manager.js",
-            "line": 185,
+            "line": 183,
             "description": "Tear down a port on the hub.",
             "itemtype": "method",
             "name": "destroy",
@@ -1527,7 +1551,7 @@
         },
         {
             "file": "src/port-manager.js",
-            "line": 214,
+            "line": 212,
             "description": "Create a link between two ports.  Links are created in both directions,\nand a message with those capabilities is sent to the source port.",
             "itemtype": "method",
             "name": "createLink",
@@ -1565,7 +1589,7 @@
         },
         {
             "file": "src/port-manager.js",
-            "line": 271,
+            "line": 269,
             "description": "Remove a link between to ports. The reverse link will also be removed.",
             "itemtype": "method",
             "name": "removeLink",
@@ -1586,7 +1610,7 @@
         },
         {
             "file": "src/port-manager.js",
-            "line": 318,
+            "line": 316,
             "description": "Forget the flow from id with a given name.",
             "itemtype": "method",
             "name": "forgetFlow",
@@ -1609,7 +1633,7 @@
         },
         {
             "file": "src/port-manager.js",
-            "line": 337,
+            "line": 335,
             "description": "Get the core freedom.js API active on the current hub.",
             "itemtype": "method",
             "name": "getCore",
@@ -1744,7 +1768,7 @@
         },
         {
             "file": "src/port-module.js",
-            "line": 352,
+            "line": 353,
             "description": "Update the module environment with information about a dependent manifest.",
             "itemtype": "method",
             "name": "updateEnv",
@@ -1786,7 +1810,7 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 72,
+            "line": 73,
             "description": "Get a textual description of this Port.",
             "itemtype": "method",
             "name": "toString",
@@ -1799,7 +1823,7 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 81,
+            "line": 82,
             "description": "Attach the manifest of the active module to the externally visible namespace.",
             "itemtype": "method",
             "name": "updateEnv",
@@ -1817,7 +1841,7 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 101,
+            "line": 102,
             "description": "Attach a proxy to the externally visible namespace.",
             "itemtype": "method",
             "name": "attach",
@@ -1845,7 +1869,7 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 128,
+            "line": 129,
             "description": "Request a set of proxy interfaces, and bind them to the external\nnamespace.",
             "itemtype": "method",
             "name": "loadLinks",
@@ -1863,7 +1887,48 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 197,
+            "line": 200,
+            "description": "Create a proxy for a single manifest item, and attach it to the global\ncontext once it is loaded.",
+            "itemtype": "method",
+            "name": "loadLink",
+            "params": [
+                {
+                    "name": "name",
+                    "description": "The name of the link",
+                    "type": "String"
+                },
+                {
+                    "name": "definition",
+                    "description": "The definition of the API to expose.",
+                    "type": "Object",
+                    "optional": true,
+                    "props": [
+                        {
+                            "name": "name",
+                            "description": "The name of the API for the link.",
+                            "type": "String"
+                        },
+                        {
+                            "name": "definition",
+                            "description": "The definition of the API.",
+                            "type": "Object"
+                        },
+                        {
+                            "name": "provides",
+                            "description": "Whether the link is a provider.",
+                            "type": "Boolean"
+                        }
+                    ]
+                }
+            ],
+            "access": "private",
+            "tagname": "",
+            "class": "ModuleInternal",
+            "module": "freedom"
+        },
+        {
+            "file": "src/port-moduleinternal.js",
+            "line": 232,
             "description": "Update the exported manifest of a dependency.\nSets it internally if not yet exported, or attaches the property if it\nis loaded after the module has started (we don't delay start to retreive\nthe manifest of the dependency.)",
             "itemtype": "method",
             "name": "updateManifest",
@@ -1884,7 +1949,7 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 216,
+            "line": 251,
             "description": "Determine which proxy ports should be exposed by this module.",
             "itemtype": "method",
             "name": "mapProxies",
@@ -1904,7 +1969,7 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 272,
+            "line": 316,
             "description": "Load external scripts into this namespace.",
             "itemtype": "method",
             "name": "loadScripts",
@@ -1925,7 +1990,7 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 327,
+            "line": 371,
             "description": "Attempt to load resolved scripts into the namespace.",
             "itemtype": "method",
             "name": "tryLoad",
@@ -1984,7 +2049,7 @@
         },
         {
             "file": "src/port-provider.js",
-            "line": 93,
+            "line": 94,
             "description": "Close / teardown the flow this provider terminates.",
             "itemtype": "method",
             "name": "close",
@@ -1993,7 +2058,7 @@
         },
         {
             "file": "src/port-provider.js",
-            "line": 111,
+            "line": 112,
             "description": "Get an interface to expose externally representing this port.\nProviders are registered with the port using either\nprovideSynchronous or provideAsynchronous depending on the desired\nreturn interface.",
             "itemtype": "method",
             "name": "getInterface",
@@ -2006,7 +2071,7 @@
         },
         {
             "file": "src/port-provider.js",
-            "line": 156,
+            "line": 157,
             "description": "Create a function that can be used to get interfaces from this provider from\na user-visible point.",
             "itemtype": "method",
             "name": "getProxyInterface",
@@ -2015,7 +2080,7 @@
         },
         {
             "file": "src/port-provider.js",
-            "line": 206,
+            "line": 207,
             "description": "Get a new instance of the registered provider.",
             "itemtype": "method",
             "name": "getProvider",
@@ -2045,7 +2110,7 @@
         },
         {
             "file": "src/port-provider.js",
-            "line": 294,
+            "line": 295,
             "description": "Get a textual description of this port.",
             "itemtype": "method",
             "name": "toString",
@@ -2088,7 +2153,7 @@
         },
         {
             "file": "src/port-proxy.js",
-            "line": 93,
+            "line": 95,
             "description": "Create a function that can be used to get interfaces from this proxy from\na user-visible point.",
             "itemtype": "method",
             "name": "getProxyInterface",
@@ -2097,7 +2162,7 @@
         },
         {
             "file": "src/port-proxy.js",
-            "line": 161,
+            "line": 167,
             "description": "Provides a bound class for creating a proxy.Interface associated\nwith this proxy. This partial level of construction can be used\nto allow the proxy to be used as a provider for another API.",
             "itemtype": "method",
             "name": "getInterfaceConstructor",
@@ -2108,7 +2173,7 @@
         },
         {
             "file": "src/port-proxy.js",
-            "line": 176,
+            "line": 182,
             "description": "Emit a message on the channel once setup is complete.",
             "itemtype": "method",
             "name": "doEmit",
@@ -2136,7 +2201,7 @@
         },
         {
             "file": "src/port-proxy.js",
-            "line": 195,
+            "line": 201,
             "description": "Teardown a single interface of this proxy.",
             "itemtype": "method",
             "name": "teardown",
@@ -2152,7 +2217,7 @@
         },
         {
             "file": "src/port-proxy.js",
-            "line": 212,
+            "line": 218,
             "description": "Handle a message error reported to this proxy.",
             "itemtype": "method",
             "name": "error",
@@ -2173,7 +2238,7 @@
         },
         {
             "file": "src/port-proxy.js",
-            "line": 229,
+            "line": 235,
             "description": "Close / teardown the flow this proxy terminates.",
             "itemtype": "method",
             "name": "doClose",
@@ -2182,7 +2247,7 @@
         },
         {
             "file": "src/port-proxy.js",
-            "line": 251,
+            "line": 257,
             "description": "Get the textual description of this port.",
             "itemtype": "method",
             "name": "toString",
@@ -2194,7 +2259,7 @@
         },
         {
             "file": "src/port-proxy.js",
-            "line": 264,
+            "line": 270,
             "description": "Get the next ID for a proxy channel.",
             "itemtype": "method",
             "name": "nextId",
@@ -2761,7 +2826,11 @@
         },
         {
             "message": "replacing incorrect tag: returns with return",
-            "line": " src/apis.js:65"
+            "line": " src/apis.js:71"
+        },
+        {
+            "message": "replacing incorrect tag: returns with return",
+            "line": " src/apis.js:101"
         },
         {
             "message": "replacing incorrect tag: returns with return",
@@ -2785,11 +2854,11 @@
         },
         {
             "message": "replacing incorrect tag: returns with return",
-            "line": " src/port-manager.js:133"
+            "line": " src/port-manager.js:131"
         },
         {
             "message": "unknown tag: apram",
-            "line": " src/port-manager.js:185"
+            "line": " src/port-manager.js:183"
         },
         {
             "message": "replacing incorrect tag: returns with return",
@@ -2797,7 +2866,7 @@
         },
         {
             "message": "replacing incorrect tag: returns with return",
-            "line": " src/port-moduleinternal.js:327"
+            "line": " src/port-moduleinternal.js:371"
         },
         {
             "message": "unknown tag: contructor",
@@ -2841,7 +2910,7 @@
         },
         {
             "message": "Missing item type\nDefines fdom.apis for fdom module registry and core provider registation.",
-            "line": " src/apis.js:91"
+            "line": " src/apis.js:119"
         },
         {
             "message": "Missing item type\nA freedom port providing debugging output to the console.",

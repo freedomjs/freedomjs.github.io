@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.12</em>
+            <em>API Docs for: 0.5.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -131,10 +131,10 @@ fdom.link = fdom.link || {};
  * @constructor
  */
 fdom.link.Worker = function(id) {
-  if (id) {
-    this.manifest = id.substr(id.lastIndexOf(&#x27;/&#x27;) + 1);
-  }
   fdom.Link.call(this);
+  if (id) {
+    this.id = id;
+  }
 };
 
 /**
@@ -165,7 +165,7 @@ fdom.link.Worker.prototype.stop = function() {
  * @return {String} the description of this port.
  */
 fdom.link.Worker.prototype.toString = function() {
-  return &quot;[Worker&quot; + this.id + &quot;]&quot;;
+  return &quot;[Worker &quot; + this.id + &quot;]&quot;;
 };
 
 /**
@@ -191,15 +191,15 @@ fdom.link.Worker.prototype.setupListener = function() {
  * @method setupWorker
  */
 fdom.link.Worker.prototype.setupWorker = function() {
-  var worker, blob;
+  var worker, blob, self = this;
   if (typeof (window.Blob) !== typeof (Function)) {
     worker = new Worker(this.config.source);
   } else {
     blob = new window.Blob([this.config.src], {type: &#x27;text/javascript&#x27;});
-    worker = new Worker(window.URL.createObjectURL(blob) + &#x27;#&#x27; + this.manifest);
+    worker = new Worker(window.URL.createObjectURL(blob) + &#x27;#&#x27; + this.id);
   }
   worker.addEventListener(&#x27;error&#x27;, function(err) {
-    fdom.debug.error(err, this.toString());
+    fdom.debug.error(self.toString(), err.message);
   }, true);
   worker.addEventListener(&#x27;message&#x27;, function(worker, msg) {
     if (!this.obj) {

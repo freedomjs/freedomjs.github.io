@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.12</em>
+            <em>API Docs for: 0.5.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -217,7 +217,7 @@ fdom.port.Debug.prototype.print = function(message) {
       }
     }
   }
-  if (!debug) {
+  if (!debug &amp;&amp; message.severity !== &#x27;error&#x27;) {
     return;
   }
   if (typeof this.console !== &#x27;undefined&#x27; &amp;&amp; this.console !== this) {

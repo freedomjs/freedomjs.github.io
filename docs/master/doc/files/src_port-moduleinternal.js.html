@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.12</em>
+            <em>API Docs for: 0.5.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -177,6 +177,7 @@ fdom.port.ModuleInternal.prototype.onMessage = function(flow, message) {
     this.requests[message.id](message.data);
     delete this.requests[message.id];
   } else if (flow === &#x27;default&#x27; &amp;&amp; message.type === &#x27;manifest&#x27;) {
+    this.emit(&#x27;manifest&#x27;, message);
     this.updateManifest(message.name, message.manifest);
   } else if (flow === &#x27;default&#x27; &amp;&amp; message.type === &#x27;Connection&#x27;) {
     // Multiple connections can be made to the default provider.
@@ -251,26 +252,28 @@ fdom.port.ModuleInternal.prototype.attach = function(name, proxy, api) {
  * @private
  */
 fdom.port.ModuleInternal.prototype.loadLinks = function(items) {
-  var i, proxy, provider, core, api;
+  var i, proxy, provider, core,
+      manifestPredicate = function(name, flow, msg) {
+        return flow === &#x27;manifest&#x27; &amp;&amp; msg.name === name;
+      },
+      onManifest = function(item, msg) {
+        var definition = {
+          name: item.api,
+          definition: msg.manifest.api[item.api]
+        };
+        this.loadLink(item.name, definition);
+      };
+
   for (i = 0; i &lt; items.length; i += 1) {
-    api = undefined;
-    if (items[i].def) {
-      api = items[i].def.name;
-      if (items[i].provides) {
-        proxy = new fdom.port.Provider(items[i].def.definition);
-        if (!this.defaultProvider) {
-          this.defaultProvider = proxy;
-        }
-      } else {
-        proxy = new fdom.port.Proxy(fdom.proxy.ApiInterface.bind({},
-            items[i].def.definition));
-      }
+    if (items[i].provides &amp;&amp; !items[i].def) {
+      fdom.debug.error(&#x27;Module &#x27; +this.appId + &#x27; not loaded&#x27;);
+      fdom.debug.error(&#x27;Unknown provider: &#x27; + items[i].name);
+    } else if (items[i].api &amp;&amp; !items[i].def) {
+      this.once(manifestPredicate.bind({}, items[i].name),
+                onManifest.bind(this, items[i]));
     } else {
-      proxy = new fdom.port.Proxy(fdom.proxy.EventInterface);
+      this.loadLink(items[i].name, items[i].def);
     }
-    
-    proxy.once(&#x27;start&#x27;, this.attach.bind(this, items[i].name, proxy, api));
-    this.manager.createLink(this.port, items[i].name, proxy);
     this.pendingPorts += 1;
   }
   
@@ -310,6 +313,38 @@ fdom.port.ModuleInternal.prototype.loadLinks = function(items) {
   if (this.pendingPorts === 0) {
     this.emit(&#x27;start&#x27;);
   }
+};
+
+/**
+ * Create a proxy for a single manifest item, and attach it to the global
+ * context once it is loaded.
+ * @method loadLink
+ * @param {String} name The name of the link
+ * @param {Object} [definition] The definition of the API to expose.
+ * @param {String} definition.name The name of the API for the link.
+ * @param {Object} definition.definition The definition of the API.
+ * @param {Boolean} definition.provides Whether the link is a provider.
+ * @private
+ */
+fdom.port.ModuleInternal.prototype.loadLink = function(name, definition) {
+  var proxy, api;
+  if (definition) {
+    api = definition.name;
+    if (definition.provides) {
+      proxy = new fdom.port.Provider(definition.definition);
+      if (!this.defaultProvider) {
+        this.defaultProvider = proxy;
+      }
+    } else {
+      proxy = new fdom.port.Proxy(fdom.proxy.ApiInterface.bind({},
+          definition.definition));
+    }
+  } else {
+    proxy = new fdom.port.Proxy(fdom.proxy.EventInterface);
+  }
+    
+  proxy.once(&#x27;start&#x27;, this.attach.bind(this, name, proxy, api));
+  this.manager.createLink(this.port, name, proxy);
 };
 
 /**
@@ -357,7 +392,8 @@ fdom.port.ModuleInternal.prototype.mapProxies = function(manifest) {
   if (manifest.dependencies) {
     fdom.util.eachProp(manifest.dependencies, function(desc, name) {
       obj = {
-        name: name
+        name: name,
+        api: desc.api
       };
       if (seen.indexOf(name) &lt; 0) {
         if (desc.api) {
@@ -373,11 +409,19 @@ fdom.port.ModuleInternal.prototype.mapProxies = function(manifest) {
     for (i = 0; i &lt; manifest.provides.length; i += 1) {
       obj = {
         name: manifest.provides[i],
-        def: undefined,
-        provides: true
+        def: undefined
       };
       obj.def = fdom.apis.get(obj.name);
-      if (seen.indexOf(obj.name) &lt; 0 &amp;&amp; obj.def) {
+      if (obj.def) {
+        obj.def.provides = true;
+      } else if (manifest.api &amp;&amp; manifest.api[obj.name]) {
+        obj.def = {
+          name: obj.name,
+          definition: manifest.api[obj.name],
+          provides: true
+        };
+      }
+      if (seen.indexOf(obj.name) &lt; 0) {
         proxies.push(obj);
         seen.push(obj.name);
       }

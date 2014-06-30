@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.12</em>
+            <em>API Docs for: 0.5.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -172,7 +172,7 @@ fdom.setup = function (global, freedom_src, config) {
     fdom.util.advertise(config ? config.advertise : undefined);
     
     // Configure against data-manifest.
-    if (typeof document !== &#x27;undefined&#x27;) {
+    if (typeof global.document !== &#x27;undefined&#x27;) {
       fdom.util.eachReverse(fdom.util.scripts(global), function (script) {
         var manifest = script.getAttribute(&#x27;data-manifest&#x27;),
           source = script.src;
@@ -213,7 +213,7 @@ fdom.setup = function (global, freedom_src, config) {
   hub.emit(&#x27;config&#x27;, site_cfg);
 
   // Enable console.log from worker contexts.
-  if (typeof global.console === &#x27;undefined&#x27;) {
+  if (typeof global.console === &#x27;undefined&#x27; || site_cfg.relayConsole) {
     global.console = fdom.debug;
   }
   

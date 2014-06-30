@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.12</em>
+            <em>API Docs for: 0.5.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -136,7 +136,7 @@
 
 
 <div class="box intro">
-    <p>The API registry for FreeDOM.  Used to look up requested APIs,
+    <p>The API registry for freedom.js.  Used to look up requested APIs,
 and provides a bridge for core APIs to act like normal APIs.</p>
 
 </div>
@@ -240,6 +240,13 @@ and provides a bridge for core APIs to act like normal APIs.</p>
                         
                             <li class="index-item method">
                                 <a href="#method_getCore">getCore</a>
+
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method">
+                                <a href="#method_getInterfaceStyle">getInterfaceStyle</a>
 
                                 
                                 
@@ -373,7 +380,7 @@ and provides a bridge for core APIs to act like normal APIs.</p>
             
         
         
-        <a href="../files/src_proxy_apiInterface.js.html#l131"><code>src&#x2F;proxy&#x2F;apiInterface.js:131</code></a>
+        <a href="../files/src_proxy_apiInterface.js.html#l132"><code>src&#x2F;proxy&#x2F;apiInterface.js:132</code></a>
         
         </p>
 
@@ -628,7 +635,7 @@ template.</p>
             
         
         
-        <a href="../files/src_apis.js.html#l65"><code>src&#x2F;apis.js:65</code></a>
+        <a href="../files/src_apis.js.html#l71"><code>src&#x2F;apis.js:71</code></a>
         
         </p>
 
@@ -706,6 +713,116 @@ a local API definition.</p>
 </div>
 
                 
+                    <div id="method_getInterfaceStyle" class="method item">
+    <h3 class="name"><code>getInterfaceStyle</code></h3>
+
+    
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>name</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+        <span class="returns-inline">
+            <span class="type">String</span>
+        </span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_apis.js.html#l101"><code>src&#x2F;apis.js:101</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Get the style in which a core API is written.
+This method is guaranteed to know the style of a provider returned from
+a previous getCore call, and so does not use promises.</p>
+
+    </div>
+
+    
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">name</code>
+                        <span class="type">String</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The name of the provider.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
+    
+
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">String</span>:
+                    
+                    <p>The coding style, as used by
+  fdom.port.Provider.prototype.getInterface.</p>
+
+                
+            </div>
+        </div>
+    
+
+    
+</div>
+
+                
                     <div id="method_makeArrayBuffer" class="method item">
     <h3 class="name"><code>makeArrayBuffer</code></h3>
 
@@ -754,7 +871,7 @@ a local API definition.</p>
             
         
         
-        <a href="../files/src_proxy_apiInterface.js.html#l222"><code>src&#x2F;proxy&#x2F;apiInterface.js:222</code></a>
+        <a href="../files/src_proxy_apiInterface.js.html#l227"><code>src&#x2F;proxy&#x2F;apiInterface.js:227</code></a>
         
         </p>
 
@@ -868,7 +985,7 @@ a local API definition.</p>
             
         
         
-        <a href="../files/src_proxy_apiInterface.js.html#l100"><code>src&#x2F;proxy&#x2F;apiInterface.js:100</code></a>
+        <a href="../files/src_proxy_apiInterface.js.html#l101"><code>src&#x2F;proxy&#x2F;apiInterface.js:101</code></a>
         
         </p>
 
@@ -1000,7 +1117,7 @@ a template and an array of binary data elements.</p>
             
         
         
-        <a href="../files/src_proxy_apiInterface.js.html#l118"><code>src&#x2F;proxy&#x2F;apiInterface.js:118</code></a>
+        <a href="../files/src_proxy_apiInterface.js.html#l119"><code>src&#x2F;proxy&#x2F;apiInterface.js:119</code></a>
         
         </p>
 
@@ -1126,7 +1243,7 @@ template.</p>
             
         
         
-        <a href="../files/src_proxy_apiInterface.js.html#l248"><code>src&#x2F;proxy&#x2F;apiInterface.js:248</code></a>
+        <a href="../files/src_proxy_apiInterface.js.html#l253"><code>src&#x2F;proxy&#x2F;apiInterface.js:253</code></a>
         
         </p>
 
@@ -1210,6 +1327,12 @@ cannot be  overwritten. Doesn&#39;t do anything for arrays or other collections.
                     
                 </li>
             
+                <li class="arg">
+                    
+                        <code>style</code>
+                    
+                </li>
+            
             </ul><span class="paren">)</span>
         </div>
     
@@ -1286,6 +1409,24 @@ cannot be  overwritten. Doesn&#39;t do anything for arrays or other collections.
 
                     <div class="param-description">
                         <p>the function to create a provider for the API.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">style</code>
+                        <span class="type">String?</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The style the provider is written in. Valid styles
+  are documented in fdom.port.Provider.prototype.getInterface. Defaults to
+  provideAsynchronous</p>
 
                     </div>
 

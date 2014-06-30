@@ -511,7 +511,7 @@ function PeerConnection(portModule, dispatchEvent, RTCPeerConnection, RTCSession
 "undefined" == typeof fdom && (fdom = {});
 
 /**
- * The API registry for FreeDOM.  Used to look up requested APIs,
+ * The API registry for freedom.js.  Used to look up requested APIs,
  * and provides a bridge for core APIs to act like normal APIs.
  * @Class API
  * @constructor
@@ -544,11 +544,17 @@ Api.prototype.set = function(name, definition) {
  * @method register
  * @param {String} name the API name.
  * @param {Function} constructor the function to create a provider for the API.
+ * @param {String?} style The style the provider is written in. Valid styles
+ *   are documented in fdom.port.Provider.prototype.getInterface. Defaults to
+ *   provideAsynchronous
  */
-Api.prototype.register = function(name, constructor) {
+Api.prototype.register = function(name, constructor, style) {
     var i;
-    if (this.providers[name] = constructor, this.waiters[name]) {
-        for (i = 0; i < this.waiters[name].length; i += 1) this.waiters[name][i][0](constructor.bind({}, this.waiters[name][i][2]));
+    if (this.providers[name] = {
+        constructor: constructor,
+        style: style || "provideAsynchronous"
+    }, this.waiters[name]) {
+        for (i = 0; i < this.waiters[name].length; i += 1) this.waiters[name][i].resolve(constructor.bind({}, this.waiters[name][i].from));
         delete this.waiters[name];
     }
 }, /**
@@ -561,10 +567,24 @@ Api.prototype.register = function(name, constructor) {
  */
 Api.prototype.getCore = function(name, from) {
     return new Promise(function(resolve, reject) {
-        this.apis[name] ? this.providers[name] ? resolve(this.providers[name].bind({}, from)) : (this.waiters[name] || (this.waiters[name] = []), 
-        this.waiters[name].push([ resolve, reject, from ])) : (fdom.debug.warn("Api.getCore asked for unknown core: " + name), 
-        reject(null));
+        this.apis[name] ? this.providers[name] ? resolve(this.providers[name].constructor.bind({}, from)) : (this.waiters[name] || (this.waiters[name] = []), 
+        this.waiters[name].push({
+            resolve: resolve,
+            reject: reject,
+            from: from
+        })) : (fdom.debug.warn("Api.getCore asked for unknown core: " + name), reject(null));
     }.bind(this));
+}, /**
+ * Get the style in which a core API is written.
+ * This method is guaranteed to know the style of a provider returned from
+ * a previous getCore call, and so does not use promises.
+ * @method getInterfaceStyle
+ * @param {String} name The name of the provider.
+ * @returns {String} The coding style, as used by
+ *   fdom.port.Provider.prototype.getInterface.
+ */
+Api.prototype.getInterfaceStyle = function(name) {
+    return this.providers[name] ? this.providers[name].style : void fdom.debug.warn("Api.getInterfaceStyle for unknown provider: " + name);
 }, /**
  * Defines fdom.apis for fdom module registry and core provider registation.
  */
@@ -597,7 +617,7 @@ fdom.setup = function(global, freedom_src, config) {
     return manager.setup(external), site_cfg.moduleContext ? (config && fdom.util.mixin(site_cfg, config, !0), 
     site_cfg.global = global, site_cfg.src = freedom_src, link = new fdom.link[site_cfg.portType](), 
     manager.setup(link), manager.createLink(external, "default", link), manager.once("delegate", manager.setup.bind(manager, fdom.debug))) : (manager.setup(fdom.debug), 
-    fdom.util.advertise(config ? config.advertise : void 0), "undefined" != typeof document && fdom.util.eachReverse(fdom.util.scripts(global), function(script) {
+    fdom.util.advertise(config ? config.advertise : void 0), "undefined" != typeof global.document && fdom.util.eachReverse(fdom.util.scripts(global), function(script) {
         var manifest = script.getAttribute("data-manifest"), source = script.src;
         if (manifest) {
             if (site_cfg.source = source, site_cfg.manifest = manifest, script.textContent.trim().length) try {
@@ -613,7 +633,7 @@ fdom.setup = function(global, freedom_src, config) {
         site_cfg.policy.get([], root_mod).then(manager.createLink.bind(manager, external, "default"));
     }, function(err) {
         fdom.debug.error("Failed to retrieve manifest: " + err);
-    })), hub.emit("config", site_cfg), "undefined" == typeof global.console && (global.console = fdom.debug), 
+    })), hub.emit("config", site_cfg), ("undefined" == typeof global.console || site_cfg.relayConsole) && (global.console = fdom.debug), 
     external.getInterface();
 }, /*globals fdom:true */
 "undefined" == typeof fdom && (fdom = {}), /**
@@ -846,7 +866,7 @@ fdom.Policy.prototype.loadManifest = function(manifest) {
         try {
             return JSON.parse(data);
         } catch (err) {
-            return fdom.debug.warn("Failed to load " + this.manifestId + ": " + err), {};
+            return fdom.debug.warn("Failed to load " + manifest + ": " + err), {};
         }
     });
 }, /**
@@ -945,7 +965,7 @@ fdom.port.Debug.prototype.print = function(message) {
         debug = !0;
         break;
     }
-    if (debug && "undefined" != typeof this.console && this.console !== this) {
+    if ((debug || "error" === message.severity) && "undefined" != typeof this.console && this.console !== this) {
         if (args = JSON.parse(message.msg), "string" == typeof args) arr.push(args); else for (;void 0 !== args[i]; ) arr.push(args[i]), 
         i += 1;
         "undefined" != typeof process && message.source ? (arr.unshift("[39m"), arr.unshift("[31m" + message.source)) : this.console.__mozillaConsole__ && message.source ? arr.unshift(message.source.toUpperCase()) : message.source && (arr.unshift("color: red"), 
@@ -1018,7 +1038,7 @@ fdom.port.Manager.prototype.onMessage = function(flow, message) {
         flow: flow,
         message: message
     });
-    if ("debug" === message.request) return void (this.config.debug && fdom.debug.print(message));
+    if ("debug" === message.request) return void fdom.debug.print(message);
     if ("link" === message.request) this.createLink(origin, message.name, message.to, message.overrideDest); else if ("port" === message.request) message.exposeManager && (message.args = this), 
     this.createLink(origin, message.name, new fdom.port[message.service](message.args)); else if ("bindport" === message.request) this.createLink({
         id: message.id
@@ -1245,7 +1265,7 @@ fdom.port.Module.prototype.start = function() {
     // Tell the remote location to delegate debugging.
     // Tell the container to instantiate the counterpart to this external view.
     return this.started || this.port ? !1 : void (this.controlChannel && (this.loadLinks(), 
-    this.port = new fdom.link[this.config.portType](this.manifestId), this.port.on(this.emitMessage.bind(this)), 
+    this.port = new fdom.link[this.config.portType](this.manifest.name), this.port.on(this.emitMessage.bind(this)), 
     this.port.onMessage("control", {
         channel: "control",
         config: this.config
@@ -1327,12 +1347,13 @@ fdom.port.Module.prototype.emitMessage = function(name, message) {
  * @private
  */
 fdom.port.Module.prototype.loadLinks = function() {
-    var i, name, dep, channels = [ "default" ], finishLink = function(dep, provider) {
-        dep.getInterface().provideAsynchronous(provider);
+    var i, name, dep, channels = [ "default" ], finishLink = function(dep, name, provider) {
+        var style = fdom.apis.getInterfaceStyle(name);
+        dep.getInterface()[style](provider);
     };
     if (this.manifest.permissions) for (i = 0; i < this.manifest.permissions.length; i += 1) name = this.manifest.permissions[i], 
     channels.indexOf(name) < 0 && 0 === name.indexOf("core.") && (channels.push(name), 
-    dep = new fdom.port.Provider(fdom.apis.get(name).definition), fdom.apis.getCore(name, this).then(finishLink.bind(this, dep)), 
+    dep = new fdom.port.Provider(fdom.apis.get(name).definition), fdom.apis.getCore(name, this).then(finishLink.bind(this, dep, name)), 
     this.emit(this.controlChannel, {
         type: "Core Link to " + name,
         request: "link",
@@ -1362,15 +1383,21 @@ fdom.port.Module.prototype.loadLinks = function() {
  */
 fdom.port.Module.prototype.updateEnv = function(dep, manifest) {
     if (manifest) {
-        this.modInternal || this.once("modInternal", this.updateEnv.bind(this, dep, manifest));
+        if (!this.modInternal) return void this.once("modInternal", this.updateEnv.bind(this, dep, manifest));
+        var data, metadata;
+        try {
+            data = JSON.parse(manifest);
+        } catch (e) {
+            return void fdom.debug.error("Could not parse environmental manifest: " + e);
+        }
         // Decide if/what other properties should be exported.
         // Keep in sync with ModuleInternal.updateEnv
-        var metadata = {
-            name: manifest.name,
-            icon: manifest.icon,
-            description: manifest.description
-        };
-        this.port.onMessage(this.modInternal, {
+        metadata = {
+            name: data.name,
+            icon: data.icon,
+            description: data.description,
+            api: data.api
+        }, this.port.onMessage(this.modInternal, {
             type: "manifest",
             name: dep,
             manifest: metadata
@@ -1409,7 +1436,8 @@ fdom.port.ModuleInternal = function(manager) {
 fdom.port.ModuleInternal.prototype.onMessage = function(flow, message) {
     if ("control" === flow) !this.controlChannel && message.channel && (this.controlChannel = message.channel, 
     fdom.util.mixin(this.config, message.config)); else if ("default" !== flow || this.appId) "default" === flow && this.requests[message.id] ? (this.requests[message.id](message.data), 
-    delete this.requests[message.id]) : "default" === flow && "manifest" === message.type ? this.updateManifest(message.name, message.manifest) : "default" === flow && "Connection" === message.type && this.defaultProvider && this.manager.createLink(this.defaultProvider, message.channel, this.port, message.channel); else {
+    delete this.requests[message.id]) : "default" === flow && "manifest" === message.type ? (this.emit("manifest", message), 
+    this.updateManifest(message.name, message.manifest)) : "default" === flow && "Connection" === message.type && this.defaultProvider && this.manager.createLink(this.defaultProvider, message.channel, this.port, message.channel); else {
         // Recover the ID of this module:
         this.port = this.manager.hub.getDestination(message.channel), this.externalChannel = message.channel, 
         this.appId = message.appId, this.lineage = message.lineage;
@@ -1460,10 +1488,17 @@ fdom.port.ModuleInternal.prototype.attach = function(name, proxy, api) {
  * @private
  */
 fdom.port.ModuleInternal.prototype.loadLinks = function(items) {
-    var i, proxy, provider, core, api;
-    for (i = 0; i < items.length; i += 1) api = void 0, items[i].def ? (api = items[i].def.name, 
-    items[i].provides ? (proxy = new fdom.port.Provider(items[i].def.definition), this.defaultProvider || (this.defaultProvider = proxy)) : proxy = new fdom.port.Proxy(fdom.proxy.ApiInterface.bind({}, items[i].def.definition))) : proxy = new fdom.port.Proxy(fdom.proxy.EventInterface), 
-    proxy.once("start", this.attach.bind(this, items[i].name, proxy, api)), this.manager.createLink(this.port, items[i].name, proxy), 
+    var i, proxy, provider, core, manifestPredicate = function(name, flow, msg) {
+        return "manifest" === flow && msg.name === name;
+    }, onManifest = function(item, msg) {
+        var definition = {
+            name: item.api,
+            definition: msg.manifest.api[item.api]
+        };
+        this.loadLink(item.name, definition);
+    };
+    for (i = 0; i < items.length; i += 1) items[i].provides && !items[i].def ? (fdom.debug.error("Module " + this.appId + " not loaded"), 
+    fdom.debug.error("Unknown provider: " + items[i].name)) : items[i].api && !items[i].def ? this.once(manifestPredicate.bind({}, items[i].name), onManifest.bind(this, items[i])) : this.loadLink(items[i].name, items[i].def), 
     this.pendingPorts += 1;
     // Allow resolution of files by parent.
     fdom.resources.addResolver(function(manifest, url, resolve) {
@@ -1484,6 +1519,22 @@ fdom.port.ModuleInternal.prototype.loadLinks = function(items) {
         to: provider
     }), proxy = new fdom.port.Proxy(fdom.proxy.ApiInterface.bind({}, core)), this.manager.createLink(provider, "default", proxy), 
     this.attach("core", proxy), 0 === this.pendingPorts && this.emit("start");
+}, /**
+ * Create a proxy for a single manifest item, and attach it to the global
+ * context once it is loaded.
+ * @method loadLink
+ * @param {String} name The name of the link
+ * @param {Object} [definition] The definition of the API to expose.
+ * @param {String} definition.name The name of the API for the link.
+ * @param {Object} definition.definition The definition of the API.
+ * @param {Boolean} definition.provides Whether the link is a provider.
+ * @private
+ */
+fdom.port.ModuleInternal.prototype.loadLink = function(name, definition) {
+    var proxy, api;
+    definition ? (api = definition.name, definition.provides ? (proxy = new fdom.port.Provider(definition.definition), 
+    this.defaultProvider || (this.defaultProvider = proxy)) : proxy = new fdom.port.Proxy(fdom.proxy.ApiInterface.bind({}, definition.definition))) : proxy = new fdom.port.Proxy(fdom.proxy.EventInterface), 
+    proxy.once("start", this.attach.bind(this, name, proxy, api)), this.manager.createLink(this.port, name, proxy);
 }, /**
  * Update the exported manifest of a dependency.
  * Sets it internally if not yet exported, or attaches the property if it
@@ -1511,15 +1562,18 @@ fdom.port.ModuleInternal.prototype.mapProxies = function(manifest) {
     seen.push(obj.name));
     if (manifest.dependencies && fdom.util.eachProp(manifest.dependencies, function(desc, name) {
         obj = {
-            name: name
+            name: name,
+            api: desc.api
         }, seen.indexOf(name) < 0 && (desc.api && (obj.def = fdom.apis.get(desc.api)), proxies.push(obj), 
         seen.push(name));
     }), manifest.provides) for (i = 0; i < manifest.provides.length; i += 1) obj = {
         name: manifest.provides[i],
-        def: void 0,
+        def: void 0
+    }, obj.def = fdom.apis.get(obj.name), obj.def ? obj.def.provides = !0 : manifest.api && manifest.api[obj.name] && (obj.def = {
+        name: obj.name,
+        definition: manifest.api[obj.name],
         provides: !0
-    }, obj.def = fdom.apis.get(obj.name), seen.indexOf(obj.name) < 0 && obj.def && (proxies.push(obj), 
-    seen.push(obj.name));
+    }), seen.indexOf(obj.name) < 0 && (proxies.push(obj), seen.push(obj.name));
     return proxies;
 }, /**
  * Load external scripts into this namespace.
@@ -1601,7 +1655,7 @@ fdom.port.Provider.prototype.onMessage = function(source, message) {
         if (!this.channels[source]) return void fdom.debug.warn("Message from unconfigured source: " + source);
         if ("close" === message.type && message.to) delete this.providerInstances[source][message.to]; else if (message.to && this.providerInstances[source] && this.providerInstances[source][message.to]) message.message.to = message.to, 
         this.providerInstances[source][message.to](message.message); else if (message.to && message.message && "construct" === message.message.type) {
-            var args = fdom.proxy.portableToMessage(this.definition.constructor ? this.definition.constructor.value : [], message.message);
+            var args = fdom.proxy.portableToMessage(this.definition.constructor && this.definition.constructor.value ? this.definition.constructor.value : [], message.message);
             this.providerInstances[source] || (this.providerInstances[source] = {}), this.providerInstances[source][message.to] = this.getProvider(source, message.to, args);
         } else fdom.debug.warn(this.toString() + " dropping message " + JSON.stringify(message));
     }
@@ -1733,7 +1787,7 @@ fdom.port.Provider.prototype.getProvider = function(source, identifier, args) {
  */
 fdom.port.Provider.prototype.toString = function() {
     return this.emitChannel ? "[Provider " + this.emitChannel + "]" : "[unbound Provider]";
-}, /*globals fdom:true */
+}, /*globals fdom:true,console */
 "undefined" == typeof fdom && (fdom = {}), fdom.port = fdom.port || {}, /**
  * A freedom port for a user-accessable proxy.
  * @class Proxy
@@ -1784,7 +1838,8 @@ fdom.port.Proxy.prototype.onMessage = function(source, message) {
  */
 fdom.port.Proxy.prototype.getInterface = function() {
     var Iface = this.getInterfaceConstructor(), args = Array.prototype.slice.call(arguments, 0);
-    return new (Iface = Iface.bind.apply(Iface, [ Iface ].concat(args)))();
+    return args.length && (Iface = Iface.bind.apply(Iface, [ Iface ].concat(args))), 
+    new Iface();
 }, /**
  * Create a function that can be used to get interfaces from this proxy from
  * a user-visible point.
@@ -1793,7 +1848,7 @@ fdom.port.Proxy.prototype.getInterface = function() {
 fdom.port.Proxy.prototype.getProxyInterface = function() {
     var func = function(p) {
         var args = Array.prototype.slice.call(arguments, 1);
-        return p.getInterface(args);
+        return args.length > 0 ? p.getInterface(args) : p.getInterface();
     }.bind({}, this);
     return func.close = function(iface) {
         iface ? fdom.util.eachProp(this.ifaces, function(candidate, id) {
@@ -2404,7 +2459,7 @@ fdom.link.Frame.prototype.makeFrame = function(src, inject) {
     // TODO(willscott): add sandboxing protection.
     // TODO(willscott): survive name mangling.
     return src = src.replace('portType: "Worker"', 'portType: "Frame"'), inject && (extra = '<script src="' + inject + '" onerror="throw new Error(\'Injection of ' + inject + " Failed!');\"></script>"), 
-    loader = "<html>" + extra + '<script src="' + fdom.util.forceModuleContext(src) + '"></script></html>', 
+    loader = '<html><meta http-equiv="Content-type" content="text/html;charset=UTF-8">' + extra + '<script src="' + fdom.util.forceModuleContext(src) + '"></script></html>', 
     blob = fdom.util.getBlob(loader, "text/html"), frame.src = fdom.util.getURL(blob), 
     frame;
 }, /**
@@ -2430,7 +2485,7 @@ fdom.link.Frame.prototype.deliverMessage = function(flow, message) {
  * @constructor
  */
 fdom.link.Worker = function(id) {
-    id && (this.manifest = id.substr(id.lastIndexOf("/") + 1)), fdom.Link.call(this);
+    fdom.Link.call(this), id && (this.id = id);
 }, /**
  * Start this port by listening or creating a worker.
  * @method start
@@ -2449,7 +2504,7 @@ fdom.link.Worker.prototype.stop = function() {}, /**
  * @return {String} the description of this port.
  */
 fdom.link.Worker.prototype.toString = function() {
-    return "[Worker" + this.id + "]";
+    return "[Worker " + this.id + "]";
 }, /**
  * Set up a global listener to handle incoming messages to this
  * freedom.js context.
@@ -2468,12 +2523,11 @@ fdom.link.Worker.prototype.setupListener = function() {
  * @method setupWorker
  */
 fdom.link.Worker.prototype.setupWorker = function() {
-    var worker, blob;
+    var worker, blob, self = this;
     typeof window.Blob != typeof Function ? worker = new Worker(this.config.source) : (blob = new window.Blob([ this.config.src ], {
         type: "text/javascript"
-    }), worker = new Worker(window.URL.createObjectURL(blob) + "#" + this.manifest)), 
-    worker.addEventListener("error", function(err) {
-        fdom.debug.error(err, this.toString());
+    }), worker = new Worker(window.URL.createObjectURL(blob) + "#" + this.id)), worker.addEventListener("error", function(err) {
+        fdom.debug.error(self.toString(), err.message);
     }, !0), worker.addEventListener("message", function(worker, msg) {
         this.obj || (this.obj = worker, this.emit("started")), this.emitMessage(msg.data.flow, msg.data.message);
     }.bind(this, worker), !0), this.stop = function() {
@@ -2507,7 +2561,7 @@ fdom.link.Worker.prototype.deliverMessage = function(flow, message) {
                         reject: reject,
                         template: prop.ret
                     };
-                }), streams = fdom.proxy.messageToPortable(prop.value, arguments);
+                }), streams = fdom.proxy.messageToPortable(prop.value, Array.prototype.slice.call(arguments, 0));
                 return reqId += 1, emit({
                     action: "method",
                     type: name,
@@ -2535,7 +2589,7 @@ fdom.link.Worker.prototype.deliverMessage = function(flow, message) {
             var resolver = inflight[msg.reqId], template = resolver.template;
             delete inflight[msg.reqId], msg.error ? resolver.reject(msg.error) : resolver.resolve(fdom.proxy.portableToMessage(template, msg));
         } else fdom.debug.warn("Dropped response message with id " + msg.reqId); else "event" === msg.type && events[msg.name] && emitter(msg.name, fdom.proxy.portableToMessage(events[msg.name].value, msg));
-    }.bind(this)), args = fdom.proxy.messageToPortable(def.constructor ? def.constructor.value : [], Array.prototype.slice.call(args, 3)), 
+    }.bind(this)), args = fdom.proxy.messageToPortable(def.constructor && def.constructor.value ? def.constructor.value : [], Array.prototype.slice.call(args, 3)), 
     emit({
         type: "construct",
         text: args.text,
@@ -2582,8 +2636,9 @@ fdom.proxy.conform = function(template, from, externals, separate) {
     if ("function" == typeof from) //from = undefined;
     //throw "Trying to conform a function";
     return void 0;
-    if ("undefined" == typeof from || void 0 === template) return void 0;
+    if ("undefined" == typeof from) return void 0;
     if (null === from) return null;
+    if (void 0 === template) return void fdom.debug.error("Message discarded for not matching declared type!", from);
     switch (template) {
       case "string":
         return String("") + from;
@@ -2751,6 +2806,36 @@ fdom.apis.set("core.tcpsocket", {
             peerPort: "number"
         }
     },
+    /** 
+   * error codes and default messages that may be returned on failures.
+   */
+    ERRCODE: {
+        type: "constant",
+        value: {
+            /** GENERAL **/
+            SUCCESS: "Success!",
+            // Unknown
+            UNKNOWN: "Unknown error",
+            // Socket is already connected
+            ALREADY_CONNECTED: "Socket already connected",
+            // Invalid Argument, client error
+            INVALID_ARGUMENT: "Invalid argument",
+            // Connection timed out.
+            TIMED_OUT: "Timed out",
+            // Operation cannot complete because socket is not connected.
+            NOT_CONNECTED: "Socket not connected",
+            // Socket reset because of change in network state.
+            NETWORK_CHANGED: "Network changed",
+            // Connection closed
+            CONNECTION_CLOSED: "Connection closed gracefully",
+            // Connection Reset
+            CONNECTION_RESET: "Connection reset",
+            // Connection Refused
+            CONNECTION_REFUSED: "Connection refused",
+            // Generic Failure
+            CONNECTION_FAILED: "Connection failed"
+        }
+    },
     // Close a socket. Will Fail if the socket is not connected or already
     // closed.
     close: {
@@ -2823,16 +2908,39 @@ fdom.apis.set("core.tcpsocket", {
 // events will start to flow. Note that bind() should only be called
 // once per instance.
 fdom.apis.set("core.udpsocket", {
+    /** 
+   * error codes and default messages that may be returned on failures.
+   */
+    ERRCODE: {
+        type: "constant",
+        value: {
+            /** GENERAL **/
+            SUCCESS: "Success!",
+            // Unknown
+            UNKNOWN: "Unknown error",
+            // Socket is already bound
+            ALREADY_BOUND: "Socket already bound",
+            // Invalid Argument, client error
+            INVALID_ARGUMENT: "Invalid argument",
+            // Socket reset because of change in network state.
+            NETWORK_CHANGED: "Network changed",
+            // Failure to send data
+            SNED_FAILED: "Send failed"
+        }
+    },
     // Creates a socket, binds it to an interface and port and listens for
     // messages, dispatching each message as on onData event.
-    // Returns an integer, with zero meaning success and any other value
-    // being implementation-dependant.
+    // Returns on success, or fails with an error on failure.
     bind: {
         type: "method",
         value: [ // Interface (address) on which to bind.
         "string", // Port on which to bind.
         "number" ],
-        ret: "number"
+        ret: [],
+        err: {
+            errcode: "string",
+            message: "string"
+        }
     },
     // Retrieves the state of the socket.
     // Returns an object with the following properties:
@@ -2856,7 +2964,11 @@ fdom.apis.set("core.udpsocket", {
         "buffer", // Destination address.
         "string", // Destination port.
         "number" ],
-        ret: "number"
+        ret: "number",
+        err: {
+            errcode: "string",
+            message: "string"
+        }
     },
     // Releases all resources associated with this socket.
     // No-op if the socket is not bound.
@@ -2981,6 +3093,22 @@ fdom.apis.set("core.udpsocket", {
         value: [],
         ret: "string"
     },
+    createOffer: {
+        type: "method",
+        value: [ {
+            // Optional :RTCOfferOptions object.
+            offerToReceiveVideo: "number",
+            offerToReceiveAudio: "number",
+            voiceActivityDetection: "boolean",
+            iceRestart: "boolean"
+        } ],
+        ret: {
+            // Fulfills with a :RTCSessionDescription
+            type: "string",
+            // Should always be 'offer'.
+            sdp: "string"
+        }
+    },
     // Close the peer connection.
     close: {
         type: "method",
@@ -2995,8 +3123,8 @@ fdom.apis.set("core.udpsocket", {
     // Constructs new websocket. Errors in construction are passed on
     // through the onError event.
     constructor: {
-        value: // URL to connect through
-        [ "string", // Protocols
+        value: [ // URL to connect through
+        "string", // Protocols
         [ "array", "string" ] ]
     },
     // Send the data to the other side of this connection. Only one of
@@ -3069,6 +3197,37 @@ fdom.apis.set("core.udpsocket", {
         }
     }
 }), /*globals fdom:true */
+fdom.apis.set("core.oauth", {
+    /**
+   * An oAuth event has occured
+   * @return {String} The URL received by the oAuth provider.
+   **/
+    oAuthEvent: {
+        type: "event",
+        value: "string"
+    },
+    /**
+   * Express interest in initiating an oAuth flow.
+   *
+   * @method initiateOAuth
+   * @param {String[]} Valid oAuth redirect URLs for your application.
+   * @returns {{redirect:String, state:String}} A chosen redirect URI, and
+   *     state which will be monitored for oAuth redirection, if one is
+   *     available.
+   */
+    initiateOAuth: {
+        type: "method",
+        value: [ [ "array", "string" ] ],
+        ret: {
+            redirect: "string",
+            state: "string"
+        },
+        err: {
+            errcode: "string",
+            message: "string"
+        }
+    }
+}), /*globals fdom:true */
 /**
  * SOCIAL API
  *
@@ -3095,11 +3254,13 @@ fdom.apis.set("core.udpsocket", {
  *   - Returned in a global list from 'getClients'
  * {
  *   // Mandatory
- *   'userId': 'string',    // Unique ID of user (e.g. alice@gmail.com)
- *   'clientId': 'string',  // Unique ID of client
- *                          // (e.g. alice@gmail.com/Android-23nadsv32f)
- *   'status': 'string',    // Status of the client. 'STATUS' member.
- *   'timestamp': 'number'  // Timestamp of the last seen time of this device.
+ *   'userId': 'string',      // Unique ID of user (e.g. alice@gmail.com)
+ *   'clientId': 'string',    // Unique ID of client
+ *                            // (e.g. alice@gmail.com/Android-23nadsv32f)
+ *   'status': 'string',      // Status of the client. 'STATUS' member.
+ *   'lastUpdated': 'number', // Timestamp of the last time client_state was updated
+ *   'lastSeen': 'number'     // Timestamp of the last seen time of this device.
+ *                            // Note: 'lastSeen' DOES NOT trigger an 'onClientState' event
  * }
  * 
  * A <user_profile>, used in this API, is defined as:
@@ -3110,7 +3271,7 @@ fdom.apis.set("core.udpsocket", {
  * {
  *   // Mandatory
  *   'userId': 'string',    // Unique ID of user (e.g. alice@gmail.com)
- *   'timestamp': 'number'  // Timestamp of last change to the profile
+ *   'lastUpdated': 'number'  // Timestamp of last change to the profile
  *   // Optional
  *   'name': 'string',      // Name (e.g. Alice)
  *   'url': 'string',       // Homepage URL
@@ -3185,7 +3346,8 @@ fdom.apis.set("social", {
             userId: "string",
             clientId: "string",
             status: "string",
-            timestamp: "number"
+            lastUpdated: "number",
+            lastSeen: "number"
         },
         err: {
             errcode: "string",
@@ -3295,7 +3457,8 @@ fdom.apis.set("social", {
                 userId: "string",
                 clientId: "string",
                 status: "string",
-                timestamp: "number"
+                lastUpdated: "number",
+                lastSeen: "number"
             },
             message: "string"
         }
@@ -3308,7 +3471,7 @@ fdom.apis.set("social", {
         value: {
             // <user_profile>, defined above.
             userId: "string",
-            timestamp: "number",
+            lastUpdated: "number",
             name: "string",
             url: "string",
             imageData: "string"
@@ -3324,7 +3487,8 @@ fdom.apis.set("social", {
             userId: "string",
             clientId: "string",
             status: "string",
-            timestamp: "number"
+            lastUpdated: "number",
+            lastSeen: "number"
         }
     }
 }), /*globals fdom:true */
@@ -3372,7 +3536,11 @@ fdom.apis.set("storage", {
     keys: {
         type: "method",
         value: [],
-        ret: [ "array", "string" ]
+        ret: [ "array", "string" ],
+        err: {
+            errcode: "string",
+            message: "string"
+        }
     },
     /**
    * Fetch a value for a key
@@ -3385,7 +3553,11 @@ fdom.apis.set("storage", {
     get: {
         type: "method",
         value: [ "string" ],
-        ret: "string"
+        ret: "string",
+        err: {
+            errcode: "string",
+            message: "string"
+        }
     },
     /**
    * Sets a value to a key
@@ -3399,7 +3571,11 @@ fdom.apis.set("storage", {
     set: {
         type: "method",
         value: [ "string", "string" ],
-        ret: "string"
+        ret: "string",
+        err: {
+            errcode: "string",
+            message: "string"
+        }
     },
     /**
    * Removes a single key
@@ -3412,7 +3588,11 @@ fdom.apis.set("storage", {
     remove: {
         type: "method",
         value: [ "string" ],
-        ret: "string"
+        ret: "string",
+        err: {
+            errcode: "string",
+            message: "string"
+        }
     },
     /**
    * Removes all data from storage
@@ -3423,7 +3603,12 @@ fdom.apis.set("storage", {
    **/
     clear: {
         type: "method",
-        value: []
+        value: [],
+        ret: [],
+        err: {
+            errcode: "string",
+            message: "string"
+        }
     }
 }), /*globals fdom:true */
 /**
@@ -3440,13 +3625,18 @@ fdom.apis.set("transport", {
    * to the other side of the P2P connection for setup.
    *
    * @method setup
-   * @param {string} name - give this connection a name for logging
-   * @param {proxy} channel - signalling channel
+   * @param {String} name - give this connection a name for logging
+   * @param {Proxy} channel - signalling channel
    * @return nothing.
    **/
     setup: {
         type: "method",
-        value: [ "string", "proxy" ]
+        value: [ "string", "proxy" ],
+        ret: [],
+        err: {
+            errcode: "string",
+            message: "string"
+        }
     },
     /**
    * Send binary data to the peer
@@ -3461,7 +3651,12 @@ fdom.apis.set("transport", {
    **/
     send: {
         type: "method",
-        value: [ "string", "buffer" ]
+        value: [ "string", "buffer" ],
+        ret: [],
+        err: {
+            errcode: "string",
+            message: "string"
+        }
     },
     /**
    * Close the connection. Any data queued for sending, or in the
@@ -3474,7 +3669,12 @@ fdom.apis.set("transport", {
    **/
     close: {
         type: "method",
-        value: []
+        value: [],
+        ret: [],
+        err: {
+            errcode: "string",
+            message: "string"
+        }
     },
     /**
    * Event on incoming data (ArrayBuffer)
@@ -3675,6 +3875,47 @@ Echo_unprivileged.prototype.send = function(str, continuation) {
     continuation(), this.chan ? this.chan.emit("message", str) : this.dispatchEvent("message", "no channel available");
 }, fdom.apis.register("core.echo", Echo_unprivileged);
 
+/*globals fdom:true, console */
+/**
+ * An oAuth meta-provider allowing multiple platform-dependant
+ * oAuth implementations to serve as the redirectURL for an oAuth flow.
+ * The core implementations are provided in providers/oauth, and are
+ * supplemented in platform-dependent repositories.
+ *
+ */
+var OAuth = function(mod, dispatchEvent) {
+    this.mod = mod, this.dispatchEvent = dispatchEvent;
+};
+
+OAuth.handlers = [], /**
+ * Register an oAuth handler.
+ *
+ * @method register
+ * @param {Function(String[], OAuth)} handler
+ * @private
+ */
+OAuth.register = function(handler) {
+    this.handlers.push(handler);
+}, /**
+ * Indicate the initention to initiate an oAuth flow, allowing an appropriate
+ * oAuth provider to begin monitoring for redirection.
+ *
+ * @method initiateOAuth
+ * @param {String[]} redirectURIs oAuth redirection URIs registered with the
+ *     provider.
+ * @param {Function} continuation Function to call when sending is complete.
+ * @returns {{redirect:String, state:String}} The chosen redirect URI, and
+ *     State to pass to the URI on completion of oAuth.
+ */
+OAuth.prototype.initiateOAuth = function(redirectURIs, continuation) {
+    var promise, i;
+    for (i = 0; i < OAuth.handlers.length; i += 1) if (promise = OAuth.handlers[i](redirectURIs, this)) return promise.then(continuation);
+    continuation(null, {
+        errcode: "UNKNOWN",
+        message: "No requested redirects can be handled."
+    });
+}, fdom.apis.register("core.oauth", OAuth);
+
 /*globals fdom:true, console, RTCPeerConnection, webkitRTCPeerConnection */
 /*globals mozRTCPeerConnection, RTCSessionDescription, RTCIceCandidate */
 /*globals mozRTCSessionDescription, mozRTCIceCandidate */
@@ -3689,7 +3930,11 @@ var SimpleDataPeerState = {
     CONNECTED: "CONNECTED"
 };
 
-SimpleDataPeer.prototype.runWhenConnected = function(func) {
+SimpleDataPeer.prototype.createOffer = function(constaints, continuation) {
+    this.pc.createOffer(continuation, function() {
+        console.error("core.peerconnection createOffer failed.");
+    }, constaints);
+}, SimpleDataPeer.prototype.runWhenConnected = function(func) {
     this.pcState === SimpleDataPeerState.CONNECTED ? func() : this.onConnectedQueue.push(func);
 }, SimpleDataPeer.prototype.send = function(channelId, message, continuation) {
     this.channels[channelId].send(message), continuation();
@@ -3867,6 +4112,8 @@ PeerConnection.prototype.setup = function(signallingChannelId, peerName, stunSer
         }.bind(this);
         this.openDataChannel(channelId, openDataChannelContinuation);
     }
+}, PeerConnection.prototype.createOffer = function(constraints, continuation) {
+    this.peer.createOffer(constraints, continuation);
 }, // TODO: delay continuation until the open callback from _peer is called.
 PeerConnection.prototype.openDataChannel = function(channelId, continuation) {
     this.peer.openDataChannel(channelId, continuation);
@@ -3950,17 +4197,19 @@ fdom.apis.register("core.storage", Storage_unprivileged);
 
 /*globals fdom, document */
 /**
- * A FreeDOM view is provided as a core service for displaying some UI.
- * Implementation is currently designed as a sandboxed iFrame that the
- * browser treats as a 'null' origin, whose sendMessage channel is
- * given to the provider.
+ * A freedom.js view is the interface for user interaction.
+ * A view exists as an iFrame, which is shown to the user in some way.
+ * communication between the view and the freedom.js module is performed
+ * through the HTML5 postMessage mechanism, which this provider translates
+ * to freedom.js message events.
  * @Class View_unprivileged
  * @constructor
  * @private
- * @param {App} app The application creating this provider.
+ * @param {port.Module} caller The module creating this provider.
+ * @param {Function} dispatchEvent Function to call to emit events.
  */
-var View_unprivileged = function(app, dispatchEvent) {
-    this.dispatchEvent = dispatchEvent, this.host = null, this.win = null, this.app = app, 
+var View_unprivileged = function(caller, dispatchEvent) {
+    this.dispatchEvent = dispatchEvent, this.host = null, this.win = null, this.module = caller, 
     fdom.util.handleEvents(this);
 };
 
@@ -3975,26 +4224,26 @@ var View_unprivileged = function(app, dispatchEvent) {
 View_unprivileged.prototype.open = function(name, what, continuation) {
     this.host = document.createElement("div"), this.host.style.width = "100%", this.host.style.height = "100%", 
     this.host.style.display = "relative";
-    var root, frame, container = document.body, config = this.app.manifest.views;
+    var root, frame, container = document.body, config = this.module.manifest.views;
     config && config[name] && document.getElementById(name) && (container = document.getElementById(name)), 
     container.appendChild(this.host), root = this.host, // TODO(willscott): Support shadow root as available.
     // if (this.host['webkitCreateShadowRoot']) {
     //   root = this.host['webkitCreateShadowRoot']();
     // }
     frame = document.createElement("iframe"), frame.setAttribute("sandbox", "allow-scripts allow-forms"), 
-    what.file ? fdom.resources.get(this.app.manifestId, what.file).then(function(fname) {
+    what.file ? fdom.resources.get(this.module.manifestId, what.file).then(function(fname) {
         this.finishOpen(root, frame, fname, continuation);
     }.bind(this)) : what.code ? this.finishOpen(root, frame, "data:text/html;charset=utf-8," + what.code, continuation) : continuation(!1);
 }, View_unprivileged.prototype.finishOpen = function(root, frame, src, continuation) {
     frame.src = src, frame.style.width = "100%", frame.style.height = "100%", frame.style.border = "0", 
-    frame.style.background = "transparent", root.appendChild(frame), this.app.config.global.addEventListener("message", this.onMessage.bind(this), !0), 
+    frame.style.background = "transparent", root.appendChild(frame), this.module.config.global.addEventListener("message", this.onMessage.bind(this), !0), 
     this.win = frame, continuation({});
 }, View_unprivileged.prototype.show = function(continuation) {
     continuation();
 }, View_unprivileged.prototype.postMessage = function(args, continuation) {
     this.win.contentWindow.postMessage(args, "*"), continuation();
 }, View_unprivileged.prototype.close = function(continuation) {
-    this.host && (this.host.parentNode.removeChild(this.host), this.host = null), this.win && (this.app.config.global.removeEventListener("message", this.onMessage.bind(this), !0), 
+    this.host && (this.host.parentNode.removeChild(this.host), this.host = null), this.win && (this.module.config.global.removeEventListener("message", this.onMessage.bind(this), !0), 
     this.win = null), continuation();
 }, View_unprivileged.prototype.onMessage = function(m) {
     m.source === this.win.contentWindow && this.dispatchEvent("message", m.data);
@@ -4065,10 +4314,10 @@ WS.prototype.send = function(data, continuation) {
         wasClean: event.wasClean
     });
 }, fdom.apis.register("core.websocket", WS);
-//# sourceMappingURL=freedom.map
+//# sourceMappingURL=freedom.js.map
     // Create default context.
     global['freedom'] = fdom.setup(global, freedom_src);
   })();
 
 })(this);
-//# sourceMappingURL=freedom.map
+//# sourceMappingURL=freedom.js.map

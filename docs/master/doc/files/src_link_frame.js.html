@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.4.12</em>
+            <em>API Docs for: 0.5.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -243,7 +243,8 @@ fdom.link.Frame.prototype.makeFrame = function(src, inject) {
       &#x27;throw new Error(\&#x27;Injection of &#x27; + inject +&#x27; Failed!\&#x27;);&#x27; +
       &#x27;&quot;&gt;&lt;/script&gt;&#x27;;
   }
-  loader = &#x27;&lt;html&gt;&#x27; + extra + &#x27;&lt;script src=&quot;&#x27; +
+  loader = &#x27;&lt;html&gt;&lt;meta http-equiv=&quot;Content-type&quot; content=&quot;text/html;&#x27; +
+      &#x27;charset=UTF-8&quot;&gt;&#x27; + extra + &#x27;&lt;script src=&quot;&#x27; +
       fdom.util.forceModuleContext(src) + &#x27;&quot;&gt;&lt;/script&gt;&lt;/html&gt;&#x27;;
   blob = fdom.util.getBlob(loader, &#x27;text/html&#x27;);
   frame.src = fdom.util.getURL(blob);
