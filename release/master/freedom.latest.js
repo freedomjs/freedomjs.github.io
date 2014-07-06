@@ -4237,7 +4237,7 @@ View_unprivileged.prototype.open = function(name, what, continuation) {
 }, View_unprivileged.prototype.finishOpen = function(root, frame, src, continuation) {
     frame.src = src, frame.style.width = "100%", frame.style.height = "100%", frame.style.border = "0", 
     frame.style.background = "transparent", root.appendChild(frame), this.module.config.global.addEventListener("message", this.onMessage.bind(this), !0), 
-    this.win = frame, continuation({});
+    this.win = frame, continuation();
 }, View_unprivileged.prototype.show = function(continuation) {
     continuation();
 }, View_unprivileged.prototype.postMessage = function(args, continuation) {
