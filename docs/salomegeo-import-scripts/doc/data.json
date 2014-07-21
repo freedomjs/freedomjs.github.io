@@ -1990,7 +1990,7 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 374,
+            "line": 375,
             "description": "Attempt to load resolved scripts into the namespace.",
             "itemtype": "method",
             "name": "tryLoad",
@@ -2866,7 +2866,7 @@
         },
         {
             "message": "replacing incorrect tag: returns with return",
-            "line": " src/port-moduleinternal.js:374"
+            "line": " src/port-moduleinternal.js:375"
         },
         {
             "message": "unknown tag: contructor",

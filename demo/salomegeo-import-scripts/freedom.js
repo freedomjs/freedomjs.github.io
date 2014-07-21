@@ -1582,6 +1582,7 @@ fdom.port.ModuleInternal.prototype.mapProxies = function(manifest) {
  * @param {String[]} scripts The URLs of the scripts to load.
  */
 fdom.port.ModuleInternal.prototype.loadScripts = function(from, scripts) {
+    // TODO(salomegeo): add a test for failure.
     var scripts_count, importer = function(script, resolve, reject) {
         try {
             this.config.global.importScripts(script), resolve();
