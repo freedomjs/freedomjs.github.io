@@ -1582,22 +1582,30 @@ fdom.port.ModuleInternal.prototype.mapProxies = function(manifest) {
  * @param {String[]} scripts The URLs of the scripts to load.
  */
 fdom.port.ModuleInternal.prototype.loadScripts = function(from, scripts) {
-    var i = 0, safe = !0, importer = function(script, resolve) {
-        this.config.global.importScripts(script), resolve();
-    }.bind(this), urls = [], outstanding = 0, load = function(url) {
-        urls.push(url), outstanding -= 1, 0 === outstanding && (safe ? (this.emit(this.externalChannel, {
-            type: "ready"
-        }), this.tryLoad(importer, urls)) : this.tryLoad(importer, urls).then(function() {
-            this.emit(this.externalChannel, {
-                type: "ready"
-            });
-        }.bind(this)));
+    // TODO(salomegeo): add a test for failure.
+    var scripts_count, importer = function(script, resolve, reject) {
+        try {
+            this.config.global.importScripts(script), resolve();
+        } catch (e) {
+            reject(e);
+        }
     }.bind(this);
-    if (this.config.global.importScripts || (safe = !1, importer = function(url, resolve) {
+    scripts_count = "string" == typeof scripts ? 1 : scripts.length;
+    var load = function(next) {
+        if (next === scripts_count) return void this.emit(this.externalChannel, {
+            type: "ready"
+        });
+        var script;
+        script = "string" == typeof scripts ? scripts : scripts[next], fdom.resources.get(from, script).then(function(url) {
+            this.tryLoad(importer, url).then(function() {
+                load(next + 1);
+            }.bind(this));
+        }.bind(this));
+    }.bind(this);
+    this.config.global.importScripts || (importer = function(url, resolve) {
         var script = this.config.global.document.createElement("script");
         script.src = url, script.addEventListener("load", resolve, !0), this.config.global.document.body.appendChild(script);
-    }.bind(this)), "string" == typeof scripts) outstanding = 1, fdom.resources.get(from, scripts).then(load); else for (outstanding = scripts.length, 
-    i = 0; i < scripts.length; i += 1) fdom.resources.get(from, scripts[i]).then(load);
+    }.bind(this)), load(0);
 }, /**
  * Attempt to load resolved scripts into the namespace.
  * @method tryLoad
@@ -1606,14 +1614,10 @@ fdom.port.ModuleInternal.prototype.loadScripts = function(from, scripts) {
  * @param {String[]} urls The resoved URLs to load.
  * @returns {Promise} completion of load
  */
-fdom.port.ModuleInternal.prototype.tryLoad = function(importer, urls) {
-    var i, promises = [];
-    try {
-        for (i = 0; i < urls.length; i += 1) promises.push(new Promise(importer.bind({}, urls[i])));
-    } catch (e) {
-        fdom.debug.warn(e.stack), fdom.debug.error("Error loading " + urls[i], e), fdom.debug.error("If the stack trace is not useful, see https://github.com/UWNetworksLab/freedom/wiki/Debugging-Script-Parse-Errors");
-    }
-    return Promise.all(promises);
+fdom.port.ModuleInternal.prototype.tryLoad = function(importer, url) {
+    return new Promise(importer.bind({}, url)).catch(function(e) {
+        fdom.debug.warn(e.stack), fdom.debug.error("Error loading " + url, e), fdom.debug.error("If the stack trace is not useful, see https://github.com/UWNetworksLab/freedom/wiki/Debugging-Script-Parse-Errors");
+    });
 }, /*globals fdom:true */
 "undefined" == typeof fdom && (fdom = {}), fdom.port = fdom.port || {}, /**
  * A freedom port for a user-accessable provider.
@@ -4237,7 +4241,7 @@ View_unprivileged.prototype.open = function(name, what, continuation) {
 }, View_unprivileged.prototype.finishOpen = function(root, frame, src, continuation) {
     frame.src = src, frame.style.width = "100%", frame.style.height = "100%", frame.style.border = "0", 
     frame.style.background = "transparent", root.appendChild(frame), this.module.config.global.addEventListener("message", this.onMessage.bind(this), !0), 
-    this.win = frame, continuation({});
+    this.win = frame, continuation();
 }, View_unprivileged.prototype.show = function(continuation) {
     continuation();
 }, View_unprivileged.prototype.postMessage = function(args, continuation) {

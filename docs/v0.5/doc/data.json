@@ -2,7 +2,7 @@
     "project": {
         "name": "freedom",
         "description": "Embracing a distributed web",
-        "version": "0.5.0"
+        "version": "0.5.1"
     },
     "files": {
         "src/link/direct.js": {
@@ -1990,7 +1990,7 @@
         },
         {
             "file": "src/port-moduleinternal.js",
-            "line": 371,
+            "line": 375,
             "description": "Attempt to load resolved scripts into the namespace.",
             "itemtype": "method",
             "name": "tryLoad",
@@ -2866,7 +2866,7 @@
         },
         {
             "message": "replacing incorrect tag: returns with return",
-            "line": " src/port-moduleinternal.js:371"
+            "line": " src/port-moduleinternal.js:375"
         },
         {
             "message": "unknown tag: contructor",
