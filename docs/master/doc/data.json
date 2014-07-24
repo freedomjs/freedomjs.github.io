@@ -2,7 +2,7 @@
     "project": {
         "name": "freedom",
         "description": "Embracing a distributed web",
-        "version": "0.5.0"
+        "version": "0.5.2"
     },
     "files": {
         "src/link/direct.js": {
