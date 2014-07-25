@@ -1616,7 +1616,7 @@ fdom.port.ModuleInternal.prototype.loadScripts = function(from, scripts) {
  */
 fdom.port.ModuleInternal.prototype.tryLoad = function(importer, url) {
     return new Promise(importer.bind({}, url)).catch(function(e) {
-        fdom.debug.warn(e.stack), fdom.debug.error("Error loading " + url, e), fdom.debug.error("If the stack trace is not useful, see https://github.com/UWNetworksLab/freedom/wiki/Debugging-Script-Parse-Errors");
+        fdom.debug.warn(e.stack), fdom.debug.error("Error loading " + url, e), fdom.debug.error("If the stack trace is not useful, see https://github.com/freedomjs/freedom/wiki/Debugging-Script-Parse-Errors");
     });
 }, /*globals fdom:true */
 "undefined" == typeof fdom && (fdom = {}), fdom.port = fdom.port || {}, /**
@@ -3295,6 +3295,8 @@ fdom.apis.set("social", {
             UNKNOWN: "Unknown error",
             // User is currently offline
             OFFLINE: "User is currently offline",
+            // Improper parameters
+            MALFORMEDPARAMETERS: "Parameters are malformed",
             /** LOGIN **/
             // Error authenticating to the server (e.g. invalid credentials)
             LOGIN_BADCREDENTIALS: "Error authenticating with server",

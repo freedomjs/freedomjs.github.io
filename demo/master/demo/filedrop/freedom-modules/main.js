@@ -10,19 +10,17 @@ if (!window) {
 }
 // FreeDOM APIs
 var core = freedom.core();
-var social = freedom.socialprovider();
+var socialProviders = [ freedom.socialprovider() ];
+var transportProviders = [ freedom.transport ];
+var social = new SocialTransport(socialProviders, transportProviders);
 var storage = freedom.storageprovider();
 
 // Internal State
 var myClientState = null;
 var userList = {};
 var clientList = {};
-var files = {};       // Files served from this node
-var fetchQueue = [];  // Files on queue to be downloaded
-
-// PC
-var connections = {};
-var signallingChannels = {};
+var files = {};         // Files served from this node
+var queuedFetch = null;  // Store most recent fetch request
 
 console.log('File Drop root module');
 
@@ -61,30 +59,6 @@ freedom.on('serve-data', function(data) {
   updateStats(data.key, 0, 0);
 });
 
-function setupConnection(name, targetId, key) {
-  connections[targetId] = freedom.transport();
-  connections[targetId].on('onData', function(message) {
-    console.log("Receiving data with tag: " + message.tag);
-    social.sendMessage(targetId, JSON.stringify({
-      cmd: 'done',
-      data: key
-    }));
-    freedom.emit('download-data', message.data);
-  });
-  return core.createChannel().then(function (chan) {
-    // Set up the signalling channel first, it may be needed in the
-    // peerconnection setup.
-    chan.channel.on('message', function(msg) {
-      social.sendMessage(targetId, JSON.stringify({
-        cmd: 'signal',
-        data: msg
-      }));
-    });
-    signallingChannels[targetId] = chan.channel;
-    return connections[targetId].setup(name, chan.identifier);
-  });
-}
-
 function fetch(data) {
   //@todo smarter way to choose a target in the future
   var serverId = data.targetId;
@@ -92,11 +66,13 @@ function fetch(data) {
   
   console.log("fetch: downloading " + key + " from " + serverId);
   //Tell 'em I'm comin' for them
-  social.sendMessage(serverId, JSON.stringify({
+  social.sendMessage(serverId, 'protocol', JSON.stringify({
     cmd: 'fetch',
     data: key
-  }));
-  setupConnection("fetcher", serverId, key);
+  })).then(function() {
+  }, function(err) {
+    console.error(JSON.stringify(err));
+  });
 }
 
 freedom.on('download', function(data) {
@@ -104,7 +80,7 @@ freedom.on('download', function(data) {
       myClientState.status == social.STATUS["ONLINE"]) {
     fetch(data);
   } else {
-    fetchQueue.push(data);
+    queuedFetch = data;
   }
 });
 
@@ -118,6 +94,15 @@ social.on('onClientState', function(data) {
       data.clientId == myClientState.clientId) {
     myClientState = data;
   }
+
+  console.log('onClientState:' + JSON.stringify(data));
+
+  if (data.status == social.STATUS["ONLINE"] && 
+    queuedFetch !== null && data.clientId == queuedFetch.targetId) {
+    fetch(queuedFetch);
+    //setTimeout(fetch.bind({},queuedFetch),10000);
+  }
+
 });
 
 social.on('onMessage', function(data) {
@@ -125,8 +110,22 @@ social.on('onMessage', function(data) {
   var targetId;
   var key;
 
+  if (data.tag == 'file') {
+    console.log("Received data with tag: " + data.tag);
+    social.sendMessage(data.from.clientId, 'protocol', JSON.stringify({
+      cmd: 'done',
+      data: queuedFetch.key 
+    })).then(function() {
+    }, function(err) {
+      console.error(JSON.stringify(err));
+    });
+    freedom.emit('download-data', data.data);
+    return;
+  }
+
   // Try parsing message
   try {
+    data.message = social._ab2str(data.data);
     msg = JSON.parse(data.message);
   } catch (e) {
     console.log("Error parsing message: " + data);
@@ -139,30 +138,25 @@ social.on('onMessage', function(data) {
     updateStats(key, 1, 0);
 
     console.log("social.onMessage: Received request for " + key + " from " + targetId);
-    setupConnection("server-"+targetId, targetId).then(function(){ //SEND IT
-      if (files[key] && files[key].data) {
-        console.log("social.onMessage: Sending " + key + " to " + targetId);
-        connections[targetId].send('filedrop', files[key].data);
-      } else {
-        console.log("social.onMessage: I don't have key: " + key);
-        social.sendMessage(targetId, JSON.stringify({
-          cmd: 'error',
-          data: 'File missing!'
-        }));
-      }
-    });
+    if (files[key] && files[key].data) {
+      console.log("social.onMessage: Sending " + key + " to " + targetId);
+      social.sendMessage(targetId, 'file', files[key].data).then(function() {
+      }, function(err) {
+        console.error(JSON.stringify(err));
+      });
+    } else {
+      console.log("social.onMessage: I don't have key: " + key);
+      social.sendMessage(targetId, 'protocol', JSON.stringify({
+        cmd: 'error',
+        data: 'File missing!'
+      })).then(function() {
+      }, function(err) {
+        console.error(JSON.stringify(err));
+      });
+    }
   } else if (data.from.clientId && msg.cmd && msg.data && msg.cmd == 'done') {
     key = msg.data;
     updateStats(key, -1, 1);
-  } else if (data.from.clientId && msg.cmd && msg.data && msg.cmd == 'signal') {
-    console.log('social.onMessage: signalling message');
-    targetId = data.from.clientId;
-    if (signallingChannels[targetId]) {
-      signallingChannels[targetId].emit('message', msg.data);
-    } else {
-      //DEBUG
-      console.error("Signalling channel missing!!");
-    }
   } else if (data.from.clientId && msg.cmd && msg.data && msg.cmd == 'error') {
     console.log('social.onMessage: ' + msg.data);
     freedom.emit('download-error', msg.data);
@@ -183,11 +177,9 @@ social.login({
 }).then(function(ret) {
   myClientState = ret;
   if (ret.status == social.STATUS["ONLINE"]) {
-    console.log('social.onStatus: ONLINE!');
-    while (fetchQueue.length > 0) {
-      fetch(fetchQueue.shift());
-    }
+    console.log('social.login: ONLINE!');
   } else {
+    console.log('social.login: ERROR!');
     freedom.emit("serve-error", "Failed logging in. Status: "+ret.status);
   }
 }, function(err) {
