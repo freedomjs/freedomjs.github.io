@@ -3728,7 +3728,7 @@ fdom.apis.set("storebuffer", {
     set: {
         type: "method",
         value: [ "string", "buffer" ],
-        ret: "string",
+        ret: "buffer",
         err: {
             errcode: "string",
             message: "string"
@@ -3745,7 +3745,7 @@ fdom.apis.set("storebuffer", {
     remove: {
         type: "method",
         value: [ "string" ],
-        ret: "string",
+        ret: "buffer",
         err: {
             errcode: "string",
             message: "string"
