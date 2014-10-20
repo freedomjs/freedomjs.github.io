@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Worker - freedom</title>
+    <title>Consumer - freedom</title>
     <link rel="stylesheet" href="http://yui.yahooapis.com/3.9.1/build/cssgrids/cssgrids-min.css">
     <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
     <link rel="stylesheet" href="../assets/css/main.css" id="site_styles">
@@ -112,7 +112,7 @@
             <div class="apidocs">
                 <div id="docs-main">
                     <div class="content">
-                        <h1>Worker Class</h1>
+                        <h1>Consumer Class</h1>
 <div class="box meta">
     
         <div class="uses">
@@ -126,14 +126,10 @@
     
 
     
-        <div class="extends">
-            Extends <a href="../classes/Link.html" class="crosslink">Link</a>
-        </div>
-    
 
     
         <div class="foundat">
-            Defined in: <a href="../files/src_link_worker.js.html#l5"><code>src&#x2F;link&#x2F;worker.js:5</code></a>
+            Defined in: <a href="../files/src_consumer.js.html#l5"><code>src&#x2F;consumer.js:5</code></a>
         </div>
     
 
@@ -145,18 +141,34 @@
 
 
 <div class="box intro">
-    <p>A port providing message transport between two freedom contexts via Worker.</p>
+    <p>A freedom port for a user-accessable api.</p>
 
 </div>
 
 
     <div class="constructor">
         <h2>Constructor</h2>
-        <div id="method_Worker" class="method item">
-    <h3 class="name"><code>Worker</code></h3>
+        <div id="method_Consumer" class="method item">
+    <h3 class="name"><code>Consumer</code></h3>
 
     
-        <span class="paren">()</span>
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>interfaceCls</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>debug</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
     
 
     
@@ -184,7 +196,7 @@
             
         
         
-        <a href="../files/src_link_worker.js.html#l5"><code>src&#x2F;link&#x2F;worker.js:5</code></a>
+        <a href="../files/src_consumer.js.html#l5"><code>src&#x2F;consumer.js:5</code></a>
         
         </p>
 
@@ -198,6 +210,46 @@
         
     </div>
 
+    
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">interfaceCls</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The api interface exposed by this consumer.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">debug</code>
+                        <span class="type">Debug</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The debugger to use for logging.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
     
 
     
@@ -228,17 +280,26 @@
                 <div class="index-section methods">
                     <h3>Methods</h3>
 
-                    <ul class="index-list methods extends">
+                    <ul class="index-list methods">
                         
-                            <li class="index-item method inherited">
-                                <a href="#method_addErrorHandler">addErrorHandler</a>
+                            <li class="index-item method">
+                                <a href="#method_conform">conform</a>
 
+                                
+                                    <span class="flag static">static</span>
                                 
                                 
                             </li>
                         
                             <li class="index-item method">
-                                <a href="#method_deliverMessage">deliverMessage</a>
+                                <a href="#method_doClose">doClose</a>
+
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method private">
+                                <a href="#method_doEmit">doEmit</a>
 
                                 
                                 
@@ -251,9 +312,57 @@
                                 
                             </li>
                         
-                            <li class="index-item method inherited">
-                                <a href="#method_emitMessage">emitMessage</a>
+                            <li class="index-item method">
+                                <a href="#method_error">error</a>
 
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method">
+                                <a href="#method_getInterface">getInterface</a>
+
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method private">
+                                <a href="#method_getInterfaceConstructor">getInterfaceConstructor</a>
+
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method">
+                                <a href="#method_getProxyInterface">getProxyInterface</a>
+
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method">
+                                <a href="#method_makeArrayBuffer">makeArrayBuffer</a>
+
+                                
+                                    <span class="flag static">static</span>
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method">
+                                <a href="#method_messageToPortable">messageToPortable</a>
+
+                                
+                                    <span class="flag static">static</span>
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method private">
+                                <a href="#method_nextId">nextId</a>
+
+                                
+                                    <span class="flag static">static</span>
                                 
                                 
                             </li>
@@ -286,14 +395,7 @@
                                 
                             </li>
                         
-                            <li class="index-item method inherited">
-                                <a href="#method_onerror">onerror</a>
-
-                                
-                                
-                            </li>
-                        
-                            <li class="index-item method inherited">
+                            <li class="index-item method">
                                 <a href="#method_onMessage">onMessage</a>
 
                                 
@@ -301,28 +403,25 @@
                             </li>
                         
                             <li class="index-item method">
-                                <a href="#method_setupListener">setupListener</a>
+                                <a href="#method_portableToMessage">portableToMessage</a>
 
+                                
+                                    <span class="flag static">static</span>
                                 
                                 
                             </li>
                         
                             <li class="index-item method">
-                                <a href="#method_setupWorker">setupWorker</a>
+                                <a href="#method_recursiveFreezeObject">recursiveFreezeObject</a>
 
+                                
+                                    <span class="flag static">static</span>
                                 
                                 
                             </li>
                         
-                            <li class="index-item method private">
-                                <a href="#method_start">start</a>
-
-                                
-                                
-                            </li>
-                        
-                            <li class="index-item method private">
-                                <a href="#method_stop">stop</a>
+                            <li class="index-item method">
+                                <a href="#method_teardown">teardown</a>
 
                                 
                                 
@@ -351,8 +450,8 @@
                 <h2 class="off-left">Methods</h2>
 
                 
-                    <div id="method_addErrorHandler" class="method item inherited">
-    <h3 class="name"><code>addErrorHandler</code></h3>
+                    <div id="method_conform" class="method item">
+    <h3 class="name"><code>conform</code></h3>
 
     
         <div class="args">
@@ -360,7 +459,25 @@
             
                 <li class="arg">
                     
-                        <code>handler</code>
+                        <code>template</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>from</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>externals</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>Whether</code>
                     
                 </li>
             
@@ -377,6 +494,8 @@
     
 
     
+        <span class="flag static">static</span>
+    
 
     
 
@@ -385,12 +504,15 @@
     <div class="meta">
         
             
-                <p>Inherited from
-                <a href="../classes/Link.html#method_addErrorHandler">Link</a>:
+                
+                <p>
+                
+                Defined in
+                
             
         
         
-        <a href="../files/src_link.js.html#l43"><code>src&#x2F;link.js:43</code></a>
+        <a href="../files/src_consumer.js.html#l320"><code>src&#x2F;consumer.js:320</code></a>
         
         </p>
 
@@ -401,7 +523,8 @@
     </div>
 
     <div class="description">
-        <p>Register a handler to alert of errors on this port.</p>
+        <p>Force a collection of values to look like the types and length of an API
+template.</p>
 
     </div>
 
@@ -413,14 +536,62 @@
             
                 <li class="param">
                     
-                        <code class="param-name">handler</code>
-                        <span class="type">Function</span>
+                        <code class="param-name">template</code>
+                        <span class="type">Object</span>
                     
 
                     
 
                     <div class="param-description">
-                        <p>Method to call with errors.</p>
+                        <p>The template to conform to</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">from</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The value to conform</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">externals</code>
+                        <span class="type">Array</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>Listing of binary elements in the template</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">Whether</code>
+                        <span class="type">Boolean</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>to to separate or combine streams.</p>
 
                     </div>
 
@@ -437,27 +608,11 @@
 </div>
 
                 
-                    <div id="method_deliverMessage" class="method item">
-    <h3 class="name"><code>deliverMessage</code></h3>
+                    <div id="method_doClose" class="method item">
+    <h3 class="name"><code>doClose</code></h3>
 
     
-        <div class="args">
-            <span class="paren">(</span><ul class="args-list inline commas">
-            
-                <li class="arg">
-                    
-                        <code>flow</code>
-                    
-                </li>
-            
-                <li class="arg">
-                    
-                        <code>message</code>
-                    
-                </li>
-            
-            </ul><span class="paren">)</span>
-        </div>
+        <span class="paren">()</span>
     
 
     
@@ -485,7 +640,7 @@
             
         
         
-        <a href="../files/src_link_worker.js.html#l98"><code>src&#x2F;link&#x2F;worker.js:98</code></a>
+        <a href="../files/src_consumer.js.html#l239"><code>src&#x2F;consumer.js:239</code></a>
         
         </p>
 
@@ -496,8 +651,86 @@
     </div>
 
     <div class="description">
-        <p>Receive messages from the hub to this port.
-Received messages will be emitted from the other side of the port.</p>
+        <p>Close / teardown the flow this api terminates.</p>
+
+    </div>
+
+    
+
+    
+
+    
+</div>
+
+                
+                    <div id="method_doEmit" class="method item private">
+    <h3 class="name"><code>doEmit</code></h3>
+
+    
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>to</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>msg</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>all</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+
+    
+
+    
+        <span class="flag private">private</span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_consumer.js.html#l186"><code>src&#x2F;consumer.js:186</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Emit a message on the channel once setup is complete.</p>
 
     </div>
 
@@ -509,14 +742,14 @@ Received messages will be emitted from the other side of the port.</p>
             
                 <li class="param">
                     
-                        <code class="param-name">flow</code>
+                        <code class="param-name">to</code>
                         <span class="type">String</span>
                     
 
                     
 
                     <div class="param-description">
-                        <p>the channel/flow of the message.</p>
+                        <p>The ID of the flow sending the message.</p>
 
                     </div>
 
@@ -525,14 +758,30 @@ Received messages will be emitted from the other side of the port.</p>
             
                 <li class="param">
                     
-                        <code class="param-name">message</code>
+                        <code class="param-name">msg</code>
                         <span class="type">Object</span>
                     
 
                     
 
                     <div class="param-description">
-                        <p>The Message.</p>
+                        <p>The message to emit</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">all</code>
+                        <span class="type">Boolean</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>Send message to all recipients.</p>
 
                     </div>
 
@@ -657,8 +906,8 @@ Received messages will be emitted from the other side of the port.</p>
 </div>
 
                 
-                    <div id="method_emitMessage" class="method item inherited">
-    <h3 class="name"><code>emitMessage</code></h3>
+                    <div id="method_error" class="method item">
+    <h3 class="name"><code>error</code></h3>
 
     
         <div class="args">
@@ -666,13 +915,13 @@ Received messages will be emitted from the other side of the port.</p>
             
                 <li class="arg">
                     
-                        <code>flow</code>
+                        <code>id</code>
                     
                 </li>
             
                 <li class="arg">
                     
-                        <code>messgae</code>
+                        <code>message</code>
                     
                 </li>
             
@@ -697,12 +946,15 @@ Received messages will be emitted from the other side of the port.</p>
     <div class="meta">
         
             
-                <p>Inherited from
-                <a href="../classes/Link.html#method_emitMessage">Link</a>:
+                
+                <p>
+                
+                Defined in
+                
             
         
         
-        <a href="../files/src_link.js.html#l61"><code>src&#x2F;link.js:61</code></a>
+        <a href="../files/src_consumer.js.html#l222"><code>src&#x2F;consumer.js:222</code></a>
         
         </p>
 
@@ -713,7 +965,7 @@ Received messages will be emitted from the other side of the port.</p>
     </div>
 
     <div class="description">
-        <p>Emit messages to the the hub, mapping control channels.</p>
+        <p>Handle a message error reported to this api.</p>
 
     </div>
 
@@ -725,14 +977,14 @@ Received messages will be emitted from the other side of the port.</p>
             
                 <li class="param">
                     
-                        <code class="param-name">flow</code>
-                        <span class="type">String</span>
+                        <code class="param-name">id</code>
+                        <span class="type">String?</span>
                     
 
                     
 
                     <div class="param-description">
-                        <p>the flow to emit the message on.</p>
+                        <p>The id of the interface where the error occured.</p>
 
                     </div>
 
@@ -741,14 +993,14 @@ Received messages will be emitted from the other side of the port.</p>
             
                 <li class="param">
                     
-                        <code class="param-name">messgae</code>
+                        <code class="param-name">message</code>
                         <span class="type">Object</span>
                     
 
                     
 
                     <div class="param-description">
-                        <p>The message to emit.</p>
+                        <p>The message which failed, if relevant.</p>
 
                     </div>
 
@@ -757,6 +1009,525 @@ Received messages will be emitted from the other side of the port.</p>
             
             </ul>
         </div>
+    
+
+    
+
+    
+</div>
+
+                
+                    <div id="method_getInterface" class="method item">
+    <h3 class="name"><code>getInterface</code></h3>
+
+    
+        <span class="paren">()</span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_consumer.js.html#l74"><code>src&#x2F;consumer.js:74</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Create a consumer.Interface associated with this consumer.
+An interface is returned, which is supplied with important control of the
+api via constructor arguments: (bound below in getInterfaceConstructor)</p>
+<p>onMsg: function(binder) sets the function to call when messages for this
+   interface arrive on the channel,
+emit: function(msg) allows this interface to emit messages,
+id: string is the Identifier for this interface.</p>
+
+    </div>
+
+    
+
+    
+
+    
+</div>
+
+                
+                    <div id="method_getInterfaceConstructor" class="method item private">
+    <h3 class="name"><code>getInterfaceConstructor</code></h3>
+
+    
+        <span class="paren">()</span>
+    
+
+    
+
+    
+
+    
+        <span class="flag private">private</span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_consumer.js.html#l166"><code>src&#x2F;consumer.js:166</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Provides a bound class for creating a consumer.Interface associated
+with this api. This partial level of construction can be used
+to allow the consumer to be used as a provider for another API.</p>
+
+    </div>
+
+    
+
+    
+
+    
+</div>
+
+                
+                    <div id="method_getProxyInterface" class="method item">
+    <h3 class="name"><code>getProxyInterface</code></h3>
+
+    
+        <span class="paren">()</span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_consumer.js.html#l94"><code>src&#x2F;consumer.js:94</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Create a function that can be used to get interfaces from this api consumer
+from a user-visible point.</p>
+
+    </div>
+
+    
+
+    
+
+    
+</div>
+
+                
+                    <div id="method_makeArrayBuffer" class="method item">
+    <h3 class="name"><code>makeArrayBuffer</code></h3>
+
+    
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>thing</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>debug</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+        <span class="returns-inline">
+            <span class="type">ArrayBuffer</span>
+        </span>
+    
+
+    
+
+    
+
+    
+
+    
+        <span class="flag static">static</span>
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_consumer.js.html#l417"><code>src&#x2F;consumer.js:417</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Make a thing into an Array Buffer</p>
+
+    </div>
+
+    
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">thing</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                         
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">debug</code>
+                        <span class="type">Debug</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>A debugger in case of errors.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
+    
+
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">ArrayBuffer</span>:
+                    
+                    <p>An Array Buffer</p>
+
+                
+            </div>
+        </div>
+    
+
+    
+</div>
+
+                
+                    <div id="method_messageToPortable" class="method item">
+    <h3 class="name"><code>messageToPortable</code></h3>
+
+    
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>template</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>value</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>debug</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+        <span class="returns-inline">
+            <span class="type">Text: Object, binary: Array</span>
+        </span>
+    
+
+    
+
+    
+
+    
+
+    
+        <span class="flag static">static</span>
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_consumer.js.html#l287"><code>src&#x2F;consumer.js:287</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Convert a structured data structure into a message stream conforming to
+a template and an array of binary data elements.</p>
+
+    </div>
+
+    
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">template</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The template to conform to</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">value</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The instance of the data structure to confrom</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">debug</code>
+                        <span class="type">Debug</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>A debugger for errors.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
+    
+
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">Text: Object, binary: Array</span>:
+                    
+                    <p>} Separated data streams.</p>
+
+                
+            </div>
+        </div>
+    
+
+    
+</div>
+
+                
+                    <div id="method_nextId" class="method item private">
+    <h3 class="name"><code>nextId</code></h3>
+
+    
+        <span class="paren">()</span>
+    
+
+    
+
+    
+
+    
+        <span class="flag private">private</span>
+    
+
+    
+
+    
+        <span class="flag static">static</span>
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_consumer.js.html#l274"><code>src&#x2F;consumer.js:274</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Get the next ID for an api channel.</p>
+
+    </div>
+
     
 
     
@@ -1220,93 +1991,7 @@ selected items removed and returned by the function.</p>
 </div>
 
                 
-                    <div id="method_onerror" class="method item inherited">
-    <h3 class="name"><code>onerror</code></h3>
-
-    
-        <div class="args">
-            <span class="paren">(</span><ul class="args-list inline commas">
-            
-                <li class="arg">
-                    
-                        <code>err</code>
-                    
-                </li>
-            
-            </ul><span class="paren">)</span>
-        </div>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                <p>Inherited from
-                <a href="../classes/Link.html#method_onerror">Link</a>:
-            
-        
-        
-        <a href="../files/src_link.js.html#l52"><code>src&#x2F;link.js:52</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Report an error on this link.</p>
-
-    </div>
-
-    
-        <div class="params">
-            <h4>Parameters:</h4>
-
-            <ul class="params-list">
-            
-                <li class="param">
-                    
-                        <code class="param-name">err</code>
-                        <span class="type">Error</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>The error that occurred.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-            </ul>
-        </div>
-    
-
-    
-
-    
-</div>
-
-                
-                    <div id="method_onMessage" class="method item inherited">
+                    <div id="method_onMessage" class="method item">
     <h3 class="name"><code>onMessage</code></h3>
 
     
@@ -1315,7 +2000,7 @@ selected items removed and returned by the function.</p>
             
                 <li class="arg">
                     
-                        <code>flow</code>
+                        <code>source</code>
                     
                 </li>
             
@@ -1346,12 +2031,15 @@ selected items removed and returned by the function.</p>
     <div class="meta">
         
             
-                <p>Inherited from
-                <a href="../classes/Link.html#method_onMessage">Link</a>:
+                
+                <p>
+                
+                Defined in
+                
             
         
         
-        <a href="../files/src_link.js.html#l23"><code>src&#x2F;link.js:23</code></a>
+        <a href="../files/src_consumer.js.html#l26"><code>src&#x2F;consumer.js:26</code></a>
         
         </p>
 
@@ -1362,9 +2050,7 @@ selected items removed and returned by the function.</p>
     </div>
 
     <div class="description">
-        <p>Receive messages from the hub to this port.
-Manages startup, and passes others to &#39;deliverMessage&#39; implemented
-in derived classes.</p>
+        <p>Receive incoming messages for this consumer.</p>
 
     </div>
 
@@ -1376,14 +2062,14 @@ in derived classes.</p>
             
                 <li class="param">
                     
-                        <code class="param-name">flow</code>
+                        <code class="param-name">source</code>
                         <span class="type">String</span>
                     
 
                     
 
                     <div class="param-description">
-                        <p>the channel/flow of the message.</p>
+                        <p>The source of the message.</p>
 
                     </div>
 
@@ -1399,7 +2085,7 @@ in derived classes.</p>
                     
 
                     <div class="param-description">
-                        <p>The Message.</p>
+                        <p>The received message.</p>
 
                     </div>
 
@@ -1416,11 +2102,39 @@ in derived classes.</p>
 </div>
 
                 
-                    <div id="method_setupListener" class="method item">
-    <h3 class="name"><code>setupListener</code></h3>
+                    <div id="method_portableToMessage" class="method item">
+    <h3 class="name"><code>portableToMessage</code></h3>
 
     
-        <span class="paren">()</span>
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>template</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>}</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>debug</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+        <span class="returns-inline">
+            <span class="type">Object</span>
+        </span>
     
 
     
@@ -1430,7 +2144,7 @@ in derived classes.</p>
     
 
     
-
+        <span class="flag static">static</span>
     
 
     
@@ -1448,7 +2162,7 @@ in derived classes.</p>
             
         
         
-        <a href="../files/src_link_worker.js.html#l50"><code>src&#x2F;link&#x2F;worker.js:50</code></a>
+        <a href="../files/src_consumer.js.html#l306"><code>src&#x2F;consumer.js:306</code></a>
         
         </p>
 
@@ -1459,24 +2173,110 @@ in derived classes.</p>
     </div>
 
     <div class="description">
-        <p>Set up a global listener to handle incoming messages to this
-freedom.js context.</p>
+        <p>Convert Structured Data streams into a data structure conforming to a
+template.</p>
 
     </div>
 
     
+        <div class="params">
+            <h4>Parameters:</h4>
 
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">template</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The template to conform to</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">}</code>
+                        <span class="type">Text: Object, binary: Array</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>streams The streams to conform</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">debug</code>
+                        <span class="type">Debug</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>A debugger for errors.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
+    
+
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">Object</span>:
+                    
+                    <p>The data structure matching the template.</p>
+
+                
+            </div>
+        </div>
     
 
     
 </div>
 
                 
-                    <div id="method_setupWorker" class="method item">
-    <h3 class="name"><code>setupWorker</code></h3>
+                    <div id="method_recursiveFreezeObject" class="method item">
+    <h3 class="name"><code>recursiveFreezeObject</code></h3>
 
     
-        <span class="paren">()</span>
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>obj</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+        <span class="returns-inline">
+            <span class="type">Object</span>
+        </span>
     
 
     
@@ -1486,7 +2286,7 @@ freedom.js context.</p>
     
 
     
-
+        <span class="flag static">static</span>
     
 
     
@@ -1504,7 +2304,7 @@ freedom.js context.</p>
             
         
         
-        <a href="../files/src_link_worker.js.html#l69"><code>src&#x2F;link&#x2F;worker.js:69</code></a>
+        <a href="../files/src_consumer.js.html#l444"><code>src&#x2F;consumer.js:444</code></a>
         
         </p>
 
@@ -1515,31 +2315,81 @@ freedom.js context.</p>
     </div>
 
     <div class="description">
-        <p>Set up a worker with an isolated freedom.js context inside.</p>
+        <p>Recursively traverse a [nested] object and freeze its keys from being
+writable. Note, the result can have new keys added to it, but existing ones
+cannot be  overwritten. Doesn&#39;t do anything for arrays or other collections.</p>
 
     </div>
 
     
+        <div class="params">
+            <h4>Parameters:</h4>
 
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">obj</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <ul>
+<li>object to be frozen</li>
+</ul>
+
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
+    
+
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">Object</span>:
+                    
+                    <p>obj</p>
+
+                
+            </div>
+        </div>
     
 
     
 </div>
 
                 
-                    <div id="method_start" class="method item private">
-    <h3 class="name"><code>start</code></h3>
+                    <div id="method_teardown" class="method item">
+    <h3 class="name"><code>teardown</code></h3>
 
     
-        <span class="paren">()</span>
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>id</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
     
 
     
 
     
 
-    
-        <span class="flag private">private</span>
     
 
     
@@ -1561,7 +2411,7 @@ freedom.js context.</p>
             
         
         
-        <a href="../files/src_link_worker.js.html#l19"><code>src&#x2F;link&#x2F;worker.js:19</code></a>
+        <a href="../files/src_consumer.js.html#l205"><code>src&#x2F;consumer.js:205</code></a>
         
         </p>
 
@@ -1572,67 +2422,34 @@ freedom.js context.</p>
     </div>
 
     <div class="description">
-        <p>Start this port by listening or creating a worker.</p>
+        <p>Teardown a single interface of this api.</p>
 
     </div>
 
     
+        <div class="params">
+            <h4>Parameters:</h4>
 
-    
-
-    
-</div>
-
-                
-                    <div id="method_stop" class="method item private">
-    <h3 class="name"><code>stop</code></h3>
-
-    
-        <span class="paren">()</span>
-    
-
-    
-
-    
-
-    
-        <span class="flag private">private</span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
+            <ul class="params-list">
             
-                
-                <p>
-                
-                Defined in
-                
+                <li class="param">
+                    
+                        <code class="param-name">id</code>
+                        <span class="type">String</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The id of the interface to tear down.</p>
+
+                    </div>
+
+                    
+                </li>
             
-        
-        
-        <a href="../files/src_link_worker.js.html#l32"><code>src&#x2F;link&#x2F;worker.js:32</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Stop this port by destroying the worker.</p>
-
-    </div>
-
+            </ul>
+        </div>
     
 
     
@@ -1650,7 +2467,7 @@ freedom.js context.</p>
 
     
         <span class="returns-inline">
-            <span class="type">String</span>
+            <span class="type"></span>
         </span>
     
 
@@ -1677,7 +2494,7 @@ freedom.js context.</p>
             
         
         
-        <a href="../files/src_link_worker.js.html#l41"><code>src&#x2F;link&#x2F;worker.js:41</code></a>
+        <a href="../files/src_consumer.js.html#l261"><code>src&#x2F;consumer.js:261</code></a>
         
         </p>
 
@@ -1701,9 +2518,7 @@ freedom.js context.</p>
             <div class="returns-description">
                 
                     
-                        <span class="type">String</span>:
-                    
-                    <p>the description of this port.</p>
+                    <p>The description of this port.</p>
 
                 
             </div>

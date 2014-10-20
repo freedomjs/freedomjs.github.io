@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>src/link/direct.js - freedom</title>
+    <title>src/api.js - freedom</title>
     <link rel="stylesheet" href="http://yui.yahooapis.com/3.9.1/build/cssgrids/cssgrids-min.css">
     <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
     <link rel="stylesheet" href="../assets/css/main.css" id="site_styles">
@@ -112,96 +112,131 @@
             <div class="apidocs">
                 <div id="docs-main">
                     <div class="content">
-                        <h1 class="file-heading">File: src/link/direct.js</h1>
+                        <h1 class="file-heading">File: src/api.js</h1>
 
 <div class="file">
     <pre class="code prettyprint linenums">
-/*jslint indent:2, white:true, node:true, sloppy:true */
-var Link = require(&#x27;../link&#x27;);
-var entry = require(&#x27;../entry&#x27;);
+/*jslint indent:2,white:true,node:true,sloppy:true */
+var PromiseCompat = require(&#x27;es6-promise&#x27;).Promise;
 
 /**
- * A port providing message transport between two freedom contexts in the same namespace.
- * Note that using a direct link does not provide the isolation that freedom.js
- * encourages. To that end it should be limited to a method for testing and not
- * used in production without some serious though about the implications of that decision.
- * @class Direct
- * @extends Link
- * @uses handleEvents
+ * The API registry for freedom.js.  Used to look up requested APIs,
+ * and provides a bridge for core APIs to act like normal APIs.
+ * @Class API
+ * @param {Debug} debug The debugger to use for logging.
  * @constructor
  */
-var Direct = function(id, resource) {
-  Link.call(this, id, resource);
+var Api = function(debug) {
+  this.debug = debug;
+  this.apis = {};
+  this.providers = {};
+  this.waiters = {};
 };
 
 /**
- * Start this port.
- * @method start
- * @private
+ * Get an API.
+ * @method get
+ * @param {String} api The API name to get.
+ * @returns {{name:String, definition:API}} The API if registered.
  */
-Direct.prototype.start = function() {
-  if (this.config.moduleContext) {
-    this.config.global.directLink.other = this;
-    this.other = this.config.global.directLink;
-    this.other.emit(&#x27;started&#x27;);
-  } else {
-    this.config.global.directLink = this;
+Api.prototype.get = function(api) {
+  if (!this.apis[api]) {
+    return false;
+  }
+  return {
+    name: api,
+    definition: this.apis[api]
+  };
+};
 
-    // Keep fdom.debug connected to parent hub.
-    var child = entry(undefined, {
-      isModule: true,
-      portType: &#x27;Direct&#x27;
-    });
+/**
+ * Set an API to a definition.
+ * @method set
+ * @param {String} name The API name.
+ * @param {API} definition The JSON object defining the API.
+ */
+Api.prototype.set = function(name, definition) {
+  this.apis[name] = definition;
+};
+
+/**
+ * Register a core API provider.
+ * @method register
+ * @param {String} name the API name.
+ * @param {Function} constructor the function to create a provider for the API.
+ * @param {String?} style The style the provider is written in. Valid styles
+ *   are documented in fdom.port.Provider.prototype.getInterface. Defaults to
+ *   provideAsynchronous
+ */
+Api.prototype.register = function(name, constructor, style) {
+  var i;
+
+  this.providers[name] = {
+    constructor: constructor,
+    style: style || &#x27;provideAsynchronous&#x27;
+  };
+
+  if (this.waiters[name]) {
+    for (i = 0; i &lt; this.waiters[name].length; i += 1) {
+      this.waiters[name][i].resolve(constructor.bind({},
+          this.waiters[name][i].from));
+    }
+    delete this.waiters[name];
   }
 };
 
 /**
- * Stop this port by deleting the frame.
- * @method stop
- * @private
+ * Get a core API connected to a given FreeDOM module.
+ * @method getCore
+ * @param {String} name the API to retrieve.
+ * @param {port.App} from The instantiating App.
+ * @returns {Promise} A promise of a fdom.App look-alike matching
+ * a local API definition.
  */
-Direct.prototype.stop = function() {
-  if (this === this.config.global.directLink) {
-    delete this.config.global.directLink;
-  }
-  delete this.other;
-};
-
-/**
- * Get the textual description of this port.
- * @method toString
- * @return {String} the description of this port.
- */
-Direct.prototype.toString = function() {
-  return &quot;[Direct&quot; + this.id + &quot;]&quot;;
-};
-
-/**
- * Receive messages from the hub to this port.
- * Received messages will be emitted from the other side of the port.
- * @method deliverMessage
- * @param {String} flow the channel/flow of the message.
- * @param {Object} message The Message.
- */
-Direct.prototype.deliverMessage = function(flow, message) {
-  if (this.other) {
-    /* //- For Debugging Purposes -
-    if (this === this.config.global.directLink) {
-      console.warn(&#x27;-&gt;[&#x27; + flow + &#x27;] &#x27; + JSON.stringify(message));
+Api.prototype.getCore = function(name, from) {
+  return new PromiseCompat(function(resolve, reject) {
+    if (this.apis[name]) {
+      if (this.providers[name]) {
+        resolve(this.providers[name].constructor.bind({}, from));
+      } else {
+        if (!this.waiters[name]) {
+          this.waiters[name] = [];
+        }
+        this.waiters[name].push({
+          resolve: resolve,
+          reject: reject,
+          from: from
+        });
+      }
     } else {
-      console.warn(&#x27;&lt;-[&#x27; + flow + &#x27;] &#x27; + JSON.stringify(message));
+      this.debug.warn(&#x27;Api.getCore asked for unknown core: &#x27; + name);
+      reject(null);
     }
-    */
-    if (flow === &#x27;control&#x27;) {
-      flow = this.other.controlChannel;
-    }
-    setTimeout(this.other.emit.bind(this.other, flow, message), 0);
+  }.bind(this));
+};
+
+/**
+ * Get the style in which a core API is written.
+ * This method is guaranteed to know the style of a provider returned from
+ * a previous getCore call, and so does not use promises.
+ * @method getInterfaceStyle
+ * @param {String} name The name of the provider.
+ * @returns {String} The coding style, as used by
+ *   fdom.port.Provider.prototype.getInterface.
+ */
+Api.prototype.getInterfaceStyle = function(name) {
+  if (this.providers[name]) {
+    return this.providers[name].style;
   } else {
-    this.once(&#x27;started&#x27;, this.onMessage.bind(this, flow, message));
+    this.debug.warn(&#x27;Api.getInterfaceStyle for unknown provider: &#x27; + name);
+    return undefined;
   }
 };
 
-module.exports = Direct;
+/**
+ * Defines the apis module and provider registry.
+ */
+module.exports = Api;
 
     </pre>
 </div>

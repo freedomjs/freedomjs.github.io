@@ -2,29 +2,23 @@ YUI.add("yuidoc-meta", function(Y) {
    Y.YUIDoc = { meta: {
     "classes": [
         "API",
+        "Consumer",
+        "Direct",
+        "Frame",
         "Hub",
         "Link",
-        "Link.Direct",
         "Manager",
         "Module",
         "ModuleInternal",
         "Policy",
         "Provider",
-        "Proxy",
+        "ProxyBinder",
         "Resource",
         "Worker",
         "handleEvents",
-        "link.Frame",
         "util"
     ],
-    "modules": [
-        "freedom"
-    ],
-    "allModules": [
-        {
-            "displayName": "freedom",
-            "name": "freedom"
-        }
-    ]
+    "modules": [],
+    "allModules": []
 } };
 });

@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.5.2</em>
+            <em>API Docs for: 0.6.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -43,15 +43,17 @@
             
                 <li><a href="../classes/API.html">API</a></li>
             
+                <li><a href="../classes/Consumer.html">Consumer</a></li>
+            
+                <li><a href="../classes/Direct.html">Direct</a></li>
+            
+                <li><a href="../classes/Frame.html">Frame</a></li>
+            
                 <li><a href="../classes/handleEvents.html">handleEvents</a></li>
             
                 <li><a href="../classes/Hub.html">Hub</a></li>
             
                 <li><a href="../classes/Link.html">Link</a></li>
-            
-                <li><a href="../classes/Link.Direct.html">Link.Direct</a></li>
-            
-                <li><a href="../classes/link.Frame.html">link.Frame</a></li>
             
                 <li><a href="../classes/Manager.html">Manager</a></li>
             
@@ -63,7 +65,7 @@
             
                 <li><a href="../classes/Provider.html">Provider</a></li>
             
-                <li><a href="../classes/Proxy.html">Proxy</a></li>
+                <li><a href="../classes/ProxyBinder.html">ProxyBinder</a></li>
             
                 <li><a href="../classes/Resource.html">Resource</a></li>
             
@@ -74,8 +76,6 @@
             </ul>
 
             <ul id="api-modules" class="apis modules">
-            
-                <li><a href="../modules/freedom.html">freedom</a></li>
             
             </ul>
         </div>
@@ -117,21 +117,13 @@
     
 
     
-        <div class="extends">
-            Extends Port
-        </div>
-    
 
     
         <div class="foundat">
-            Defined in: <a href="../files/src_port-manager.js.html#l8"><code>src&#x2F;port-manager.js:8</code></a>
+            Defined in: <a href="../files/src_manager.js.html#l5"><code>src&#x2F;manager.js:5</code></a>
         </div>
     
 
-    
-        
-            Module: <a href="../modules/freedom.html">freedom</a>
-        
     
 
     
@@ -157,6 +149,18 @@
                 <li class="arg">
                     
                         <code>hub</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>resource</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>api</code>
                     
                 </li>
             
@@ -189,7 +193,7 @@
             
         
         
-        <a href="../files/src_port-manager.js.html#l8"><code>src&#x2F;port-manager.js:8</code></a>
+        <a href="../files/src_manager.js.html#l5"><code>src&#x2F;manager.js:5</code></a>
         
         </p>
 
@@ -219,6 +223,38 @@
 
                     <div class="param-description">
                         <p>The routing hub to control.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">resource</code>
+                        <span class="type"><a href="../classes/Resource.html" class="crosslink">Resource</a></span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The resource manager for the runtime.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">api</code>
+                        <span class="type">Api</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The API manager for the runtime.</p>
 
                     </div>
 
@@ -257,7 +293,7 @@
                 <div class="index-section methods">
                     <h3>Methods</h3>
 
-                    <ul class="index-list methods extends">
+                    <ul class="index-list methods">
                         
                             <li class="index-item method">
                                 <a href="#method_createLink">createLink</a>
@@ -273,22 +309,8 @@
                                 
                             </li>
                         
-                            <li class="index-item method">
-                                <a href="#method_error">error</a>
-
-                                
-                                
-                            </li>
-                        
                             <li class="index-item method private">
                                 <a href="#method_forgetFlow">forgetFlow</a>
-
-                                
-                                
-                            </li>
-                        
-                            <li class="index-item method private">
-                                <a href="#method_format">format</a>
 
                                 
                                 
@@ -309,28 +331,7 @@
                             </li>
                         
                             <li class="index-item method">
-                                <a href="#method_log">log</a>
-
-                                
-                                
-                            </li>
-                        
-                            <li class="index-item method">
                                 <a href="#method_onMessage">onMessage</a>
-
-                                
-                                
-                            </li>
-                        
-                            <li class="index-item method">
-                                <a href="#method_onMessage">onMessage</a>
-
-                                
-                                
-                            </li>
-                        
-                            <li class="index-item method">
-                                <a href="#method_print">print</a>
 
                                 
                                 
@@ -352,20 +353,6 @@
                         
                             <li class="index-item method">
                                 <a href="#method_toString">toString</a>
-
-                                
-                                
-                            </li>
-                        
-                            <li class="index-item method">
-                                <a href="#method_toString">toString</a>
-
-                                
-                                
-                            </li>
-                        
-                            <li class="index-item method">
-                                <a href="#method_warn">warn</a>
 
                                 
                                 
@@ -408,7 +395,7 @@
             
                 <li class="arg">
                     
-                        <code>destiantion</code>
+                        <code>destination</code>
                     
                 </li>
             
@@ -453,7 +440,7 @@
             
         
         
-        <a href="../files/src_port-manager.js.html#l212"><code>src&#x2F;port-manager.js:212</code></a>
+        <a href="../files/src_manager.js.html#l207"><code>src&#x2F;manager.js:207</code></a>
         
         </p>
 
@@ -509,7 +496,7 @@ and a message with those capabilities is sent to the source port.</p>
             
                 <li class="param">
                     
-                        <code class="param-name">destiantion</code>
+                        <code class="param-name">destination</code>
                         <span class="type">Port</span>
                     
 
@@ -550,7 +537,7 @@ and a message with those capabilities is sent to the source port.</p>
                     
 
                     <div class="param-description">
-                        <p>Tell the destination rather than source about the link.</p>
+                        <p>Tell the destination about the link.</p>
 
                     </div>
 
@@ -599,7 +586,7 @@ and a message with those capabilities is sent to the source port.</p>
             
         
         
-        <a href="../files/src_port-manager.js.html#l183"><code>src&#x2F;port-manager.js:183</code></a>
+        <a href="../files/src_manager.js.html#l178"><code>src&#x2F;manager.js:178</code></a>
         
         </p>
 
@@ -611,61 +598,6 @@ and a message with those capabilities is sent to the source port.</p>
 
     <div class="description">
         <p>Tear down a port on the hub.</p>
-
-    </div>
-
-    
-
-    
-
-    
-</div>
-
-                
-                    <div id="method_error" class="method item">
-    <h3 class="name"><code>error</code></h3>
-
-    
-        <span class="paren">()</span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/src_port-debug.js.html#l150"><code>src&#x2F;port-debug.js:150</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Print an error message to the console.</p>
 
     </div>
 
@@ -727,7 +659,7 @@ and a message with those capabilities is sent to the source port.</p>
             
         
         
-        <a href="../files/src_port-manager.js.html#l316"><code>src&#x2F;port-manager.js:316</code></a>
+        <a href="../files/src_manager.js.html#l314"><code>src&#x2F;manager.js:314</code></a>
         
         </p>
 
@@ -790,141 +722,6 @@ and a message with those capabilities is sent to the source port.</p>
 </div>
 
                 
-                    <div id="method_format" class="method item private">
-    <h3 class="name"><code>format</code></h3>
-
-    
-        <div class="args">
-            <span class="paren">(</span><ul class="args-list inline commas">
-            
-                <li class="arg">
-                    
-                        <code>severity</code>
-                    
-                </li>
-            
-                <li class="arg">
-                    
-                        <code>source</code>
-                    
-                </li>
-            
-                <li class="arg">
-                    
-                        <code>args</code>
-                    
-                </li>
-            
-            </ul><span class="paren">)</span>
-        </div>
-    
-
-    
-
-    
-
-    
-        <span class="flag private">private</span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/src_port-debug.js.html#l47"><code>src&#x2F;port-debug.js:47</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Dispatch a debug message with arbitrary severity.</p>
-
-    </div>
-
-    
-        <div class="params">
-            <h4>Parameters:</h4>
-
-            <ul class="params-list">
-            
-                <li class="param">
-                    
-                        <code class="param-name">severity</code>
-                        <span class="type">String</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>the severity of the message.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-                <li class="param">
-                    
-                        <code class="param-name">source</code>
-                        <span class="type">String</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>The location of message.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-                <li class="param">
-                    
-                        <code class="param-name">args</code>
-                        <span class="type">String</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>The contents of the message.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-            </ul>
-        </div>
-    
-
-    
-
-    
-</div>
-
-                
                     <div id="method_getCore" class="method item private">
     <h3 class="name"><code>getCore</code></h3>
 
@@ -969,7 +766,7 @@ and a message with those capabilities is sent to the source port.</p>
             
         
         
-        <a href="../files/src_port-manager.js.html#l335"><code>src&#x2F;port-manager.js:335</code></a>
+        <a href="../files/src_manager.js.html#l333"><code>src&#x2F;manager.js:333</code></a>
         
         </p>
 
@@ -1062,7 +859,7 @@ and a message with those capabilities is sent to the source port.</p>
             
         
         
-        <a href="../files/src_port-manager.js.html#l131"><code>src&#x2F;port-manager.js:131</code></a>
+        <a href="../files/src_manager.js.html#l126"><code>src&#x2F;manager.js:126</code></a>
         
         </p>
 
@@ -1123,173 +920,6 @@ and a message with those capabilities is sent to the source port.</p>
 </div>
 
                 
-                    <div id="method_log" class="method item">
-    <h3 class="name"><code>log</code></h3>
-
-    
-        <span class="paren">()</span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/src_port-debug.js.html#l134"><code>src&#x2F;port-debug.js:134</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Print a log message to the console.</p>
-
-    </div>
-
-    
-
-    
-
-    
-</div>
-
-                
-                    <div id="method_onMessage" class="method item">
-    <h3 class="name"><code>onMessage</code></h3>
-
-    
-        <div class="args">
-            <span class="paren">(</span><ul class="args-list inline commas">
-            
-                <li class="arg">
-                    
-                        <code>source</code>
-                    
-                </li>
-            
-                <li class="arg">
-                    
-                        <code>message</code>
-                    
-                </li>
-            
-            </ul><span class="paren">)</span>
-        </div>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/src_port-debug.js.html#l31"><code>src&#x2F;port-debug.js:31</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Handler for receiving messages sent to the debug port.
-These messages are used to retreive config for exposing console.</p>
-
-    </div>
-
-    
-        <div class="params">
-            <h4>Parameters:</h4>
-
-            <ul class="params-list">
-            
-                <li class="param">
-                    
-                        <code class="param-name">source</code>
-                        <span class="type">String</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>the source identifier for the message.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-                <li class="param">
-                    
-                        <code class="param-name">message</code>
-                        <span class="type">Object</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>the received message.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-            </ul>
-        </div>
-    
-
-    
-
-    
-</div>
-
-                
                     <div id="method_onMessage" class="method item">
     <h3 class="name"><code>onMessage</code></h3>
 
@@ -1338,7 +968,7 @@ These messages are used to retreive config for exposing console.</p>
             
         
         
-        <a href="../files/src_port-manager.js.html#l44"><code>src&#x2F;port-manager.js:44</code></a>
+        <a href="../files/src_manager.js.html#l48"><code>src&#x2F;manager.js:48</code></a>
         
         </p>
 
@@ -1355,7 +985,7 @@ identified by the request property.  The actions are:</p>
 <ol>
 <li>debug. Prints the message to the console.</li>
 <li>link. Creates a link between the source and a provided destination port.</li>
-<li>port. Creates a link between the source and a described port type.</li>
+<li>environment. Instantiate a module environment defined in ModuleInternal.</li>
 <li>delegate. Routes a defined set of control messages to another location.</li>
 <li>resource. Registers the source as a resource resolver.</li>
 <li>core. Generates a core provider for the requester.</li>
@@ -1397,95 +1027,6 @@ identified by the request property.  The actions are:</p>
 
                     <div class="param-description">
                         <p>The received message.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-            </ul>
-        </div>
-    
-
-    
-
-    
-</div>
-
-                
-                    <div id="method_print" class="method item">
-    <h3 class="name"><code>print</code></h3>
-
-    
-        <div class="args">
-            <span class="paren">(</span><ul class="args-list inline commas">
-            
-                <li class="arg">
-                    
-                        <code>message</code>
-                    
-                </li>
-            
-            </ul><span class="paren">)</span>
-        </div>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/src_port-debug.js.html#l77"><code>src&#x2F;port-debug.js:77</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Print received messages on the console.</p>
-
-    </div>
-
-    
-        <div class="params">
-            <h4>Parameters:</h4>
-
-            <ul class="params-list">
-            
-                <li class="param">
-                    
-                        <code class="param-name">message</code>
-                        <span class="type">Object</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>The message emitted by {@see format} to print.</p>
 
                     </div>
 
@@ -1550,7 +1091,7 @@ identified by the request property.  The actions are:</p>
             
         
         
-        <a href="../files/src_port-manager.js.html#l269"><code>src&#x2F;port-manager.js:269</code></a>
+        <a href="../files/src_manager.js.html#l267"><code>src&#x2F;manager.js:267</code></a>
         
         </p>
 
@@ -1655,7 +1196,7 @@ identified by the request property.  The actions are:</p>
             
         
         
-        <a href="../files/src_port-manager.js.html#l141"><code>src&#x2F;port-manager.js:141</code></a>
+        <a href="../files/src_manager.js.html#l136"><code>src&#x2F;manager.js:136</code></a>
         
         </p>
 
@@ -1738,7 +1279,7 @@ identified by the request property.  The actions are:</p>
             
         
         
-        <a href="../files/src_port-manager.js.html#l35"><code>src&#x2F;port-manager.js:35</code></a>
+        <a href="../files/src_manager.js.html#l39"><code>src&#x2F;manager.js:39</code></a>
         
         </p>
 
@@ -1769,134 +1310,6 @@ identified by the request property.  The actions are:</p>
                 
             </div>
         </div>
-    
-
-    
-</div>
-
-                
-                    <div id="method_toString" class="method item">
-    <h3 class="name"><code>toString</code></h3>
-
-    
-        <span class="paren">()</span>
-    
-
-    
-        <span class="returns-inline">
-            <span class="type">String</span>
-        </span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/src_port-debug.js.html#l22"><code>src&#x2F;port-debug.js:22</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Provide a textual description of this port.</p>
-
-    </div>
-
-    
-
-    
-        <div class="returns">
-            <h4>Returns:</h4>
-
-            <div class="returns-description">
-                
-                    
-                        <span class="type">String</span>:
-                    
-                    <p>the textual description.</p>
-
-                
-            </div>
-        </div>
-    
-
-    
-</div>
-
-                
-                    <div id="method_warn" class="method item">
-    <h3 class="name"><code>warn</code></h3>
-
-    
-        <span class="paren">()</span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/src_port-debug.js.html#l142"><code>src&#x2F;port-debug.js:142</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Print a warning message to the console.</p>
-
-    </div>
-
-    
-
     
 
     

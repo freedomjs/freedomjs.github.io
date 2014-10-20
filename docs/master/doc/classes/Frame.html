@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Worker - freedom</title>
+    <title>Frame - freedom</title>
     <link rel="stylesheet" href="http://yui.yahooapis.com/3.9.1/build/cssgrids/cssgrids-min.css">
     <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
     <link rel="stylesheet" href="../assets/css/main.css" id="site_styles">
@@ -112,7 +112,7 @@
             <div class="apidocs">
                 <div id="docs-main">
                     <div class="content">
-                        <h1>Worker Class</h1>
+                        <h1>Frame Class</h1>
 <div class="box meta">
     
         <div class="uses">
@@ -133,7 +133,7 @@
 
     
         <div class="foundat">
-            Defined in: <a href="../files/src_link_worker.js.html#l5"><code>src&#x2F;link&#x2F;worker.js:5</code></a>
+            Defined in: <a href="../files/src_link_frame.js.html#l6"><code>src&#x2F;link&#x2F;frame.js:6</code></a>
         </div>
     
 
@@ -145,15 +145,15 @@
 
 
 <div class="box intro">
-    <p>A port providing message transport between two freedom contexts via Worker.</p>
+    <p>A port providing message transport between two freedom contexts via iFrames.</p>
 
 </div>
 
 
     <div class="constructor">
         <h2>Constructor</h2>
-        <div id="method_Worker" class="method item">
-    <h3 class="name"><code>Worker</code></h3>
+        <div id="method_Frame" class="method item">
+    <h3 class="name"><code>Frame</code></h3>
 
     
         <span class="paren">()</span>
@@ -184,7 +184,7 @@
             
         
         
-        <a href="../files/src_link_worker.js.html#l5"><code>src&#x2F;link&#x2F;worker.js:5</code></a>
+        <a href="../files/src_link_frame.js.html#l6"><code>src&#x2F;link&#x2F;frame.js:6</code></a>
         
         </p>
 
@@ -258,15 +258,29 @@
                                 
                             </li>
                         
-                            <li class="index-item method inherited">
-                                <a href="#method_off">off</a>
+                            <li class="index-item method">
+                                <a href="#method_getURL">getURL</a>
 
                                 
                                 
                             </li>
                         
-                            <li class="index-item method inherited inherited">
-                                <a href="#method_"></a>
+                            <li class="index-item method">
+                                <a href="#method_getURL">getURL</a>
+
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method">
+                                <a href="#method_makeFrame">makeFrame</a>
+
+                                
+                                
+                            </li>
+                        
+                            <li class="index-item method inherited">
+                                <a href="#method_off">off</a>
 
                                 
                                 
@@ -293,6 +307,13 @@
                                 
                             </li>
                         
+                            <li class="index-item method inherited inherited">
+                                <a href="#method_"></a>
+
+                                
+                                
+                            </li>
+                        
                             <li class="index-item method inherited">
                                 <a href="#method_onMessage">onMessage</a>
 
@@ -301,14 +322,14 @@
                             </li>
                         
                             <li class="index-item method">
-                                <a href="#method_setupListener">setupListener</a>
+                                <a href="#method_setupFrame">setupFrame</a>
 
                                 
                                 
                             </li>
                         
                             <li class="index-item method">
-                                <a href="#method_setupWorker">setupWorker</a>
+                                <a href="#method_setupListener">setupListener</a>
 
                                 
                                 
@@ -485,7 +506,7 @@
             
         
         
-        <a href="../files/src_link_worker.js.html#l98"><code>src&#x2F;link&#x2F;worker.js:98</code></a>
+        <a href="../files/src_link_frame.js.html#l169"><code>src&#x2F;link&#x2F;frame.js:169</code></a>
         
         </p>
 
@@ -765,6 +786,178 @@ Received messages will be emitted from the other side of the port.</p>
 </div>
 
                 
+                    <div id="method_getURL" class="method item">
+    <h3 class="name"><code>getURL</code></h3>
+
+    
+        <span class="paren">()</span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_link_frame.js.html#l72"><code>src&#x2F;link&#x2F;frame.js:72</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Get a URL of a blob object for inclusion in a frame.
+Polyfills implementations which don&#39;t have a current URL object, like
+phantomjs.</p>
+
+    </div>
+
+    
+
+    
+
+    
+</div>
+
+                
+                    <div id="method_getURL" class="method item">
+    <h3 class="name"><code>getURL</code></h3>
+
+    
+        <span class="paren">()</span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_link_frame.js.html#l86"><code>src&#x2F;link&#x2F;frame.js:86</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Deallocate the URL of a blob object.
+Polyfills implementations which don&#39;t have a current URL object, like
+phantomjs.</p>
+
+    </div>
+
+    
+
+    
+
+    
+</div>
+
+                
+                    <div id="method_makeFrame" class="method item">
+    <h3 class="name"><code>makeFrame</code></h3>
+
+    
+        <span class="paren">()</span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_link_frame.js.html#l135"><code>src&#x2F;link&#x2F;frame.js:135</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Make frames to replicate freedom isolation without web-workers.
+iFrame isolation is non-standardized, and access to the DOM within frames
+means that they are insecure. However, debugging of webworkers is
+painful enough that this mode of execution can be valuable for debugging.</p>
+
+    </div>
+
+    
+
+    
+
+    
+</div>
+
+                
                     <div id="method_off" class="method item inherited">
     <h3 class="name"><code>off</code></h3>
 
@@ -867,136 +1060,6 @@ Received messages will be emitted from the other side of the port.</p>
         </div>
     
 
-    
-
-    
-</div>
-
-                
-                    <div id="method_" class="method item inherited">
-    <h3 class="name"><code></code></h3>
-
-    
-        <div class="args">
-            <span class="paren">(</span><ul class="args-list inline commas">
-            
-                <li class="arg">
-                    
-                        <code>list</code>
-                    
-                </li>
-            
-                <li class="arg">
-                    
-                        <code>predicate</code>
-                    
-                </li>
-            
-            </ul><span class="paren">)</span>
-        </div>
-    
-
-    
-        <span class="returns-inline">
-            <span class="type">Array</span>
-        </span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            <p>Inherited from
-            <a href="../classes/HandleEvents.html#method_">
-                handleEvents
-            </a>
-            
-            but overwritten in
-            
-        
-        
-        <a href="../files/src_util.js.html#l153"><code>src&#x2F;util.js:153</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Filter a list based on a predicate. The list is filtered in place, with
-selected items removed and returned by the function.</p>
-
-    </div>
-
-    
-        <div class="params">
-            <h4>Parameters:</h4>
-
-            <ul class="params-list">
-            
-                <li class="param">
-                    
-                        <code class="param-name">list</code>
-                        <span class="type">Array</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>The list to filter</p>
-
-                    </div>
-
-                    
-                </li>
-            
-                <li class="param">
-                    
-                        <code class="param-name">predicate</code>
-                        <span class="type">Function</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>The method to run on each item.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-            </ul>
-        </div>
-    
-
-    
-        <div class="returns">
-            <h4>Returns:</h4>
-
-            <div class="returns-description">
-                
-                    
-                        <span class="type">Array</span>:
-                    
-                    <p>Selected items</p>
-
-                
-            </div>
-        </div>
     
 
     
@@ -1306,6 +1369,136 @@ selected items removed and returned by the function.</p>
 </div>
 
                 
+                    <div id="method_" class="method item inherited">
+    <h3 class="name"><code></code></h3>
+
+    
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>list</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>predicate</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
+    
+
+    
+        <span class="returns-inline">
+            <span class="type">Array</span>
+        </span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            <p>Inherited from
+            <a href="../classes/HandleEvents.html#method_">
+                handleEvents
+            </a>
+            
+            but overwritten in
+            
+        
+        
+        <a href="../files/src_util.js.html#l153"><code>src&#x2F;util.js:153</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Filter a list based on a predicate. The list is filtered in place, with
+selected items removed and returned by the function.</p>
+
+    </div>
+
+    
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">list</code>
+                        <span class="type">Array</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The list to filter</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">predicate</code>
+                        <span class="type">Function</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The method to run on each item.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
+    
+
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">Array</span>:
+                    
+                    <p>Selected items</p>
+
+                
+            </div>
+        </div>
+    
+
+    
+</div>
+
+                
                     <div id="method_onMessage" class="method item inherited">
     <h3 class="name"><code>onMessage</code></h3>
 
@@ -1416,6 +1609,61 @@ in derived classes.</p>
 </div>
 
                 
+                    <div id="method_setupFrame" class="method item">
+    <h3 class="name"><code>setupFrame</code></h3>
+
+    
+        <span class="paren">()</span>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <div class="meta">
+        
+            
+                
+                <p>
+                
+                Defined in
+                
+            
+        
+        
+        <a href="../files/src_link_frame.js.html#l100"><code>src&#x2F;link&#x2F;frame.js:100</code></a>
+        
+        </p>
+
+
+        
+
+        
+    </div>
+
+    <div class="description">
+        <p>Set up an iFrame with an isolated freedom.js context inside.</p>
+
+    </div>
+
+    
+
+    
+
+    
+</div>
+
+                
                     <div id="method_setupListener" class="method item">
     <h3 class="name"><code>setupListener</code></h3>
 
@@ -1448,7 +1696,7 @@ in derived classes.</p>
             
         
         
-        <a href="../files/src_link_worker.js.html#l50"><code>src&#x2F;link&#x2F;worker.js:50</code></a>
+        <a href="../files/src_link_frame.js.html#l51"><code>src&#x2F;link&#x2F;frame.js:51</code></a>
         
         </p>
 
@@ -1461,61 +1709,6 @@ in derived classes.</p>
     <div class="description">
         <p>Set up a global listener to handle incoming messages to this
 freedom.js context.</p>
-
-    </div>
-
-    
-
-    
-
-    
-</div>
-
-                
-                    <div id="method_setupWorker" class="method item">
-    <h3 class="name"><code>setupWorker</code></h3>
-
-    
-        <span class="paren">()</span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/src_link_worker.js.html#l69"><code>src&#x2F;link&#x2F;worker.js:69</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Set up a worker with an isolated freedom.js context inside.</p>
 
     </div>
 
@@ -1561,7 +1754,7 @@ freedom.js context.</p>
             
         
         
-        <a href="../files/src_link_worker.js.html#l19"><code>src&#x2F;link&#x2F;worker.js:19</code></a>
+        <a href="../files/src_link_frame.js.html#l17"><code>src&#x2F;link&#x2F;frame.js:17</code></a>
         
         </p>
 
@@ -1572,7 +1765,7 @@ freedom.js context.</p>
     </div>
 
     <div class="description">
-        <p>Start this port by listening or creating a worker.</p>
+        <p>Start this port by listening or creating a frame.</p>
 
     </div>
 
@@ -1618,7 +1811,7 @@ freedom.js context.</p>
             
         
         
-        <a href="../files/src_link_worker.js.html#l32"><code>src&#x2F;link&#x2F;worker.js:32</code></a>
+        <a href="../files/src_link_frame.js.html#l33"><code>src&#x2F;link&#x2F;frame.js:33</code></a>
         
         </p>
 
@@ -1629,7 +1822,7 @@ freedom.js context.</p>
     </div>
 
     <div class="description">
-        <p>Stop this port by destroying the worker.</p>
+        <p>Stop this port by deleting the frame.</p>
 
     </div>
 
@@ -1677,7 +1870,7 @@ freedom.js context.</p>
             
         
         
-        <a href="../files/src_link_worker.js.html#l41"><code>src&#x2F;link&#x2F;worker.js:41</code></a>
+        <a href="../files/src_link_frame.js.html#l42"><code>src&#x2F;link&#x2F;frame.js:42</code></a>
         
         </p>
 

@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.5.2</em>
+            <em>API Docs for: 0.6.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -43,15 +43,17 @@
             
                 <li><a href="../classes/API.html">API</a></li>
             
+                <li><a href="../classes/Consumer.html">Consumer</a></li>
+            
+                <li><a href="../classes/Direct.html">Direct</a></li>
+            
+                <li><a href="../classes/Frame.html">Frame</a></li>
+            
                 <li><a href="../classes/handleEvents.html">handleEvents</a></li>
             
                 <li><a href="../classes/Hub.html">Hub</a></li>
             
                 <li><a href="../classes/Link.html">Link</a></li>
-            
-                <li><a href="../classes/Link.Direct.html">Link.Direct</a></li>
-            
-                <li><a href="../classes/link.Frame.html">link.Frame</a></li>
             
                 <li><a href="../classes/Manager.html">Manager</a></li>
             
@@ -63,7 +65,7 @@
             
                 <li><a href="../classes/Provider.html">Provider</a></li>
             
-                <li><a href="../classes/Proxy.html">Proxy</a></li>
+                <li><a href="../classes/ProxyBinder.html">ProxyBinder</a></li>
             
                 <li><a href="../classes/Resource.html">Resource</a></li>
             
@@ -74,8 +76,6 @@
             </ul>
 
             <ul id="api-modules" class="apis modules">
-            
-                <li><a href="../modules/freedom.html">freedom</a></li>
             
             </ul>
         </div>
@@ -116,28 +116,26 @@
 
 <div class="file">
     <pre class="code prettyprint linenums">
-/*globals fdom:true */
-/*jslint indent:2,white:true,node:true,sloppy:true */
-if (typeof fdom === &#x27;undefined&#x27;) {
-  fdom = {};
-}
+/*jslint indent:2,sloppy:true,node:true */
+var util = require(&#x27;./util&#x27;);
 
 /**
  * Defines fdom.Hub, the core message hub between freedom modules.
  * Incomming messages from apps are sent to hub.onMessage()
  * @class Hub
+ * @param {Debug} debug Logger for debugging.
  * @constructor
  */
-fdom.Hub = function() {
-  this.route = Math.round(Math.random() * 1000000);
+var Hub = function (debug) {
+  this.debug = debug;
   this.config = {};
   this.apps = {};
   this.routes = {};
   this.unbound = [];
 
-  fdom.util.handleEvents(this);
-  this.on(&#x27;config&#x27;, function(config) {
-    fdom.util.mixin(this.config, config);
+  util.handleEvents(this);
+  this.on(&#x27;config&#x27;, function (config) {
+    util.mixin(this.config, config);
   }.bind(this));
 };
 
@@ -147,19 +145,20 @@ fdom.Hub = function() {
  * @param {String} source The identifiying source of the message.
  * @param {Object} message The sent message.
  */
-fdom.Hub.prototype.onMessage = function(source, message) {
+Hub.prototype.onMessage = function (source, message) {
   var destination = this.routes[source], type;
   if (!destination || !destination.app) {
-    fdom.debug.warn(&quot;Message dropped from unregistered source &quot; + source);
+    this.debug.warn(&quot;Message dropped from unregistered source &quot; + source);
     return;
   }
 
-  if(!this.apps[destination.app]) {
-    fdom.debug.warn(&quot;Message dropped to destination &quot; + destination.app);
+  if (!this.apps[destination.app]) {
+    this.debug.warn(&quot;Message dropped to destination &quot; + destination.app);
     return;
   }
 
-  if (!message.quiet) {
+  // The firehose tracing all internal freedom.js messages.
+  if (!message.quiet &amp;&amp; !destination.quiet &amp;&amp; this.config &amp;&amp; this.config.trace) {
     type = message.type;
     if (message.type === &#x27;message&#x27; &amp;&amp; message.message &amp;&amp;
         message.message.action === &#x27;method&#x27;) {
@@ -171,7 +170,7 @@ fdom.Hub.prototype.onMessage = function(source, message) {
         message.message.type === &#x27;event&#x27;) {
       type = &#x27;event.&#x27; + message.message.name;
     }
-    fdom.debug.log(this.apps[destination.source].toString() +
+    this.debug.debug(this.apps[destination.source].toString() +
         &quot; -&quot; + type + &quot;-&gt; &quot; +
         this.apps[destination.app].toString() + &quot;.&quot; + destination.flow);
   }
@@ -185,7 +184,7 @@ fdom.Hub.prototype.onMessage = function(source, message) {
  * @param {String} source The flow to retrieve.
  * @return {Port} The destination port.
  */
-fdom.Hub.prototype.getDestination = function(source) {
+Hub.prototype.getDestination = function (source) {
   var destination = this.routes[source];
   if (!destination) {
     return null;
@@ -199,12 +198,12 @@ fdom.Hub.prototype.getDestination = function(source) {
  * @param {Port} source The flow identifier to retrieve.
  * @return {Port} The source port.
  */
-fdom.Hub.prototype.getSource = function(source) {
+Hub.prototype.getSource = function (source) {
   if (!source) {
     return false;
   }
   if (!this.apps[source.id]) {
-    fdom.debug.warn(&quot;No registered source &#x27;&quot; + source.id + &quot;&#x27;&quot;);
+    this.debug.warn(&quot;No registered source &#x27;&quot; + source.id + &quot;&#x27;&quot;);
     return false;
   }
   return this.apps[source.id];
@@ -217,7 +216,7 @@ fdom.Hub.prototype.getSource = function(source) {
  * @param {Boolean} [force] Whether to override an existing port.
  * @return {Boolean} Whether the app was registered.
  */
-fdom.Hub.prototype.register = function(app, force) {
+Hub.prototype.register = function (app, force) {
   if (!this.apps[app.id] || force) {
     this.apps[app.id] = app;
     return true;
@@ -235,8 +234,8 @@ fdom.Hub.prototype.register = function(app, force) {
  * @param {Port} app The Port to deregister
  * @return {Boolean} Whether the app was deregistered.
  */
-fdom.Hub.prototype.deregister = function(app) {
-  if(!this.apps[app.id]) {
+Hub.prototype.deregister = function (app) {
+  if (!this.apps[app.id]) {
     return false;
   }
   delete this.apps[app.id];
@@ -249,15 +248,16 @@ fdom.Hub.prototype.deregister = function(app) {
  * @param {Port} source The source of the route.
  * @param {Port} destination The destination of the route.
  * @param {String} flow The flow where the destination will receive messages.
+ * @param {Boolean} quiet Whether messages on this route should be suppressed.
  * @return {String} A routing source identifier for sending messages.
  */
-fdom.Hub.prototype.install = function(source, destination, flow) {
+Hub.prototype.install = function (source, destination, flow, quiet) {
   source = this.getSource(source);
   if (!source) {
     return;
   }
   if (!destination) {
-    fdom.debug.warn(&quot;Unwilling to generate blackhole flow from &quot; + source.id);
+    this.debug.warn(&quot;Unwilling to generate blackhole flow from &quot; + source.id);
     return;
   }
 
@@ -265,7 +265,8 @@ fdom.Hub.prototype.install = function(source, destination, flow) {
   this.routes[route] = {
     app: destination,
     flow: flow,
-    source: source.id
+    source: source.id,
+    quiet: quiet
   };
   if (typeof source.on === &#x27;function&#x27;) {
     source.on(route, this.onMessage.bind(this, route));
@@ -281,7 +282,7 @@ fdom.Hub.prototype.install = function(source, destination, flow) {
  * @param {String} flow The route to uninstall.
  * @return {Boolean} Whether the route was able to be uninstalled.
  */
-fdom.Hub.prototype.uninstall = function(source, flow) {
+Hub.prototype.uninstall = function (source, flow) {
   source = this.getSource(source);
   if (!source) {
     return;
@@ -291,7 +292,7 @@ fdom.Hub.prototype.uninstall = function(source, flow) {
   if (!route) {
     return false;
   } else if (route.source !== source.id) {
-    fdom.debug.warn(&quot;Flow &quot; + flow + &quot; does not belong to port &quot; + source.id);
+    this.debug.warn(&quot;Flow &quot; + flow + &quot; does not belong to port &quot; + source.id);
     return false;
   }
 
@@ -308,9 +309,11 @@ fdom.Hub.prototype.uninstall = function(source, flow) {
  * @return {String} a routing source identifier.
  * @private
  */
-fdom.Hub.prototype.generateRoute = function() {
-  return (this.route += 1);
+Hub.prototype.generateRoute = function () {
+  return util.getId();
 };
+
+module.exports = Hub;
 
     </pre>
 </div>

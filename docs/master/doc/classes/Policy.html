@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.5.2</em>
+            <em>API Docs for: 0.6.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -43,15 +43,17 @@
             
                 <li><a href="../classes/API.html">API</a></li>
             
+                <li><a href="../classes/Consumer.html">Consumer</a></li>
+            
+                <li><a href="../classes/Direct.html">Direct</a></li>
+            
+                <li><a href="../classes/Frame.html">Frame</a></li>
+            
                 <li><a href="../classes/handleEvents.html">handleEvents</a></li>
             
                 <li><a href="../classes/Hub.html">Hub</a></li>
             
                 <li><a href="../classes/Link.html">Link</a></li>
-            
-                <li><a href="../classes/Link.Direct.html">Link.Direct</a></li>
-            
-                <li><a href="../classes/link.Frame.html">link.Frame</a></li>
             
                 <li><a href="../classes/Manager.html">Manager</a></li>
             
@@ -63,7 +65,7 @@
             
                 <li><a href="../classes/Provider.html">Provider</a></li>
             
-                <li><a href="../classes/Proxy.html">Proxy</a></li>
+                <li><a href="../classes/ProxyBinder.html">ProxyBinder</a></li>
             
                 <li><a href="../classes/Resource.html">Resource</a></li>
             
@@ -74,8 +76,6 @@
             </ul>
 
             <ul id="api-modules" class="apis modules">
-            
-                <li><a href="../modules/freedom.html">freedom</a></li>
             
             </ul>
         </div>
@@ -125,10 +125,6 @@
     
 
     
-        
-            Module: <a href="../modules/freedom.html">freedom</a>
-        
-    
 
     
 </div>
@@ -148,7 +144,29 @@ migration and coallesing of execution.</p>
     <h3 class="name"><code>Policy</code></h3>
 
     
-        <span class="paren">()</span>
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+            
+                <li class="arg">
+                    
+                        <code>manager</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>resource</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>config</code>
+                    
+                </li>
+            
+            </ul><span class="paren">)</span>
+        </div>
     
 
     
@@ -190,6 +208,62 @@ migration and coallesing of execution.</p>
         
     </div>
 
+    
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+            
+                <li class="param">
+                    
+                        <code class="param-name">manager</code>
+                        <span class="type"><a href="../classes/Manager.html" class="crosslink">Manager</a></span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The manager of the active runtime.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">resource</code>
+                        <span class="type"><a href="../classes/Resource.html" class="crosslink">Resource</a></span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The resource loader of the active runtime.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
+                        <code class="param-name">config</code>
+                        <span class="type">Object</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>The local config.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+            </ul>
+        </div>
     
 
     
@@ -352,7 +426,7 @@ migration and coallesing of execution.</p>
             
         
         
-        <a href="../files/src_policy.js.html#l169"><code>src&#x2F;policy.js:169</code></a>
+        <a href="../files/src_policy.js.html#l193"><code>src&#x2F;policy.js:193</code></a>
         
         </p>
 
@@ -473,7 +547,7 @@ migration and coallesing of execution.</p>
             
         
         
-        <a href="../files/src_policy.js.html#l80"><code>src&#x2F;policy.js:80</code></a>
+        <a href="../files/src_policy.js.html#l104"><code>src&#x2F;policy.js:104</code></a>
         
         </p>
 
@@ -619,7 +693,7 @@ module creating it.</p>
             
         
         
-        <a href="../files/src_policy.js.html#l47"><code>src&#x2F;policy.js:47</code></a>
+        <a href="../files/src_policy.js.html#l56"><code>src&#x2F;policy.js:56</code></a>
         
         </p>
 
@@ -761,7 +835,7 @@ Reponds with the promise of a port representing the module,</p>
             
         
         
-        <a href="../files/src_policy.js.html#l117"><code>src&#x2F;policy.js:117</code></a>
+        <a href="../files/src_policy.js.html#l141"><code>src&#x2F;policy.js:141</code></a>
         
         </p>
 
@@ -916,7 +990,7 @@ Reponds with the promise of a port representing the module,</p>
             
         
         
-        <a href="../files/src_policy.js.html#l151"><code>src&#x2F;policy.js:151</code></a>
+        <a href="../files/src_policy.js.html#l175"><code>src&#x2F;policy.js:175</code></a>
         
         </p>
 
@@ -1031,7 +1105,7 @@ Reponds with the promise of a port representing the module,</p>
             
         
         
-        <a href="../files/src_policy.js.html#l203"><code>src&#x2F;policy.js:203</code></a>
+        <a href="../files/src_policy.js.html#l233"><code>src&#x2F;policy.js:233</code></a>
         
         </p>
 
@@ -1140,7 +1214,7 @@ TODO: consider making static.</p>
             
         
         
-        <a href="../files/src_policy.js.html#l35"><code>src&#x2F;policy.js:35</code></a>
+        <a href="../files/src_policy.js.html#l44"><code>src&#x2F;policy.js:44</code></a>
         
         </p>
 
@@ -1187,7 +1261,7 @@ TODO: consider making static</p>
             
         
         
-        <a href="../files/src_policy.js.html#l23"><code>src&#x2F;policy.js:23</code></a>
+        <a href="../files/src_policy.js.html#l32"><code>src&#x2F;policy.js:32</code></a>
         
         </p>
 

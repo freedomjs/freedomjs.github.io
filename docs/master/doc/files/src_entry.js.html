@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.5.2</em>
+            <em>API Docs for: 0.6.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -43,15 +43,17 @@
             
                 <li><a href="../classes/API.html">API</a></li>
             
+                <li><a href="../classes/Consumer.html">Consumer</a></li>
+            
+                <li><a href="../classes/Direct.html">Direct</a></li>
+            
+                <li><a href="../classes/Frame.html">Frame</a></li>
+            
                 <li><a href="../classes/handleEvents.html">handleEvents</a></li>
             
                 <li><a href="../classes/Hub.html">Hub</a></li>
             
                 <li><a href="../classes/Link.html">Link</a></li>
-            
-                <li><a href="../classes/Link.Direct.html">Link.Direct</a></li>
-            
-                <li><a href="../classes/link.Frame.html">link.Frame</a></li>
             
                 <li><a href="../classes/Manager.html">Manager</a></li>
             
@@ -63,7 +65,7 @@
             
                 <li><a href="../classes/Provider.html">Provider</a></li>
             
-                <li><a href="../classes/Proxy.html">Proxy</a></li>
+                <li><a href="../classes/ProxyBinder.html">ProxyBinder</a></li>
             
                 <li><a href="../classes/Resource.html">Resource</a></li>
             
@@ -74,8 +76,6 @@
             </ul>
 
             <ul id="api-modules" class="apis modules">
-            
-                <li><a href="../modules/freedom.html">freedom</a></li>
             
             </ul>
         </div>
@@ -116,109 +116,131 @@
 
 <div class="file">
     <pre class="code prettyprint linenums">
-/*globals fdom:true, Promise, document, location, console */
-/*jslint indent:2,sloppy:true */
+/*jslint indent:2,node:true */
+var PromiseCompat = require(&#x27;es6-promise&#x27;).Promise;
 
-/**
- * @module freedom
- */
-if (typeof fdom === &#x27;undefined&#x27;) {
-  fdom = {};
-}
+var Api = require(&#x27;./api&#x27;);
+var Debug = require(&#x27;./debug&#x27;);
+var Hub = require(&#x27;./hub&#x27;);
+var Manager = require(&#x27;./manager&#x27;);
+var Policy = require(&#x27;./policy&#x27;);
+var ProxyBinder = require(&#x27;./proxybinder&#x27;);
+var Resource = require(&#x27;./resource&#x27;);
+var util = require(&#x27;./util&#x27;);
+var Bundle = require(&#x27;./bundle&#x27;);
 
-/**
- * External freedom Setup.  global.freedom is set to the value returned by
- * setup (see preamble.js and postamble.js for that mechanism).  As a result,
- * this is the primary entry function for the freedom library.
- * @for util
- * @method setup
- * @param {Object} global The window / frame / worker context freedom is in.
- * @param {String} freedom_src The textual code of freedom, for replication.
- * @param {Object} config Overriding config for freedom.js
- * @static
- */
-fdom.setup = function (global, freedom_src, config) {
-  fdom.debug = new fdom.port.Debug();
-
-  var hub = new fdom.Hub(),
-    site_cfg = {
-      &#x27;debug&#x27;: true,
-      &#x27;stayLocal&#x27;: false,
-      &#x27;portType&#x27;: &#x27;Worker&#x27;,
-      &#x27;moduleContext&#x27;: (!config || typeof (config.isModule) === &quot;undefined&quot;) ?
-          fdom.util.isModuleContext() :
-          config.isModule
-    },
-    manager = new fdom.port.Manager(hub),
-    external = new fdom.port.Proxy(fdom.proxy.EventInterface),
-    link;
-
-  manager.setup(external);
-
-  if (site_cfg.moduleContext) {
-    if (config) {
-      fdom.util.mixin(site_cfg, config, true);
-    }
-    site_cfg.global = global;
-    site_cfg.src = freedom_src;
-    link = new fdom.link[site_cfg.portType]();
-    manager.setup(link);
-    manager.createLink(external, &#x27;default&#x27;, link);
-
-    // Delay debug messages until delegation to the parent context is setup.
-    manager.once(&#x27;delegate&#x27;, manager.setup.bind(manager, fdom.debug));
-  } else {
-    manager.setup(fdom.debug);
-    fdom.util.advertise(config ? config.advertise : undefined);
-    
-    // Configure against data-manifest.
-    if (typeof global.document !== &#x27;undefined&#x27;) {
-      fdom.util.eachReverse(fdom.util.scripts(global), function (script) {
-        var manifest = script.getAttribute(&#x27;data-manifest&#x27;),
-          source = script.src;
-        if (manifest) {
-          site_cfg.source = source;
-          site_cfg.manifest = manifest;
-          if (script.textContent.trim().length) {
-            try {
-              fdom.util.mixin(site_cfg, JSON.parse(script.textContent), true);
-            } catch (e) {
-              fdom.debug.warn(&quot;Failed to parse configuration: &quot; + e);
-            }
-          }
-          return true;
-        }
-      });
-    }
-
-    site_cfg.global = global;
-    site_cfg.src = freedom_src;
-    site_cfg.resources = fdom.resources;
-    if (config) {
-      fdom.util.mixin(site_cfg, config, true);
-    }
-
-    if (typeof location !== &#x27;undefined&#x27;) {
-      site_cfg.location = location.protocol + &quot;//&quot; + location.host + location.pathname;
-    }
-    site_cfg.policy = new fdom.Policy(manager, site_cfg);
-
-    fdom.resources.get(site_cfg.location, site_cfg.manifest).then(function (root_mod) {
-      site_cfg.policy.get([], root_mod)
-          .then(manager.createLink.bind(manager, external, &#x27;default&#x27;));
-    }, function (err) {
-      fdom.debug.error(&#x27;Failed to retrieve manifest: &#x27; + err);
-    });
-  }
-  hub.emit(&#x27;config&#x27;, site_cfg);
-
-  // Enable console.log from worker contexts.
-  if (typeof global.console === &#x27;undefined&#x27; || site_cfg.relayConsole) {
-    global.console = fdom.debug;
-  }
+var freedomGlobal;
+var getGlobal = function () {
+  &#x27;use strict&#x27;;
   
-  return external.getInterface();
+  // Node.js
+  if (typeof global !== &#x27;undefined&#x27; &amp;&amp; global.prototype === undefined) {
+    freedomGlobal = global;
+  // Browsers
+  } else {
+    setTimeout(function () {
+      freedomGlobal = this;
+    }, 0);
+  }
 };
+getGlobal();
+
+/**
+ * Create a new freedom context.
+ * @param {Object} context Information about the local context.
+ * @see {util/workerEntry.js}
+ * @param {String} manifest The manifest to load.
+ * @param {Object} config Configuration keys set by the user.
+ * @returns {Promise} A promise for the module defined in the manifest.
+ */
+var setup = function (context, manifest, config) {
+  &#x27;use strict&#x27;;
+  var debug = new Debug(),
+    hub = new Hub(debug),
+    resource = new Resource(debug),
+    api = new Api(debug),
+    manager = new Manager(hub, resource, api),
+    binder = new ProxyBinder(manager),
+    policy,
+    site_cfg = {
+      &#x27;debug&#x27;: &#x27;log&#x27;,
+      &#x27;manifest&#x27;: manifest,
+      &#x27;moduleContext&#x27;: (!context || typeof (context.isModule) === &quot;undefined&quot;) ?
+          util.isModuleContext() :
+          context.isModule
+    },
+    link,
+    Port;
+  Bundle.register(context.providers, api);
+  resource.register(context.resolvers || []);
+
+
+  if (config) {
+    util.mixin(site_cfg, config, true);
+  }
+  site_cfg.global = freedomGlobal;
+  if (context) {
+    util.mixin(site_cfg, context, true);
+  }
+
+  return new PromiseCompat(function (resolve, reject) {
+    if (site_cfg.moduleContext) {
+      Port = site_cfg.portType;
+      link = new Port(&#x27;Outbound&#x27;, resource);
+      manager.setup(link);
+
+      // Delay debug messages until delegation to the parent context is setup.
+      manager.once(&#x27;delegate&#x27;, manager.setup.bind(manager, debug));
+    } else {
+      manager.setup(debug);
+      policy = new Policy(manager, resource, site_cfg);
+
+      var fallbackLogger, getIface;
+      fallbackLogger = function (message) {
+        api.getCore(&#x27;core.console&#x27;, debug).then(function (Logger) {
+          debug.setLogger(new Logger());
+          if (message) {
+            debug.error(message);
+          }
+        });
+      };
+      getIface = function (manifest) {
+        return resource.get(site_cfg.location, manifest).then(
+          function (canonical_manifest) {
+            return policy.get([], canonical_manifest);
+          }
+        ).then(function (instance) {
+          manager.setup(instance);
+          return binder.bindDefault(instance, api, instance.manifest);
+        });
+      };
+
+      if (site_cfg.logger) {
+        getIface(site_cfg.logger).then(function (iface) {
+          if (iface.external.api !== &#x27;console&#x27;) {
+            fallbackLogger(&quot;Unwilling to use logger with unknown API:&quot;,
+              iface.external.api);
+          } else {
+            debug.setLogger(iface.external());
+          }
+        }, fallbackLogger);
+      } else {
+        fallbackLogger();
+      }
+
+      getIface(site_cfg.manifest).then(function (iface) {
+        return iface.external;
+      }, function (err) {
+        debug.error(&#x27;Failed to retrieve manifest: &#x27; + err);
+        throw err;
+      }).then(resolve, reject);
+    }
+
+    hub.emit(&#x27;config&#x27;, site_cfg);
+  });
+};
+
+module.exports = setup;
 
     </pre>
 </div>

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>src/link/direct.js - freedom</title>
+    <title>src/proxybinder.js - freedom</title>
     <link rel="stylesheet" href="http://yui.yahooapis.com/3.9.1/build/cssgrids/cssgrids-min.css">
     <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
     <link rel="stylesheet" href="../assets/css/main.css" id="site_styles">
@@ -112,96 +112,118 @@
             <div class="apidocs">
                 <div id="docs-main">
                     <div class="content">
-                        <h1 class="file-heading">File: src/link/direct.js</h1>
+                        <h1 class="file-heading">File: src/proxybinder.js</h1>
 
 <div class="file">
     <pre class="code prettyprint linenums">
-/*jslint indent:2, white:true, node:true, sloppy:true */
-var Link = require(&#x27;../link&#x27;);
-var entry = require(&#x27;../entry&#x27;);
+/*jslint indent:2, node:true */
+var PromiseCompat = require(&#x27;es6-promise&#x27;).Promise;
+
+var ApiInterface = require(&#x27;./proxy/apiInterface&#x27;);
+var EventInterface = require(&#x27;./proxy/eventInterface&#x27;);
+var Consumer = require(&#x27;./consumer&#x27;);
+var Provider = require(&#x27;./provider&#x27;);
 
 /**
- * A port providing message transport between two freedom contexts in the same namespace.
- * Note that using a direct link does not provide the isolation that freedom.js
- * encourages. To that end it should be limited to a method for testing and not
- * used in production without some serious though about the implications of that decision.
- * @class Direct
- * @extends Link
- * @uses handleEvents
- * @constructor
+ * A Proxy Binder manages the external interface, and creates one of
+ * the different types of objects exposed by freedom either as a global
+ * within a worker / module context, or returned by an external call to
+ * create a freedom runtime.
+ * @Class ProxyBinder
+ * @param {Manager} manager The manager for the active runtime.
  */
-var Direct = function(id, resource) {
-  Link.call(this, id, resource);
+var ProxyBinder = function (manager) {
+  &#x27;use strict&#x27;;
+  this.manager = manager;
 };
 
 /**
- * Start this port.
- * @method start
- * @private
+ * Create a proxy for a freedom port, and return it once loaded.
+ * @method getExternal
+ * @param {Port} port The port for the proxy to communicate with.
+ * @param {String} name The name of the proxy.
+ * @param {Object} [definition] The definition of the API to expose.
+ * @param {String} definition.name The name of the API.
+ * @param {Object} definition.definition The definition of the API.
+ * @param {Boolean} definition.provides Whether this is a consumer or provider.
+ * @returns {Promise} A promise for the active proxy interface.
  */
-Direct.prototype.start = function() {
-  if (this.config.moduleContext) {
-    this.config.global.directLink.other = this;
-    this.other = this.config.global.directLink;
-    this.other.emit(&#x27;started&#x27;);
-  } else {
-    this.config.global.directLink = this;
-
-    // Keep fdom.debug connected to parent hub.
-    var child = entry(undefined, {
-      isModule: true,
-      portType: &#x27;Direct&#x27;
-    });
-  }
-};
-
-/**
- * Stop this port by deleting the frame.
- * @method stop
- * @private
- */
-Direct.prototype.stop = function() {
-  if (this === this.config.global.directLink) {
-    delete this.config.global.directLink;
-  }
-  delete this.other;
-};
-
-/**
- * Get the textual description of this port.
- * @method toString
- * @return {String} the description of this port.
- */
-Direct.prototype.toString = function() {
-  return &quot;[Direct&quot; + this.id + &quot;]&quot;;
-};
-
-/**
- * Receive messages from the hub to this port.
- * Received messages will be emitted from the other side of the port.
- * @method deliverMessage
- * @param {String} flow the channel/flow of the message.
- * @param {Object} message The Message.
- */
-Direct.prototype.deliverMessage = function(flow, message) {
-  if (this.other) {
-    /* //- For Debugging Purposes -
-    if (this === this.config.global.directLink) {
-      console.warn(&#x27;-&gt;[&#x27; + flow + &#x27;] &#x27; + JSON.stringify(message));
+ProxyBinder.prototype.getExternal = function (port, name, definition) {
+  &#x27;use strict&#x27;;
+  var proxy, api;
+  return new PromiseCompat(function (resolve, reject) {
+    if (definition) {
+      api = definition.name;
+      if (definition.provides) {
+        proxy = new Provider(definition.definition, this.manager.debug);
+      } else {
+        proxy = new Consumer(ApiInterface.bind({},
+            definition.definition),
+            this.manager.debug);
+      }
     } else {
-      console.warn(&#x27;&lt;-[&#x27; + flow + &#x27;] &#x27; + JSON.stringify(message));
+      proxy = new Consumer(EventInterface, this.manager.debug);
     }
-    */
-    if (flow === &#x27;control&#x27;) {
-      flow = this.other.controlChannel;
-    }
-    setTimeout(this.other.emit.bind(this.other, flow, message), 0);
-  } else {
-    this.once(&#x27;started&#x27;, this.onMessage.bind(this, flow, message));
-  }
+
+    proxy.once(&#x27;start&#x27;, function () {
+      var iface = proxy.getProxyInterface();
+      if (api) {
+        iface.api = api;
+      }
+      resolve({
+        port: proxy,
+        external: iface
+      });
+    });
+
+    this.manager.createLink(port, name, proxy);
+  }.bind(this));
 };
 
-module.exports = Direct;
+/**
+ * Bind the default proxy for a freedom port.
+ * @method bindDefault
+ * @param {Port} port The port for the proxy to communicate with.
+ * @param {Api} api The API loader with API definitions.
+ * @param {Object} manifest The manifest of the module to expose.
+ * @param {Boolean} internal Whether the interface is for inside the module.
+ * @returns {Promise} A promise for a proxy interface.
+ * @private
+ */
+ProxyBinder.prototype.bindDefault = function (port, api, manifest, internal) {
+  &#x27;use strict&#x27;;
+  var metadata = {
+    name: manifest.name,
+    icon: manifest.icon,
+    description: manifest.description
+  }, def;
+
+  if (manifest[&#x27;default&#x27;]) {
+    def = api.get(manifest[&#x27;default&#x27;]);
+    if (!def &amp;&amp; manifest.api &amp;&amp; manifest.api[manifest[&#x27;default&#x27;]]) {
+      def = {
+        name: manifest[&#x27;default&#x27;],
+        definition: manifest.api[manifest[&#x27;default&#x27;]]
+      };
+    }
+    if (internal &amp;&amp; manifest.provides &amp;&amp;
+        manifest.provides.indexOf(manifest[&#x27;default&#x27;]) !== false) {
+      def.provides = true;
+    } else if (internal) {
+      api.debug.warn(&quot;default API not provided, &quot; +
+                     &quot;are you missing a provides key in your manifest?&quot;);
+    }
+  }
+
+  return this.getExternal(port, &#x27;default&#x27;, def).then(
+    function (metadata, info) {
+      info.external.manifest = metadata;
+      return info;
+    }.bind(this, metadata)
+  );
+};
+
+module.exports = ProxyBinder;
 
     </pre>
 </div>

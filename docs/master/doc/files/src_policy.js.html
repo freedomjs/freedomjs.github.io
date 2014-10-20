@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.5.2</em>
+            <em>API Docs for: 0.6.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -43,15 +43,17 @@
             
                 <li><a href="../classes/API.html">API</a></li>
             
+                <li><a href="../classes/Consumer.html">Consumer</a></li>
+            
+                <li><a href="../classes/Direct.html">Direct</a></li>
+            
+                <li><a href="../classes/Frame.html">Frame</a></li>
+            
                 <li><a href="../classes/handleEvents.html">handleEvents</a></li>
             
                 <li><a href="../classes/Hub.html">Hub</a></li>
             
                 <li><a href="../classes/Link.html">Link</a></li>
-            
-                <li><a href="../classes/Link.Direct.html">Link.Direct</a></li>
-            
-                <li><a href="../classes/link.Frame.html">link.Frame</a></li>
             
                 <li><a href="../classes/Manager.html">Manager</a></li>
             
@@ -63,7 +65,7 @@
             
                 <li><a href="../classes/Provider.html">Provider</a></li>
             
-                <li><a href="../classes/Proxy.html">Proxy</a></li>
+                <li><a href="../classes/ProxyBinder.html">ProxyBinder</a></li>
             
                 <li><a href="../classes/Resource.html">Resource</a></li>
             
@@ -74,8 +76,6 @@
             </ul>
 
             <ul id="api-modules" class="apis modules">
-            
-                <li><a href="../modules/freedom.html">freedom</a></li>
             
             </ul>
         </div>
@@ -116,23 +116,32 @@
 
 <div class="file">
     <pre class="code prettyprint linenums">
-/*globals fdom:true, XMLHttpRequest, Promise */
+/*globals XMLHttpRequest */
 /*jslint indent:2,white:true,node:true,sloppy:true */
-if (typeof fdom === &#x27;undefined&#x27;) {
-  fdom = {};
-}
+var PromiseCompat = require(&#x27;es6-promise&#x27;).Promise;
+var Module = require(&#x27;./module&#x27;);
+var util = require(&#x27;./util&#x27;);
 
 /**
  * The Policy registry for freedom.js.  Used to look up modules and provide
  * migration and coallesing of execution.
  * @Class Policy
+ * @param {Manager} manager The manager of the active runtime.
+ * @param {Resource} resource The resource loader of the active runtime.
+ * @param {Object} config The local config.
  * @constructor
  */
-fdom.Policy = function(manager, config) {
+var Policy = function(manager, resource, config) {
+  this.api = manager.api;
+  this.debug = manager.debug;
   this.location = config.location;
+  this.resource = resource;
+
   this.config = config;
   this.runtimes = [];
   this.policies = [];
+  this.pending = {};
+  util.handleEvents(this);
 
   this.add(manager, config.policy);
   this.runtimes[0].local = true;
@@ -144,7 +153,7 @@ fdom.Policy = function(manager, config) {
  * TODO: consider making static
  * @property defaultPolicy
  */
-fdom.Policy.prototype.defaultPolicy = {
+Policy.prototype.defaultPolicy = {
   background: false, // Can this runtime run &#x27;background&#x27; modules?
   interactive: true // Is there a view associated with this runtime?
   // TODO: remaining runtime policy.
@@ -156,7 +165,7 @@ fdom.Policy.prototype.defaultPolicy = {
  * TODO: consider making static
  * @property defaultConstraints
  */
-fdom.Policy.prototype.defaultConstraints = {
+Policy.prototype.defaultConstraints = {
   isolation: &quot;always&quot;, // values: always, app, never
   placement: &quot;local&quot; // values: local, stable, redundant
   // TODO: remaining constraints, express platform-specific dependencies.
@@ -170,7 +179,20 @@ fdom.Policy.prototype.defaultConstraints = {
  * @param {String} id The canonical ID of the module to get.
  * @returns {Promise} A promise for the local port towards the module.
  */
-fdom.Policy.prototype.get = function(lineage, id) {
+Policy.prototype.get = function(lineage, id) {
+  
+  // Make sure that a module isn&#x27;t getting located twice at the same time.
+  // This is resolved by delaying if it until we see it in a &#x27;moduleAdd&#x27; event.
+  if (this.pending[id]) {
+    return new PromiseCompat(function (resolve, reject) {
+      this.once(&#x27;placed&#x27;, function(l, i) {
+        this.get(l, i).then(resolve, reject);
+      }.bind(this, lineage, id));
+    }.bind(this));
+  } else {
+    this.pending[id] = true;
+  }
+
   return this.loadManifest(id).then(function(manifest) {
     var constraints = this.overlay(this.defaultConstraints, manifest.constraints),
         runtime = this.findDestination(lineage, id, constraints),
@@ -179,20 +201,22 @@ fdom.Policy.prototype.get = function(lineage, id) {
       portId = this.isRunning(runtime, id, lineage,
                              constraints.isolation !== &#x27;never&#x27;);
       if(constraints.isolation !== &#x27;always&#x27; &amp;&amp; portId) {
-        fdom.debug.log(&#x27;Reused port &#x27; + portId);
+        this.debug.info(&#x27;Reused port &#x27; + portId);
+        delete this.pending[id];
+        this.emit(&#x27;placed&#x27;);
         return runtime.manager.getPort(portId);
       } else {
-        return new fdom.port.Module(id, manifest, lineage);
+        return new Module(id, manifest, lineage, this);
       }
     } else {
       // TODO: Create a port to go to the remote runtime.
-      fdom.debug.error(&#x27;Unexpected location selected for module placement&#x27;);
+      this.debug.error(&#x27;Unexpected location selected for module placement&#x27;);
       return false;
     }
   }.bind(this), function(err) {
-    fdom.debug.error(&#x27;Policy Error Resolving &#x27; + id, err);
-    return false;
-  });
+    this.debug.error(&#x27;Policy Error Resolving &#x27; + id, err);
+    throw(err);
+  }.bind(this));
 };
 
 /**
@@ -204,7 +228,7 @@ fdom.Policy.prototype.get = function(lineage, id) {
  * @param {Object} constraints Constraints for the module.
  * @returns {Object} The element of this.runtimes where the module should run.
  */
-fdom.Policy.prototype.findDestination = function(lineage, id, constraints) {
+Policy.prototype.findDestination = function(lineage, id, constraints) {
   var i;
 
   // Step 1: if an instance already exists, the m
@@ -241,7 +265,7 @@ fdom.Policy.prototype.findDestination = function(lineage, id, constraints) {
  * @param {Boolean} fullMatch If the module needs to be in the same app.
  * @returns {String|Boolean} The Module id if it is running, or false if not.
  */
-fdom.Policy.prototype.isRunning = function(runtime, id, from, fullMatch) {
+Policy.prototype.isRunning = function(runtime, id, from, fullMatch) {
   var i = 0, j = 0, okay;
   for (i = 0; i &lt; runtime.modules.length; i += 1) {
     if (fullMatch &amp;&amp; runtime.modules[i].length === from.length + 1) {
@@ -272,16 +296,16 @@ fdom.Policy.prototype.isRunning = function(runtime, id, from, fullMatch) {
  * @param {String} manifest The canonical ID of the manifest
  * @returns {Promise} Promise for the json contents of the manifest.
  */
-fdom.Policy.prototype.loadManifest = function(manifest) {
-  return fdom.resources.getContents(manifest).then(function(data) {
+Policy.prototype.loadManifest = function(manifest) {
+  return this.resource.getContents(manifest).then(function(data) {
     var resp = {};
     try {
       return JSON.parse(data);
     } catch(err) {
-      fdom.debug.warn(&quot;Failed to load &quot; + manifest + &quot;: &quot; + err);
-      return {};
+      this.debug.error(&quot;Failed to load &quot; + manifest + &quot;: &quot; + err);
+      throw new Error(&quot;No Manifest Available&quot;);
     }
-  });
+  }.bind(this));
 };
 
 /**
@@ -290,7 +314,7 @@ fdom.Policy.prototype.loadManifest = function(manifest) {
  * @param {fdom.port} port The port to use for module lifetime info
  * @param {Object} policy The policy of the runtime.
  */
-fdom.Policy.prototype.add = function(port, policy) {
+Policy.prototype.add = function(port, policy) {
   var runtime = {
     manager: port,
     modules: []
@@ -299,12 +323,18 @@ fdom.Policy.prototype.add = function(port, policy) {
   this.policies.push(this.overlay(this.defaultPolicy, policy));
 
   port.on(&#x27;moduleAdd&#x27;, function(runtime, info) {
-    var lineage = info.lineage;
+    var lineage = [];
+    lineage = lineage.concat(info.lineage);
     lineage[0] = info.id;
     runtime.modules.push(lineage);
+    if (this.pending[info.lineage[0]]) {
+      delete this.pending[info.lineage[0]];
+      this.emit(&#x27;placed&#x27;);
+    }
   }.bind(this, runtime));
   port.on(&#x27;moduleRemove&#x27;, function(runtime, info) {
-    var lineage = info.lineage, i, modFingerprint;
+    var lineage = [], i, modFingerprint;
+    lineage = lineage.concat(info.lineage);
     lineage[0] = info.id;
     modFingerprint = lineage.toString();
 
@@ -314,7 +344,7 @@ fdom.Policy.prototype.add = function(port, policy) {
         return;
       }
     }
-    fdom.debug.warn(&#x27;Unknown module to remove: &#x27;, info.id);
+    this.debug.warn(&#x27;Unknown module to remove: &#x27;, info.id);
   }.bind(this, runtime));
 };
 
@@ -327,15 +357,17 @@ fdom.Policy.prototype.add = function(port, policy) {
  * @param {Object} overlay The superceeding object
  * @returns {Object} A new object with base parameters when not set in overlay.
  */
-fdom.Policy.prototype.overlay = function(base, overlay) {
+Policy.prototype.overlay = function(base, overlay) {
   var ret = {};
 
-  fdom.util.mixin(ret, base);
+  util.mixin(ret, base);
   if (overlay) {
-    fdom.util.mixin(ret, overlay, true);
+    util.mixin(ret, overlay, true);
   }
   return ret;
 };
+
+module.exports = Policy;
 
     </pre>
 </div>

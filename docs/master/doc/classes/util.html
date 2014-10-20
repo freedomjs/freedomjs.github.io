@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.5.2</em>
+            <em>API Docs for: 0.6.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -43,15 +43,17 @@
             
                 <li><a href="../classes/API.html">API</a></li>
             
+                <li><a href="../classes/Consumer.html">Consumer</a></li>
+            
+                <li><a href="../classes/Direct.html">Direct</a></li>
+            
+                <li><a href="../classes/Frame.html">Frame</a></li>
+            
                 <li><a href="../classes/handleEvents.html">handleEvents</a></li>
             
                 <li><a href="../classes/Hub.html">Hub</a></li>
             
                 <li><a href="../classes/Link.html">Link</a></li>
-            
-                <li><a href="../classes/Link.Direct.html">Link.Direct</a></li>
-            
-                <li><a href="../classes/link.Frame.html">link.Frame</a></li>
             
                 <li><a href="../classes/Manager.html">Manager</a></li>
             
@@ -63,7 +65,7 @@
             
                 <li><a href="../classes/Provider.html">Provider</a></li>
             
-                <li><a href="../classes/Proxy.html">Proxy</a></li>
+                <li><a href="../classes/ProxyBinder.html">ProxyBinder</a></li>
             
                 <li><a href="../classes/Resource.html">Resource</a></li>
             
@@ -74,8 +76,6 @@
             </ul>
 
             <ul id="api-modules" class="apis modules">
-            
-                <li><a href="../modules/freedom.html">freedom</a></li>
             
             </ul>
         </div>
@@ -120,14 +120,10 @@
 
     
         <div class="foundat">
-            Defined in: <a href="../files/src_util.js.html#l8"><code>src&#x2F;util.js:8</code></a>
+            Defined in: <a href="../files/src_util.js.html#l5"><code>src&#x2F;util.js:5</code></a>
         </div>
     
 
-    
-        
-            Module: <a href="../modules/freedom.html">freedom</a>
-        
     
 
     
@@ -165,7 +161,7 @@
                     <ul class="index-list methods">
                         
                             <li class="index-item method">
-                                <a href="#method_advertise">advertise</a>
+                                <a href="#method_ab2str">ab2str</a>
 
                                 
                                     <span class="flag static">static</span>
@@ -192,15 +188,6 @@
                             </li>
                         
                             <li class="index-item method">
-                                <a href="#method_forceModuleContext">forceModuleContext</a>
-
-                                
-                                    <span class="flag static">static</span>
-                                
-                                
-                            </li>
-                        
-                            <li class="index-item method">
                                 <a href="#method_getBlob">getBlob</a>
 
                                 
@@ -211,15 +198,6 @@
                         
                             <li class="index-item method">
                                 <a href="#method_getId">getId</a>
-
-                                
-                                    <span class="flag static">static</span>
-                                
-                                
-                            </li>
-                        
-                            <li class="index-item method">
-                                <a href="#method_getURL">getURL</a>
 
                                 
                                     <span class="flag static">static</span>
@@ -264,7 +242,7 @@
                             </li>
                         
                             <li class="index-item method">
-                                <a href="#method_setup">setup</a>
+                                <a href="#method_str2ab">str2ab</a>
 
                                 
                                     <span class="flag static">static</span>
@@ -288,8 +266,8 @@
                 <h2 class="off-left">Methods</h2>
 
                 
-                    <div id="method_advertise" class="method item">
-    <h3 class="name"><code>advertise</code></h3>
+                    <div id="method_ab2str" class="method item">
+    <h3 class="name"><code>ab2str</code></h3>
 
     
         <div class="args">
@@ -297,7 +275,7 @@
             
                 <li class="arg">
                     
-                        <code>force</code>
+                        <code>buffer</code>
                     
                 </li>
             
@@ -305,6 +283,10 @@
         </div>
     
 
+    
+        <span class="returns-inline">
+            <span class="type">String</span>
+        </span>
     
 
     
@@ -332,7 +314,7 @@
             
         
         
-        <a href="../files/src_util.js.html#l315"><code>src&#x2F;util.js:315</code></a>
+        <a href="../files/src_util.js.html#l128"><code>src&#x2F;util.js:128</code></a>
         
         </p>
 
@@ -343,8 +325,7 @@
     </div>
 
     <div class="description">
-        <p>When running in a priviledged context, honor a global
-&#39;freedomcfg&#39; function to allow registration of additional API providers.</p>
+        <p>Convert an array buffer containing an encoded string back into a string.</p>
 
     </div>
 
@@ -356,14 +337,14 @@
             
                 <li class="param">
                     
-                        <code class="param-name">force</code>
-                        <span class="type">Boolean</span>
+                        <code class="param-name">buffer</code>
+                        <span class="type">ArrayBuffer</span>
                     
 
                     
 
                     <div class="param-description">
-                        <p>Advertise even if not in a priviledged context.</p>
+                        <p>The buffer to unwrap.</p>
 
                     </div>
 
@@ -374,6 +355,20 @@
         </div>
     
 
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">String</span>:
+                    
+                    <p>The decoded buffer.</p>
+
+                
+            </div>
+        </div>
     
 
     
@@ -414,7 +409,7 @@
             
         
         
-        <a href="../files/src_util.js.html#l41"><code>src&#x2F;util.js:41</code></a>
+        <a href="../files/src_util.js.html#l38"><code>src&#x2F;util.js:38</code></a>
         
         </p>
 
@@ -473,7 +468,7 @@ iteration is stopped.</p>
             
         
         
-        <a href="../files/src_util.js.html#l16"><code>src&#x2F;util.js:16</code></a>
+        <a href="../files/src_util.js.html#l13"><code>src&#x2F;util.js:13</code></a>
         
         </p>
 
@@ -486,65 +481,6 @@ iteration is stopped.</p>
     <div class="description">
         <p>Helper function for iterating over an array backwards. If the func
 returns a true value, it will break out of the loop.</p>
-
-    </div>
-
-    
-
-    
-
-    
-</div>
-
-                
-                    <div id="method_forceModuleContext" class="method item">
-    <h3 class="name"><code>forceModuleContext</code></h3>
-
-    
-        <span class="paren">()</span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-        <span class="flag static">static</span>
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/src_util.js.html#l260"><code>src&#x2F;util.js:260</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Provide a version of src where the &#39;isModuleContext&#39; function will return
-true. Used for creating module contexts which may not be able to determine
-that they need to start up in that mode by themselves.</p>
 
     </div>
 
@@ -590,7 +526,7 @@ that they need to start up in that mode by themselves.</p>
             
         
         
-        <a href="../files/src_util.js.html#l283"><code>src&#x2F;util.js:283</code></a>
+        <a href="../files/src_util.js.html#l295"><code>src&#x2F;util.js:295</code></a>
         
         </p>
 
@@ -649,7 +585,7 @@ phantomjs.</p>
             
         
         
-        <a href="../files/src_util.js.html#l79"><code>src&#x2F;util.js:79</code></a>
+        <a href="../files/src_util.js.html#l76"><code>src&#x2F;util.js:76</code></a>
         
         </p>
 
@@ -661,65 +597,6 @@ phantomjs.</p>
 
     <div class="description">
         <p>Get a unique ID.</p>
-
-    </div>
-
-    
-
-    
-
-    
-</div>
-
-                
-                    <div id="method_getURL" class="method item">
-    <h3 class="name"><code>getURL</code></h3>
-
-    
-        <span class="paren">()</span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-        <span class="flag static">static</span>
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/src_util.js.html#l300"><code>src&#x2F;util.js:300</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Get a URL of a blob object for inclusion in a frame.
-Polyfills implementations which don&#39;t have a current URL object, like
-phantomjs.</p>
 
     </div>
 
@@ -765,7 +642,7 @@ phantomjs.</p>
             
         
         
-        <a href="../files/src_util.js.html#l33"><code>src&#x2F;util.js:33</code></a>
+        <a href="../files/src_util.js.html#l30"><code>src&#x2F;util.js:30</code></a>
         
         </p>
 
@@ -821,7 +698,7 @@ phantomjs.</p>
             
         
         
-        <a href="../files/src_util.js.html#l248"><code>src&#x2F;util.js:248</code></a>
+        <a href="../files/src_util.js.html#l283"><code>src&#x2F;util.js:283</code></a>
         
         </p>
 
@@ -879,7 +756,7 @@ Note: Declaration can be redefined in forceModuleContext below.</p>
             
         
         
-        <a href="../files/src_util.js.html#l59"><code>src&#x2F;util.js:59</code></a>
+        <a href="../files/src_util.js.html#l56"><code>src&#x2F;util.js:56</code></a>
         
         </p>
 
@@ -940,7 +817,7 @@ trigger a problem related to that.</p>
             
         
         
-        <a href="../files/src_util.js.html#l336"><code>src&#x2F;util.js:336</code></a>
+        <a href="../files/src_util.js.html#l312"><code>src&#x2F;util.js:312</code></a>
         
         </p>
 
@@ -963,8 +840,8 @@ trigger a problem related to that.</p>
 </div>
 
                 
-                    <div id="method_setup" class="method item">
-    <h3 class="name"><code>setup</code></h3>
+                    <div id="method_str2ab" class="method item">
+    <h3 class="name"><code>str2ab</code></h3>
 
     
         <div class="args">
@@ -972,19 +849,7 @@ trigger a problem related to that.</p>
             
                 <li class="arg">
                     
-                        <code>global</code>
-                    
-                </li>
-            
-                <li class="arg">
-                    
-                        <code>freedom_src</code>
-                    
-                </li>
-            
-                <li class="arg">
-                    
-                        <code>config</code>
+                        <code>str</code>
                     
                 </li>
             
@@ -992,6 +857,10 @@ trigger a problem related to that.</p>
         </div>
     
 
+    
+        <span class="returns-inline">
+            <span class="type">ArrayBuffer</span>
+        </span>
     
 
     
@@ -1019,7 +888,7 @@ trigger a problem related to that.</p>
             
         
         
-        <a href="../files/src_entry.js.html#l11"><code>src&#x2F;entry.js:11</code></a>
+        <a href="../files/src_util.js.html#l108"><code>src&#x2F;util.js:108</code></a>
         
         </p>
 
@@ -1030,9 +899,8 @@ trigger a problem related to that.</p>
     </div>
 
     <div class="description">
-        <p>External freedom Setup.  global.freedom is set to the value returned by
-setup (see preamble.js and postamble.js for that mechanism).  As a result,
-this is the primary entry function for the freedom library.</p>
+        <p>Encode a string into a binary array buffer, by treating each character as a
+utf16 encoded character - the native javascript encoding.</p>
 
     </div>
 
@@ -1044,46 +912,14 @@ this is the primary entry function for the freedom library.</p>
             
                 <li class="param">
                     
-                        <code class="param-name">global</code>
-                        <span class="type">Object</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>The window / frame / worker context freedom is in.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-                <li class="param">
-                    
-                        <code class="param-name">freedom_src</code>
+                        <code class="param-name">str</code>
                         <span class="type">String</span>
                     
 
                     
 
                     <div class="param-description">
-                        <p>The textual code of freedom, for replication.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-                <li class="param">
-                    
-                        <code class="param-name">config</code>
-                        <span class="type">Object</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>Overriding config for freedom.js</p>
+                        <p>The string to encode.</p>
 
                     </div>
 
@@ -1094,6 +930,20 @@ this is the primary entry function for the freedom library.</p>
         </div>
     
 
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">ArrayBuffer</span>:
+                    
+                    <p>The encoded string.</p>
+
+                
+            </div>
+        </div>
     
 
     

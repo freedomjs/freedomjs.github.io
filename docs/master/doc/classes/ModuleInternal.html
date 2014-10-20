@@ -19,7 +19,7 @@
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: 0.5.2</em>
+            <em>API Docs for: 0.6.0</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -43,15 +43,17 @@
             
                 <li><a href="../classes/API.html">API</a></li>
             
+                <li><a href="../classes/Consumer.html">Consumer</a></li>
+            
+                <li><a href="../classes/Direct.html">Direct</a></li>
+            
+                <li><a href="../classes/Frame.html">Frame</a></li>
+            
                 <li><a href="../classes/handleEvents.html">handleEvents</a></li>
             
                 <li><a href="../classes/Hub.html">Hub</a></li>
             
                 <li><a href="../classes/Link.html">Link</a></li>
-            
-                <li><a href="../classes/Link.Direct.html">Link.Direct</a></li>
-            
-                <li><a href="../classes/link.Frame.html">link.Frame</a></li>
             
                 <li><a href="../classes/Manager.html">Manager</a></li>
             
@@ -63,7 +65,7 @@
             
                 <li><a href="../classes/Provider.html">Provider</a></li>
             
-                <li><a href="../classes/Proxy.html">Proxy</a></li>
+                <li><a href="../classes/ProxyBinder.html">ProxyBinder</a></li>
             
                 <li><a href="../classes/Resource.html">Resource</a></li>
             
@@ -74,8 +76,6 @@
             </ul>
 
             <ul id="api-modules" class="apis modules">
-            
-                <li><a href="../modules/freedom.html">freedom</a></li>
             
             </ul>
         </div>
@@ -124,14 +124,10 @@
 
     
         <div class="foundat">
-            Defined in: <a href="../files/src_port-moduleinternal.js.html#l8"><code>src&#x2F;port-moduleinternal.js:8</code></a>
+            Defined in: <a href="../files/src_moduleinternal.js.html#l9"><code>src&#x2F;moduleinternal.js:9</code></a>
         </div>
     
 
-    
-        
-            Module: <a href="../modules/freedom.html">freedom</a>
-        
     
 
     
@@ -190,7 +186,7 @@ facing exports have appropriate properties, and load user scripts.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l8"><code>src&#x2F;port-moduleinternal.js:8</code></a>
+        <a href="../files/src_moduleinternal.js.html#l9"><code>src&#x2F;moduleinternal.js:9</code></a>
         
         </p>
 
@@ -268,7 +264,7 @@ facing exports have appropriate properties, and load user scripts.</p>
                             </li>
                         
                             <li class="index-item method private">
-                                <a href="#method_loadLink">loadLink</a>
+                                <a href="#method_generateEnv">generateEnv</a>
 
                                 
                                 
@@ -316,13 +312,6 @@ facing exports have appropriate properties, and load user scripts.</p>
                                 
                             </li>
                         
-                            <li class="index-item method private">
-                                <a href="#method_updateEnv">updateEnv</a>
-
-                                
-                                
-                            </li>
-                        
                             <li class="index-item method">
                                 <a href="#method_updateManifest">updateManifest</a>
 
@@ -356,6 +345,12 @@ facing exports have appropriate properties, and load user scripts.</p>
                 <li class="arg">
                     
                         <code>name</code>
+                    
+                </li>
+            
+                <li class="arg">
+                    
+                        <code>provides</code>
                     
                 </li>
             
@@ -402,7 +397,7 @@ facing exports have appropriate properties, and load user scripts.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l102"><code>src&#x2F;port-moduleinternal.js:102</code></a>
+        <a href="../files/src_moduleinternal.js.html#l119"><code>src&#x2F;moduleinternal.js:119</code></a>
         
         </p>
 
@@ -441,8 +436,24 @@ facing exports have appropriate properties, and load user scripts.</p>
             
                 <li class="param">
                     
+                        <code class="param-name">provides</code>
+                        <span class="type">Boolean</span>
+                    
+
+                    
+
+                    <div class="param-description">
+                        <p>If this proxy is a provider.</p>
+
+                    </div>
+
+                    
+                </li>
+            
+                <li class="param">
+                    
                         <code class="param-name">proxy</code>
-                        <span class="type"><a href="../classes/Proxy.html" class="crosslink">Proxy</a></span>
+                        <span class="type">ProxyInterface</span>
                     
 
                     
@@ -481,8 +492,8 @@ facing exports have appropriate properties, and load user scripts.</p>
 </div>
 
                 
-                    <div id="method_loadLink" class="method item private">
-    <h3 class="name"><code>loadLink</code></h3>
+                    <div id="method_generateEnv" class="method item private">
+    <h3 class="name"><code>generateEnv</code></h3>
 
     
         <div class="args">
@@ -490,13 +501,13 @@ facing exports have appropriate properties, and load user scripts.</p>
             
                 <li class="arg">
                     
-                        <code>name</code>
+                        <code>manifest</code>
                     
                 </li>
             
                 <li class="arg">
                     
-                        <code class="optional">[definition]</code>
+                        <code>items</code>
                     
                 </li>
             
@@ -504,6 +515,10 @@ facing exports have appropriate properties, and load user scripts.</p>
         </div>
     
 
+    
+        <span class="returns-inline">
+            <span class="type">Promise</span>
+        </span>
     
 
     
@@ -531,7 +546,7 @@ facing exports have appropriate properties, and load user scripts.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l200"><code>src&#x2F;port-moduleinternal.js:200</code></a>
+        <a href="../files/src_moduleinternal.js.html#l92"><code>src&#x2F;moduleinternal.js:92</code></a>
         
         </p>
 
@@ -542,8 +557,7 @@ facing exports have appropriate properties, and load user scripts.</p>
     </div>
 
     <div class="description">
-        <p>Create a proxy for a single manifest item, and attach it to the global
-context once it is loaded.</p>
+        <p>Generate an externaly visisble namespace</p>
 
     </div>
 
@@ -555,14 +569,14 @@ context once it is loaded.</p>
             
                 <li class="param">
                     
-                        <code class="param-name">name</code>
-                        <span class="type">String</span>
+                        <code class="param-name">manifest</code>
+                        <span class="type">Object</span>
                     
 
                     
 
                     <div class="param-description">
-                        <p>The name of the link</p>
+                        <p>The manifest of the module.</p>
 
                     </div>
 
@@ -571,64 +585,17 @@ context once it is loaded.</p>
             
                 <li class="param">
                     
-                        <code class="param-name optional">[definition]</code>
+                        <code class="param-name">items</code>
                         <span class="type">Object</span>
-                        <span class="flag optional" title="This parameter is optional.">optional</span>
                     
 
                     
 
                     <div class="param-description">
-                        <p>The definition of the API to expose.</p>
+                        <p>Other interfaces to load.</p>
 
                     </div>
 
-                    
-                        <ul class="params-list">
-                            
-                            <li class="param">
-                                
-                                    <code class="param-name">name</code>
-                                    <span class="type">String</span>
-                                
-
-                                <div class="param-description">
-                                    <p>The name of the API for the link.</p>
-
-                                </div>
-
-                                
-                            </li>
-                            
-                            <li class="param">
-                                
-                                    <code class="param-name">definition</code>
-                                    <span class="type">Object</span>
-                                
-
-                                <div class="param-description">
-                                    <p>The definition of the API.</p>
-
-                                </div>
-
-                                
-                            </li>
-                            
-                            <li class="param">
-                                
-                                    <code class="param-name">provides</code>
-                                    <span class="type">Boolean</span>
-                                
-
-                                <div class="param-description">
-                                    <p>Whether the link is a provider.</p>
-
-                                </div>
-
-                                
-                            </li>
-                            
-                        </ul>
                     
                 </li>
             
@@ -636,6 +603,20 @@ context once it is loaded.</p>
         </div>
     
 
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">Promise</span>:
+                    
+                    <p>A promise when the external namespace is visible.</p>
+
+                
+            </div>
+        </div>
     
 
     
@@ -660,6 +641,10 @@ context once it is loaded.</p>
     
 
     
+        <span class="returns-inline">
+            <span class="type">Promise</span>
+        </span>
+    
 
     
 
@@ -686,7 +671,7 @@ context once it is loaded.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l129"><code>src&#x2F;port-moduleinternal.js:129</code></a>
+        <a href="../files/src_moduleinternal.js.html#l148"><code>src&#x2F;moduleinternal.js:148</code></a>
         
         </p>
 
@@ -728,6 +713,20 @@ namespace.</p>
         </div>
     
 
+    
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                
+                    
+                        <span class="type">Promise</span>:
+                    
+                    <p>Promise for when all links are loaded.</p>
+
+                
+            </div>
+        </div>
     
 
     
@@ -782,7 +781,7 @@ namespace.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l316"><code>src&#x2F;port-moduleinternal.js:316</code></a>
+        <a href="../files/src_moduleinternal.js.html#l336"><code>src&#x2F;moduleinternal.js:336</code></a>
         
         </p>
 
@@ -891,7 +890,7 @@ namespace.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l251"><code>src&#x2F;port-moduleinternal.js:251</code></a>
+        <a href="../files/src_moduleinternal.js.html#l265"><code>src&#x2F;moduleinternal.js:265</code></a>
         
         </p>
 
@@ -1000,7 +999,7 @@ namespace.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l29"><code>src&#x2F;port-moduleinternal.js:29</code></a>
+        <a href="../files/src_moduleinternal.js.html#l33"><code>src&#x2F;moduleinternal.js:33</code></a>
         
         </p>
 
@@ -1103,7 +1102,7 @@ the manifest info for the module.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l73"><code>src&#x2F;port-moduleinternal.js:73</code></a>
+        <a href="../files/src_moduleinternal.js.html#l83"><code>src&#x2F;moduleinternal.js:83</code></a>
         
         </p>
 
@@ -1194,7 +1193,7 @@ the manifest info for the module.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l375"><code>src&#x2F;port-moduleinternal.js:375</code></a>
+        <a href="../files/src_moduleinternal.js.html#l396"><code>src&#x2F;moduleinternal.js:396</code></a>
         
         </p>
 
@@ -1271,97 +1270,6 @@ the manifest info for the module.</p>
 </div>
 
                 
-                    <div id="method_updateEnv" class="method item private">
-    <h3 class="name"><code>updateEnv</code></h3>
-
-    
-        <div class="args">
-            <span class="paren">(</span><ul class="args-list inline commas">
-            
-                <li class="arg">
-                    
-                        <code>manifest</code>
-                    
-                </li>
-            
-            </ul><span class="paren">)</span>
-        </div>
-    
-
-    
-
-    
-
-    
-        <span class="flag private">private</span>
-    
-
-    
-
-    
-
-    
-
-    
-
-    <div class="meta">
-        
-            
-                
-                <p>
-                
-                Defined in
-                
-            
-        
-        
-        <a href="../files/src_port-moduleinternal.js.html#l82"><code>src&#x2F;port-moduleinternal.js:82</code></a>
-        
-        </p>
-
-
-        
-
-        
-    </div>
-
-    <div class="description">
-        <p>Attach the manifest of the active module to the externally visible namespace.</p>
-
-    </div>
-
-    
-        <div class="params">
-            <h4>Parameters:</h4>
-
-            <ul class="params-list">
-            
-                <li class="param">
-                    
-                        <code class="param-name">manifest</code>
-                        <span class="type">Object</span>
-                    
-
-                    
-
-                    <div class="param-description">
-                        <p>The manifest of the module.</p>
-
-                    </div>
-
-                    
-                </li>
-            
-            </ul>
-        </div>
-    
-
-    
-
-    
-</div>
-
-                
                     <div id="method_updateManifest" class="method item">
     <h3 class="name"><code>updateManifest</code></h3>
 
@@ -1410,7 +1318,7 @@ the manifest info for the module.</p>
             
         
         
-        <a href="../files/src_port-moduleinternal.js.html#l232"><code>src&#x2F;port-moduleinternal.js:232</code></a>
+        <a href="../files/src_moduleinternal.js.html#l246"><code>src&#x2F;moduleinternal.js:246</code></a>
         
         </p>
 
