@@ -1,8 +1,12 @@
-/*globals freedom:true, fdom, WebSocket, console*/
-/*jslint sloppy:true*/
+/*globals WebSocket, ArrayBuffer, Blob, Uint8Array, console */
+/*jslint sloppy:true, node:true */
+
+var WSHandle = null;
+var nodeStyle = false;
 
 /**
- * A WebSocket core provider.
+ * A WebSocket core provider
+ *
  * @param {port.Module} module The Module requesting this provider
  * @param {Function} dispatchEvent Function to dispatch events.
  * @param {String} url The Remote URL to connect with.
@@ -10,7 +14,18 @@
  * @param {WebSocket?} socket An alternative socket class to use.
  */
 var WS = function (module, dispatchEvent, url, protocols, socket) {
-  var WSImplementation = socket || WebSocket;
+  var WSImplementation = null,
+    error;
+  this.isNode = nodeStyle;
+  if (typeof socket !== 'undefined') {
+    WSImplementation = socket;
+  } else if (WSHandle !== null) {
+    WSImplementation = WSHandle;
+  } else if (typeof WebSocket !== 'undefined') {
+    WSImplementation = WebSocket;
+  } else {
+    console.error('Platform does not support WebSocket');
+  }
 
   this.dispatchEvent = dispatchEvent;
   try {
@@ -19,8 +34,9 @@ var WS = function (module, dispatchEvent, url, protocols, socket) {
     } else {
       this.websocket = new WSImplementation(url);
     }
+    this.websocket.binaryType = 'arraybuffer';
   } catch (e) {
-    var error = {};
+    error = {};
     if (e instanceof SyntaxError) {
       error.errcode = 'SYNTAX';
     } else {
@@ -31,19 +47,41 @@ var WS = function (module, dispatchEvent, url, protocols, socket) {
     return;
   }
 
-  this.websocket.onopen = this.onOpen.bind(this);
-  this.websocket.onclose = this.onClose.bind(this);
-  this.websocket.onmessage = this.onMessage.bind(this);
-  this.websocket.onerror = this.onError.bind(this);
+  if (this.isNode) {
+    this.websocket.on('message', this.onMessage.bind(this));
+    this.websocket.on('open', this.onOpen.bind(this));
+    // node.js websocket implementation not compliant
+    this.websocket.on('close', this.onClose.bind(this, {
+      code: 0,
+      reason: 'UNKNOWN',
+      wasClean: true
+    }));
+    this.websocket.on('error', this.onError.bind(this));
+  } else {
+    this.websocket.onopen = this.onOpen.bind(this);
+    this.websocket.onclose = this.onClose.bind(this);
+    this.websocket.onmessage = this.onMessage.bind(this);
+    this.websocket.onerror = this.onError.bind(this);
+  }
 };
 
-WS.prototype.send = function(data, continuation) {
-  var toSend = data.text || data.binary || data.buffer;
-  var errcode, message;
+WS.prototype.send = function (data, continuation) {
+  var toSend = data.text || data.binary || data.buffer,
+    errcode,
+    message;
 
   if (toSend) {
     try {
-      this.websocket.send(toSend);
+      // For node.js, we have to do weird buffer stuff
+      if (this.isNode && toSend instanceof ArrayBuffer) {
+        this.websocket.send(
+          new Uint8Array(toSend),
+          { binary: true },
+          this.onError.bind(this)
+        );
+      } else {
+        this.websocket.send(toSend);
+      }
     } catch (e) {
       if (e instanceof SyntaxError) {
         errcode = "SYNTAX";
@@ -67,15 +105,15 @@ WS.prototype.send = function(data, continuation) {
   }
 };
 
-WS.prototype.getReadyState = function(continuation) {
+WS.prototype.getReadyState = function (continuation) {
   continuation(this.websocket.readyState);
 };
 
-WS.prototype.getBufferedAmount = function(continuation) {
+WS.prototype.getBufferedAmount = function (continuation) {
   continuation(this.websocket.bufferedAmount);
 };
 
-WS.prototype.close = function(code, reason, continuation) {
+WS.prototype.close = function (code, reason, continuation) {
   try {
     if (code && reason) {
       this.websocket.close(code, reason);
@@ -90,40 +128,49 @@ WS.prototype.close = function(code, reason, continuation) {
     } else {
       errorCode = "INVALID_ACCESS";
     }
-    continuation(undefined,{
+    continuation(undefined, {
       errcode: errorCode,
       message: e.message
     });
   }
 };
 
-WS.prototype.onOpen = function(event) {
+WS.prototype.onOpen = function (event) {
   this.dispatchEvent('onOpen');
 };
 
-WS.prototype.onMessage = function(event) {
+WS.prototype.onMessage = function (event, flags) {
   var data = {};
-  if (event.data instanceof ArrayBuffer) {
-    data.buffer = data;
-  } else if (event.data instanceof Blob) {
-    data.binary = data;
+  if (this.isNode && flags && flags.binary) {
+    data.buffer = new Uint8Array(event).buffer;
+  } else if (this.isNode) {
+    data.text = event;
+  } else if (typeof ArrayBuffer !== 'undefined' && event.data instanceof ArrayBuffer) {
+    data.buffer = event.data;
+  } else if (typeof Blob !== 'undefined' && event.data instanceof Blob) {
+    data.binary = event.data;
   } else if (typeof event.data === 'string') {
     data.text = event.data;
   }
   this.dispatchEvent('onMessage', data);
 };
 
-WS.prototype.onError = function(event) {
+WS.prototype.onError = function (event) {
   // Nothing to pass on
   // See: http://stackoverflow.com/a/18804298/300539
   this.dispatchEvent('onError');
 };
 
-WS.prototype.onClose = function(event) {
+WS.prototype.onClose = function (event) {
   this.dispatchEvent('onClose',
                      {code: event.code,
                       reason: event.reason,
                       wasClean: event.wasClean});
 };
 
-fdom.apis.register('core.websocket', WS);
+exports.provider = WS;
+exports.name = 'core.websocket';
+exports.setSocket = function(impl, isNode) {
+  WSHandle = impl;
+  nodeStyle = isNode;
+};
