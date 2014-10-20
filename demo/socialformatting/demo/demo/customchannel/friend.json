@@ -1,7 +1,0 @@
-{
-  "name": "Custom Channel Friend",
-  "description": "Included Channel Helper",
-  "app": {
-    "script": "friend.js"
-  }
-}
