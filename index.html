@@ -8,7 +8,6 @@
   <meta name="author" content="">
   <meta name="keywords" content="html5, library, framework, javascript" />
 
-
   <title>freedom.js: the P2P Web Framework</title>
 
   <link href="https://fonts.googleapis.com/css?family=Chivo:900" rel="stylesheet" type="text/css">
@@ -34,7 +33,7 @@
 <section>
   <nav class="navbar center">
     <ul>
-      <li><a href="demo/" id="demo" class="button">
+      <li><a href="dist/freedom/latest/demo/" id="demo" class="button">
         <span class='triangle'>&#9654;</span><span>Examples</span>
       </a></li>
       <li><a href="https://github.com/freedomjs/freedom/wiki" 
@@ -53,18 +52,28 @@
 
 <!-- jumbotron! -->
 <script type="text/javascript"
-  src="release/master/freedom.latest.js"
-  data-manifest="demo/master/demo/connections/manifest.json">
+        src="dist/freedom/v0.5/freedom.js"
+        data-manifest="dist/freedom/v0.5/demo/connections/manifest.json">
   {
     "stayLocal": true,
-    "debug": false 
+    "debug": true
   }
 </script>
-<script>
- freedom.on("height", function(h) {
-   document.getElementById("connections").style.height = h + 'px';
- });
+<script type="text/javascript">
+  freedom.on("height", function(h) {
+    document.getElementById("connections").style.height = h + 'px';
+  });
 </script>
+<!-- freedom v0.6 syntax 
+<script type="text/javascript" src="dist/freedom/latest/freedom.js"></script>
+<script type="text/javascript">
+  freedom('dist/freedom/latest/demo/connections/manifest.json', { debug: 'debug' }).then(function (instance) {
+    instance().on("height", function(h) {
+      document.getElementById("connections").style.height = h + 'px';
+    });
+  });
+</script>
+-->
 <section id="connections" class="lastChild">
   <span>freedom.js is loading</span>
 </section>
@@ -111,7 +120,7 @@
       And you can still make the rich social applications
       your users expect.
     </p> 
-    <a href="http://freedomjs.org/demo">
+    <a href="dist/freedom/latest/demo">
       Try our demos
     </a>
   </div>
