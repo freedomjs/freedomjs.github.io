@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <title>Connections ~ freedom.js Demos</title>
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+  <link href='../style.css' rel='stylesheet' type='text/css' />
+
+  <script type="text/javascript" src="../../freedom.js"></script>
+
+  <script type="text/javascript">
+    freedom('manifest.json').then(function (instance) {
+      instance().on("height", function(h) {
+        document.getElementById("connections").style.height = h + 'px';
+      });
+    });
+  </script>
+</head>
+<body>
+  <header id='logo'>freedom.js</header>
+  <header><span class='triangle'>&#9654;</span> Demos</header>
+  <header><span class='triangle'>&#9654;</span> Connections</header>
+  <section id="connections" class="lastChild">
+    <span>freedom.js is loading.</span>
+  </section>
+</body>
+</html>
+
