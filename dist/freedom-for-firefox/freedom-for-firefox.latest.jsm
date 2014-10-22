@@ -1,1 +1,1 @@
-freedom-for-firefox.0.4.2.jsm
+freedom-for-firefox.v0.5.0.jsm
