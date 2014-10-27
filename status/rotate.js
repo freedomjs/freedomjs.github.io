@@ -42,7 +42,7 @@ function renderBuildTimes(data, root) {
   var barPaddingH = 50; // vertical padding between bars
   var gridLabelHeight = 480; // space reserved for gridline labels
   var gridChartOffset = 3; // space between start of grid and first bar
-  var maxBarHeight = 450; // height of the bar with the max value
+  var maxBarHeight = windowHeight - 150; // height of the bar with the max value
   
   // scales
   var xScale = d3.scale.linear()
