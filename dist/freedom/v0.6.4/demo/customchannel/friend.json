@@ -1,0 +1,13 @@
+{
+  "name": "Custom Channel Friend",
+  "description": "Included Channel Helper",
+  "app": {
+    "script": "friend.js"
+  },
+  "provides": ["alternative"],
+  "api": {
+    "alternative": {
+      "testMethod": {"type": "method", "value": ["string"], "ret": "string"}
+    }
+  }
+}
