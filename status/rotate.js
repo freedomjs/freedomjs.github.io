@@ -31,9 +31,79 @@ function makeImage(url, title) {
   return img;
 }
 
-function renderBuildTimes(data, root) {
-  console.warn(data);
+function codeClimate(repo, title) {
+  return function(b, t) {
+    var gpaURL = "http://cors.corsproxy.io/?url=https://codeclimate.com/repos/" + repo +"/gpa.json";
+    var fetcher = new XMLHttpRequest();
+    fetcher.open('get', gpaURL, true);
+    fetcher.responseType = 'json';
+    fetcher.onreadystatechange = function() {
+      if (this.readyState === 4) {
+        var data = fetcher.response.data[0].values;
+        renderGPA(data, b);
+      }
+    }
+    fetcher.send();
+    if (title) {
+      t.innerHTML = "<header><span class='triangle'>&#9654;</span> " + title + "</header>";
+    } else {
+      t.innerHTML = "<header><span class='triangle'>&#9654;</span> Code Climate</header>";
+    }
+  }
+}
 
+function renderGPA(data, root) {
+  var windowWidth = window.innerWidth;
+  var windowHeight = window.innerHeight;
+  var paddingLeft = 5; // space to the left of the bars
+
+  var x = d3.scale.linear()
+    .domain([d3.min(data, function (d) {return d.x;}),
+             d3.max(data, function (d) {return d.x;})])
+    .range([50, windowWidth - 50]);
+  var y = d3.scale.linear()
+    .domain([0, 4])
+    .range([450, 50]);
+  var c = d3.scale.linear()
+    .domain([0, 2, 3, 4])
+    .range(["#ee0000","#ee0000","#ffee00","#00aa00"])
+    .interpolate(d3.interpolateHcl);
+
+  var chart = d3.select(root).append("svg")
+    .attr('width', window.innerWidth).attr('height', 500).attr('style','width:100%;height:100%;');
+
+    var lineFunction = d3.svg.line()
+      .x(function(d) { return x(d.x); })
+      .y(function(d) { return y(d.y); })
+      .interpolate("linear");
+    var lineGraph = chart.append("path")
+    .attr("d", lineFunction(data))
+    .attr("stroke", "gray")
+    .attr("stroke-width", 4)
+    .attr("fill", "none");
+
+    var cContainer = chart.append('g')
+      .attr('transform', 'translate(' + paddingLeft + ', 0)'); 
+
+    cContainer.selectAll("circle").data(data).enter().append("circle")
+      .attr("cx", function (d) { return x(d.x);})
+      .attr("cy", function (d) { return y(d.y);})
+      .attr("r", 30)
+      .style("fill", function(d) {return c(d.y)});
+
+    var gridContainer = chart.append('g')
+      .attr('transform', 'translate(' + paddingLeft + ', 0)'); 
+
+  gridContainer.selectAll("text").data(data).enter().append("text")
+    .attr("x", function (d) { return x(d.x);})
+    .attr("y", function (d) { return y(d.y);})
+    .attr("text-anchor", "middle")
+    .text(function(d) {
+      return String(d.y);
+    });
+}
+
+function renderBuildTimes(data, root) {
   var windowWidth = window.innerWidth;
   var windowHeight = window.innerHeight;
   var paddingLeft = 5; // space to the left of the bars
