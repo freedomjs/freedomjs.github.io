@@ -1,0 +1,1 @@
+freedom.v0.6.8.js
