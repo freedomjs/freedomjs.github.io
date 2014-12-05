@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>src/manager.js - freedom</title>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/3.9.1/build/cssgrids/cssgrids-min.css">
+    <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
+    <link rel="stylesheet" href="../assets/css/main.css" id="site_styles">
+    <link rel="shortcut icon" type="image/png" href="../assets/favicon.png">
+    <script src="http://yui.yahooapis.com/combo?3.9.1/build/yui/yui-min.js"></script>
+</head>
+<body class="yui3-skin-sam">
+
+<div id="doc">
+    <div id="hd" class="yui3-g header">
+        <div class="yui3-u-3-4">
+            
+                <h1><img src="../assets/css/logo.png" title="freedom"></h1>
+            
+        </div>
+        <div class="yui3-u-1-4 version">
+            <em>API Docs for: 0.6.11</em>
+        </div>
+    </div>
+    <div id="bd" class="yui3-g">
+
+        <div class="yui3-u-1-4">
+            <div id="docs-sidebar" class="sidebar apidocs">
+                <div id="api-list">
+    <h2 class="off-left">APIs</h2>
+    <div id="api-tabview" class="tabview">
+        <ul class="tabs">
+            <li><a href="#api-classes">Classes</a></li>
+            <li><a href="#api-modules">Modules</a></li>
+        </ul>
+
+        <div id="api-tabview-filter">
+            <input type="search" id="api-filter" placeholder="Type to filter APIs">
+        </div>
+
+        <div id="api-tabview-panel">
+            <ul id="api-classes" class="apis classes">
+            
+                <li><a href="../classes/API.html">API</a></li>
+            
+                <li><a href="../classes/Consumer.html">Consumer</a></li>
+            
+                <li><a href="../classes/Direct.html">Direct</a></li>
+            
+                <li><a href="../classes/Frame.html">Frame</a></li>
+            
+                <li><a href="../classes/handleEvents.html">handleEvents</a></li>
+            
+                <li><a href="../classes/Hub.html">Hub</a></li>
+            
+                <li><a href="../classes/Link.html">Link</a></li>
+            
+                <li><a href="../classes/Manager.html">Manager</a></li>
+            
+                <li><a href="../classes/Module.html">Module</a></li>
+            
+                <li><a href="../classes/ModuleInternal.html">ModuleInternal</a></li>
+            
+                <li><a href="../classes/Policy.html">Policy</a></li>
+            
+                <li><a href="../classes/Provider.html">Provider</a></li>
+            
+                <li><a href="../classes/ProxyBinder.html">ProxyBinder</a></li>
+            
+                <li><a href="../classes/Resource.html">Resource</a></li>
+            
+                <li><a href="../classes/util.html">util</a></li>
+            
+                <li><a href="../classes/Worker.html">Worker</a></li>
+            
+            </ul>
+
+            <ul id="api-modules" class="apis modules">
+            
+            </ul>
+        </div>
+    </div>
+</div>
+
+            </div>
+        </div>
+        <div class="yui3-u-3-4">
+                <div id="api-options">
+        Show:
+        <label for="api-show-inherited">
+            <input type="checkbox" id="api-show-inherited" checked>
+            Inherited
+        </label>
+
+        <label for="api-show-protected">
+            <input type="checkbox" id="api-show-protected">
+            Protected
+        </label>
+
+        <label for="api-show-private">
+            <input type="checkbox" id="api-show-private">
+            Private
+        </label>
+        <label for="api-show-deprecated">
+            <input type="checkbox" id="api-show-deprecated">
+            Deprecated
+        </label>
+
+    </div>
+
+
+            <div class="apidocs">
+                <div id="docs-main">
+                    <div class="content">
+                        <h1 class="file-heading">File: src/manager.js</h1>
+
+<div class="file">
+    <pre class="code prettyprint linenums">
+/*jslint indent:2,node:true,sloppy:true */
+var util = require(&#x27;./util&#x27;);
+var ModuleInternal = require(&#x27;./moduleinternal&#x27;);
+
+/**
+ * A freedom port which manages the control plane of of changing hub routes.
+ * @class Manager
+ * @implements Port
+ * @param {Hub} hub The routing hub to control.
+ * @param {Resource} resource The resource manager for the runtime.
+ * @param {Api} api The API manager for the runtime.
+ * @constructor
+ */
+var Manager = function (hub, resource, api) {
+  this.id = &#x27;control&#x27;;
+  this.config = {};
+  this.controlFlows = {};
+  this.dataFlows = {};
+  this.dataFlows[this.id] = [];
+  this.reverseFlowMap = {};
+
+  this.debug = hub.debug;
+  this.hub = hub;
+  this.resource = resource;
+  this.api = api;
+
+  this.delegate = null;
+  this.toDelegate = {};
+  
+  this.hub.on(&#x27;config&#x27;, function (config) {
+    util.mixin(this.config, config);
+    this.emit(&#x27;config&#x27;);
+  }.bind(this));
+  
+  util.handleEvents(this);
+  this.hub.register(this);
+};
+
+/**
+ * Provide a textual description of this port.
+ * @method toString
+ * @return {String} the description of this port.
+ */
+Manager.prototype.toString = function () {
+  return &quot;[Local Controller]&quot;;
+};
+
+/**
+ * Process messages sent to this port.
+ * The manager, or &#x27;control&#x27; destination handles several types of messages,
+ * identified by the request property.  The actions are:
+ * 1. debug. Prints the message to the console.
+ * 2. link. Creates a link between the source and a provided destination port.
+ * 3. environment. Instantiate a module environment defined in ModuleInternal.
+ * 4. delegate. Routes a defined set of control messages to another location.
+ * 5. resource. Registers the source as a resource resolver.
+ * 6. core. Generates a core provider for the requester.
+ * 7. close. Tears down routes involing the requesting port.
+ * 8. unlink. Tears down a route from the requesting port.
+ * @method onMessage
+ * @param {String} flow The source identifier of the message.
+ * @param {Object} message The received message.
+ */
+Manager.prototype.onMessage = function (flow, message) {
+  var reverseFlow = this.controlFlows[flow], origin;
+  if (!reverseFlow) {
+    this.debug.warn(&quot;Unknown message source: &quot; + flow);
+    return;
+  }
+  origin = this.hub.getDestination(reverseFlow);
+
+  if (this.delegate &amp;&amp; reverseFlow !== this.delegate &amp;&amp;
+      this.toDelegate[flow]) {
+    // Ship off to the delegee
+    this.emit(this.delegate, {
+      type: &#x27;Delegation&#x27;,
+      request: &#x27;handle&#x27;,
+      quiet: true,
+      flow: flow,
+      message: message
+    });
+    return;
+  }
+
+  if (message.request === &#x27;debug&#x27;) {
+    this.debug.print(message);
+    return;
+  }
+
+  if (message.request === &#x27;link&#x27;) {
+    this.createLink(origin, message.name, message.to, message.overrideDest);
+  } else if (message.request === &#x27;environment&#x27;) {
+    this.createLink(origin, message.name, new ModuleInternal(this));
+  } else if (message.request === &#x27;delegate&#x27;) {
+    // Initate Delegation.
+    if (this.delegate === null) {
+      this.delegate = reverseFlow;
+    }
+    this.toDelegate[message.flow] = true;
+    this.emit(&#x27;delegate&#x27;);
+  } else if (message.request === &#x27;resource&#x27;) {
+    this.resource.addResolver(message.args[0]);
+    this.resource.addRetriever(message.service, message.args[1]);
+  } else if (message.request === &#x27;core&#x27;) {
+    if (this.core &amp;&amp; reverseFlow === this.delegate) {
+      (new this.core()).onMessage(origin, message.message);
+      return;
+    }
+    this.getCore(function (to, core) {
+      this.hub.onMessage(to, {
+        type: &#x27;core&#x27;,
+        core: core
+      });
+    }.bind(this, reverseFlow));
+  } else if (message.request === &#x27;close&#x27;) {
+    this.destroy(origin);
+  } else if (message.request === &#x27;unlink&#x27;) {
+    this.removeLink(origin, message.to);
+  } else {
+    this.debug.warn(&quot;Unknown control request: &quot; + message.request);
+    this.debug.log(JSON.stringify(message));
+    return;
+  }
+};
+
+/**
+ * Get the port messages will be routed to given its id.
+ * @method getPort
+ * @param {String} portId The ID of the port.
+ * @returns {fdom.Port} The port with that ID.
+ */
+Manager.prototype.getPort = function (portId) {
+  return this.hub.getDestination(this.controlFlows[portId]);
+};
+
+/**
+ * Set up a port with the hub.
+ * @method setup
+ * @param {Port} port The port to register.
+ */
+Manager.prototype.setup = function (port) {
+  if (!port.id) {
+    this.debug.warn(&quot;Refusing to setup unidentified port &quot;);
+    return false;
+  }
+
+  if (this.controlFlows[port.id]) {
+    this.debug.warn(&quot;Refusing to re-initialize port &quot; + port.id);
+    return false;
+  }
+
+  if (!this.config.global) {
+    this.once(&#x27;config&#x27;, this.setup.bind(this, port));
+    return;
+  }
+
+  this.hub.register(port);
+  var flow = this.hub.install(this, port.id, &quot;control&quot;),
+    reverse = this.hub.install(port, this.id, port.id);
+  this.controlFlows[port.id] = flow;
+  this.dataFlows[port.id] = [reverse];
+  this.reverseFlowMap[flow] = reverse;
+  this.reverseFlowMap[reverse] = flow;
+
+  if (port.lineage) {
+    this.emit(&#x27;moduleAdd&#x27;, {id: port.id, lineage: port.lineage});
+  }
+  
+  this.hub.onMessage(flow, {
+    type: &#x27;setup&#x27;,
+    channel: reverse,
+    config: this.config
+  });
+
+  return true;
+};
+
+/**
+ * Tear down a port on the hub.
+ * @method destroy
+ * @apram {Port} port The port to unregister.
+ */
+Manager.prototype.destroy = function (port) {
+  if (!port.id) {
+    this.debug.warn(&quot;Unable to tear down unidentified port&quot;);
+    return false;
+  }
+
+  if (port.lineage) {
+    this.emit(&#x27;moduleRemove&#x27;, {id: port.id, lineage: port.lineage});
+  }
+
+  // Remove the port.
+  delete this.controlFlows[port.id];
+
+  // Remove associated links.
+  var i;
+  for (i = this.dataFlows[port.id].length - 1; i &gt;= 0; i -= 1) {
+    this.removeLink(port, this.dataFlows[port.id][i]);
+  }
+
+  // Remove the port.
+  delete this.dataFlows[port.id];
+  this.hub.deregister(port);
+};
+
+/**
+ * Create a link between two ports.  Links are created in both directions,
+ * and a message with those capabilities is sent to the source port.
+ * @method createLink
+ * @param {Port} port The source port.
+ * @param {String} name The flow for messages from destination to port.
+ * @param {Port} destination The destination port.
+ * @param {String} [destName] The flow name for messages to the destination.
+ * @param {Boolean} [toDest] Tell the destination about the link.
+ */
+Manager.prototype.createLink = function (port, name, destination, destName,
+                                         toDest) {
+  if (!this.config.global) {
+    this.once(&#x27;config&#x27;,
+      this.createLink.bind(this, port, name, destination, destName));
+    return;
+  }
+  
+  if (!this.controlFlows[port.id]) {
+    this.debug.warn(&#x27;Unwilling to link from non-registered source.&#x27;);
+    return;
+  }
+
+  if (!this.controlFlows[destination.id]) {
+    if (this.setup(destination) === false) {
+      this.debug.warn(&#x27;Could not find or setup destination.&#x27;);
+      return;
+    }
+  }
+  var quiet = destination.quiet || false,
+    outgoingName = destName || &#x27;default&#x27;,
+    outgoing = this.hub.install(port, destination.id, outgoingName, quiet),
+    reverse;
+
+  // Recover the port so that listeners are installed.
+  destination = this.hub.getDestination(outgoing);
+  reverse = this.hub.install(destination, port.id, name, quiet);
+
+  this.reverseFlowMap[outgoing] = reverse;
+  this.dataFlows[port.id].push(outgoing);
+  this.reverseFlowMap[reverse] = outgoing;
+  this.dataFlows[destination.id].push(reverse);
+
+  if (toDest) {
+    this.hub.onMessage(this.controlFlows[destination.id], {
+      type: &#x27;createLink&#x27;,
+      name: outgoingName,
+      channel: reverse,
+      reverse: outgoing
+    });
+  } else {
+    this.hub.onMessage(this.controlFlows[port.id], {
+      name: name,
+      type: &#x27;createLink&#x27;,
+      channel: outgoing,
+      reverse: reverse
+    });
+  }
+};
+
+/**
+ * Remove a link between to ports. The reverse link will also be removed.
+ * @method removeLink
+ * @param {Port} port The source port.
+ * @param {String} name The flow to be removed.
+ */
+Manager.prototype.removeLink = function (port, name) {
+  var reverse = this.hub.getDestination(name),
+    rflow = this.reverseFlowMap[name],
+    i;
+
+  if (!reverse || !rflow) {
+    this.debug.warn(&quot;Could not find metadata to remove flow: &quot; + name);
+    return;
+  }
+
+  if (this.hub.getDestination(rflow).id !== port.id) {
+    this.debug.warn(&quot;Source port does not own flow &quot; + name);
+    return;
+  }
+
+  // Notify ports that a channel is closing.
+  i = this.controlFlows[port.id];
+  if (i) {
+    this.hub.onMessage(i, {
+      type: &#x27;close&#x27;,
+      channel: name
+    });
+  }
+  i = this.controlFlows[reverse.id];
+  if (i) {
+    this.hub.onMessage(i, {
+      type: &#x27;close&#x27;,
+      channel: rflow
+    });
+  }
+
+  // Uninstall the channel.
+  this.hub.uninstall(port, name);
+  this.hub.uninstall(reverse, rflow);
+
+  delete this.reverseFlowMap[name];
+  delete this.reverseFlowMap[rflow];
+  this.forgetFlow(reverse.id, rflow);
+  this.forgetFlow(port.id, name);
+};
+
+/**
+ * Forget the flow from id with a given name.
+ * @method forgetFlow
+ * @private
+ * @param {String} id The port ID of the source.
+ * @param {String} name The flow name.
+ */
+Manager.prototype.forgetFlow = function (id, name) {
+  var i;
+  if (this.dataFlows[id]) {
+    for (i = 0; i &lt; this.dataFlows[id].length; i += 1) {
+      if (this.dataFlows[id][i] === name) {
+        this.dataFlows[id].splice(i, 1);
+        break;
+      }
+    }
+  }
+};
+
+/**
+ * Get the core freedom.js API active on the current hub.
+ * @method getCore
+ * @private
+ * @param {Function} cb Callback to fire with the core object.
+ */
+Manager.prototype.getCore = function (cb) {
+  if (this.core) {
+    cb(this.core);
+  } else {
+    this.api.getCore(&#x27;core&#x27;, this).then(function (core) {
+      this.core = core.inst;
+      cb(this.core);
+    }.bind(this));
+  }
+};
+
+module.exports = Manager;
+
+    </pre>
+</div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../assets/vendor/prettify/prettify-min.js"></script>
+<script>prettyPrint();</script>
+<script src="../assets/js/yui-prettify.js"></script>
+<script src="../assets/../api.js"></script>
+<script src="../assets/js/api-filter.js"></script>
+<script src="../assets/js/api-list.js"></script>
+<script src="../assets/js/api-search.js"></script>
+<script src="../assets/js/apidocs.js"></script>
+</body>
+</html>
