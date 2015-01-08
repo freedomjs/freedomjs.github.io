@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>src/api.js - freedom</title>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/3.9.1/build/cssgrids/cssgrids-min.css">
+    <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
+    <link rel="stylesheet" href="../assets/css/main.css" id="site_styles">
+    <link rel="shortcut icon" type="image/png" href="../assets/favicon.png">
+    <script src="http://yui.yahooapis.com/combo?3.9.1/build/yui/yui-min.js"></script>
+</head>
+<body class="yui3-skin-sam">
+
+<div id="doc">
+    <div id="hd" class="yui3-g header">
+        <div class="yui3-u-3-4">
+            
+                <h1><img src="../assets/css/logo.png" title="freedom"></h1>
+            
+        </div>
+        <div class="yui3-u-1-4 version">
+            <em>API Docs for: 0.6.15</em>
+        </div>
+    </div>
+    <div id="bd" class="yui3-g">
+
+        <div class="yui3-u-1-4">
+            <div id="docs-sidebar" class="sidebar apidocs">
+                <div id="api-list">
+    <h2 class="off-left">APIs</h2>
+    <div id="api-tabview" class="tabview">
+        <ul class="tabs">
+            <li><a href="#api-classes">Classes</a></li>
+            <li><a href="#api-modules">Modules</a></li>
+        </ul>
+
+        <div id="api-tabview-filter">
+            <input type="search" id="api-filter" placeholder="Type to filter APIs">
+        </div>
+
+        <div id="api-tabview-panel">
+            <ul id="api-classes" class="apis classes">
+            
+                <li><a href="../classes/API.html">API</a></li>
+            
+                <li><a href="../classes/Consumer.html">Consumer</a></li>
+            
+                <li><a href="../classes/Direct.html">Direct</a></li>
+            
+                <li><a href="../classes/Frame.html">Frame</a></li>
+            
+                <li><a href="../classes/handleEvents.html">handleEvents</a></li>
+            
+                <li><a href="../classes/Hub.html">Hub</a></li>
+            
+                <li><a href="../classes/Link.html">Link</a></li>
+            
+                <li><a href="../classes/Manager.html">Manager</a></li>
+            
+                <li><a href="../classes/Module.html">Module</a></li>
+            
+                <li><a href="../classes/ModuleInternal.html">ModuleInternal</a></li>
+            
+                <li><a href="../classes/Policy.html">Policy</a></li>
+            
+                <li><a href="../classes/Provider.html">Provider</a></li>
+            
+                <li><a href="../classes/ProxyBinder.html">ProxyBinder</a></li>
+            
+                <li><a href="../classes/Resource.html">Resource</a></li>
+            
+                <li><a href="../classes/util.html">util</a></li>
+            
+                <li><a href="../classes/Worker.html">Worker</a></li>
+            
+            </ul>
+
+            <ul id="api-modules" class="apis modules">
+            
+            </ul>
+        </div>
+    </div>
+</div>
+
+            </div>
+        </div>
+        <div class="yui3-u-3-4">
+                <div id="api-options">
+        Show:
+        <label for="api-show-inherited">
+            <input type="checkbox" id="api-show-inherited" checked>
+            Inherited
+        </label>
+
+        <label for="api-show-protected">
+            <input type="checkbox" id="api-show-protected">
+            Protected
+        </label>
+
+        <label for="api-show-private">
+            <input type="checkbox" id="api-show-private">
+            Private
+        </label>
+        <label for="api-show-deprecated">
+            <input type="checkbox" id="api-show-deprecated">
+            Deprecated
+        </label>
+
+    </div>
+
+
+            <div class="apidocs">
+                <div id="docs-main">
+                    <div class="content">
+                        <h1 class="file-heading">File: src/api.js</h1>
+
+<div class="file">
+    <pre class="code prettyprint linenums">
+/*jslint indent:2,white:true,node:true,sloppy:true */
+var PromiseCompat = require(&#x27;es6-promise&#x27;).Promise;
+
+/**
+ * The API registry for freedom.js.  Used to look up requested APIs,
+ * and provides a bridge for core APIs to act like normal APIs.
+ * @Class API
+ * @param {Debug} debug The debugger to use for logging.
+ * @constructor
+ */
+var Api = function(debug) {
+  this.debug = debug;
+  this.apis = {};
+  this.providers = {};
+  this.waiters = {};
+};
+
+/**
+ * Get an API.
+ * @method get
+ * @param {String} api The API name to get.
+ * @returns {{name:String, definition:API}} The API if registered.
+ */
+Api.prototype.get = function(api) {
+  if (!this.apis[api]) {
+    return false;
+  }
+  return {
+    name: api,
+    definition: this.apis[api]
+  };
+};
+
+/**
+ * Set an API to a definition.
+ * @method set
+ * @param {String} name The API name.
+ * @param {API} definition The JSON object defining the API.
+ */
+Api.prototype.set = function(name, definition) {
+  this.apis[name] = definition;
+};
+
+/**
+ * Register a core API provider.
+ * @method register
+ * @param {String} name the API name.
+ * @param {Function} constructor the function to create a provider for the API.
+ * @param {String?} style The style the provider is written in. Valid styles
+ *   are documented in fdom.port.Provider.prototype.getInterface. Defaults to
+ *   provideAsynchronous
+ * @param {Object?} flags Prefixed arguments needed by the core provider.
+ *   valid keys are &#x27;module&#x27;, &#x27;provider&#x27;, and &#x27;config&#x27;.
+ */
+Api.prototype.register = function(name, constructor, style, flags) {
+  var i,
+    args;
+
+  this.providers[name] = {
+    constructor: constructor,
+    style: style || &#x27;provideAsynchronous&#x27;,
+    flags: flags || {}
+  };
+
+  if (this.waiters[name]) {
+    for (i = 0; i &lt; this.waiters[name].length; i += 1) {
+      args = {};
+      if (flags.module) {
+        args.module = this.waiters[name][i].from;
+      }
+      if (flags.config) {
+        args.config = this.waiters[name][i].from.config;
+      }
+      this.waiters[name][i].resolve({
+        args: args,
+        inst: constructor.bind({}, args)
+      });
+    }
+    delete this.waiters[name];
+  }
+};
+
+/**
+ * Get a core API connected to a given FreeDOM module.
+ * @method getCore
+ * @param {String} name the API to retrieve.
+ * @param {Module} from The instantiating App.
+ * @returns {Promise} A promise of a fdom.App look-alike (and argument object),
+ * matching a local API definition.
+ */
+Api.prototype.getCore = function(name, from) {
+  return new PromiseCompat(function(resolve, reject) {
+    if (this.apis[name]) {
+      if (this.providers[name]) {
+        var args = {};
+        if (this.providers[name].flags.module) {
+          args.module = from;
+        }
+        if (this.providers[name].flags.config) {
+          args.config = from.config;
+        }
+        resolve({
+          args: args,
+          inst: this.providers[name].constructor.bind({}, args)
+        });
+      } else {
+        if (!this.waiters[name]) {
+          this.waiters[name] = [];
+        }
+        this.waiters[name].push({
+          resolve: resolve,
+          reject: reject,
+          from: from
+        });
+      }
+    } else {
+      this.debug.warn(&#x27;Api.getCore asked for unknown core: &#x27; + name);
+      reject(null);
+    }
+  }.bind(this));
+};
+
+/**
+ * Configure a {Provider} to provide a named core api on behalf of a
+ * given port.
+ * @param {String} name The name of the provider
+ * @param {Provider} provider The provider that will provide the named api
+ * @param {Module} from The module requesting the core provider.
+ */
+Api.prototype.provideCore = function (name, provider, from) {
+  return this.getCore(name, from).then(function (core) {
+    var flags = this.providers[name].flags,
+      iface = provider.getProxyInterface();
+    if (flags.provider) {
+      core.args.provider = iface;
+    }
+    iface()[this.providers[name].style](core.inst);
+  }.bind(this), function (err) {
+    this.debug.error(&#x27;Could not provide core: &#x27;, err);
+  }.bind(this));
+};
+
+/**
+ * Shutdown the API registry, and reject any pending waiters.
+ */
+Api.prototype.cleanup = function () {
+  var prop,
+    doReject = function (waiter) {
+      waiter.reject();
+    };
+  for (prop in this.waiters) {
+    if (this.waiters.hasOwnProperty(prop)) {
+      this.waiters[prop].forEach(doReject);
+    }
+  }
+  delete this.waiters;
+};
+
+/**
+ * Defines the apis module and provider registry.
+ */
+module.exports = Api;
+
+    </pre>
+</div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../assets/vendor/prettify/prettify-min.js"></script>
+<script>prettyPrint();</script>
+<script src="../assets/js/yui-prettify.js"></script>
+<script src="../assets/../api.js"></script>
+<script src="../assets/js/api-filter.js"></script>
+<script src="../assets/js/api-list.js"></script>
+<script src="../assets/js/api-search.js"></script>
+<script src="../assets/js/apidocs.js"></script>
+</body>
+</html>
