@@ -1,0 +1,1 @@
+../freedom-for-chrome/freedom-for-chrome.latest.js

@@ -1,0 +1,1 @@
+../freedom/latest/freedom.js
