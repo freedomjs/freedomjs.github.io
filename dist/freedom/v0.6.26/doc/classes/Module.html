@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Module - freedom</title>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/3.9.1/build/cssgrids/cssgrids-min.css">
+    <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
+    <link rel="stylesheet" href="../assets/css/main.css" id="site_styles">
+    <link rel="icon" href="../assets/favicon.ico">
+    <script src="http://yui.yahooapis.com/combo?3.9.1/build/yui/yui-min.js"></script>
+</head>
+<body class="yui3-skin-sam">
+
+<div id="doc">
+    <div id="hd" class="yui3-g header">
+        <div class="yui3-u-3-4">
+                <h1><img src="../assets/css/logo.png" title="freedom" width="117" height="52"></h1>
+        </div>
+        <div class="yui3-u-1-4 version">
+            <em>API Docs for: 0.6.26</em>
+        </div>
+    </div>
+    <div id="bd" class="yui3-g">
+
+        <div class="yui3-u-1-4">
+            <div id="docs-sidebar" class="sidebar apidocs">
+                <div id="api-list">
+                    <h2 class="off-left">APIs</h2>
+                    <div id="api-tabview" class="tabview">
+                        <ul class="tabs">
+                            <li><a href="#api-classes">Classes</a></li>
+                            <li><a href="#api-modules">Modules</a></li>
+                        </ul>
+                
+                        <div id="api-tabview-filter">
+                            <input type="search" id="api-filter" placeholder="Type to filter APIs">
+                        </div>
+                
+                        <div id="api-tabview-panel">
+                            <ul id="api-classes" class="apis classes">
+                                <li><a href="../classes/API.html">API</a></li>
+                                <li><a href="../classes/Consumer.html">Consumer</a></li>
+                                <li><a href="../classes/Direct.html">Direct</a></li>
+                                <li><a href="../classes/Frame.html">Frame</a></li>
+                                <li><a href="../classes/handleEvents.html">handleEvents</a></li>
+                                <li><a href="../classes/Hub.html">Hub</a></li>
+                                <li><a href="../classes/Link.html">Link</a></li>
+                                <li><a href="../classes/Manager.html">Manager</a></li>
+                                <li><a href="../classes/Module.html">Module</a></li>
+                                <li><a href="../classes/ModuleInternal.html">ModuleInternal</a></li>
+                                <li><a href="../classes/Policy.html">Policy</a></li>
+                                <li><a href="../classes/Provider.html">Provider</a></li>
+                                <li><a href="../classes/ProxyBinder.html">ProxyBinder</a></li>
+                                <li><a href="../classes/Resource.html">Resource</a></li>
+                                <li><a href="../classes/util.html">util</a></li>
+                                <li><a href="../classes/Worker.html">Worker</a></li>
+                            </ul>
+                
+                            <ul id="api-modules" class="apis modules">
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="yui3-u-3-4">
+                <div id="api-options">
+                    Show:
+                    <label for="api-show-inherited">
+                        <input type="checkbox" id="api-show-inherited" checked>
+                        Inherited
+                    </label>
+            
+                    <label for="api-show-protected">
+                        <input type="checkbox" id="api-show-protected">
+                        Protected
+                    </label>
+            
+                    <label for="api-show-private">
+                        <input type="checkbox" id="api-show-private">
+                        Private
+                    </label>
+                    <label for="api-show-deprecated">
+                        <input type="checkbox" id="api-show-deprecated">
+                        Deprecated
+                    </label>
+            
+                </div>
+            
+            <div class="apidocs">
+                <div id="docs-main">
+                    <div class="content">
+<h1>Module Class</h1>
+<div class="box meta">
+
+        <div class="extends">
+            Extends Port
+        </div>
+
+        <div class="foundat">
+            Defined in: <a href="../files/src_module.js.html#l5"><code>src&#x2F;module.js:5</code></a>
+        </div>
+
+
+</div>
+
+
+<div class="box intro">
+    <p>The external Port face of a module on a hub.</p>
+
+</div>
+
+    <div class="constructor">
+        <h2>Constructor</h2>
+<div id="method_Module" class="method item">
+    <h3 class="name"><code>Module</code></h3>
+
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+                <li class="arg">
+                        <code>manifestURL</code>
+                </li>
+                <li class="arg">
+                        <code>creator</code>
+                </li>
+                <li class="arg">
+                        <code>Policy</code>
+                </li>
+            </ul><span class="paren">)</span>
+        </div>
+
+
+
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/src_module.js.html#l5"><code>src&#x2F;module.js:5</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        
+    </div>
+
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+                <li class="param">
+                        <code class="param-name">manifestURL</code>
+                        <span class="type">String</span>
+
+
+                    <div class="param-description">
+                        <p>The manifest this module loads.</p>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">creator</code>
+                        <span class="type">String</span>
+
+
+                    <div class="param-description">
+                        <p>The lineage of creation for this module.</p>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">Policy</code>
+                        <span class="type"><a href="../classes/Policy.html" class="crosslink">Policy</a></span>
+
+
+                    <div class="param-description">
+                        <p>The policy loader for dependencies.</p>
+
+                    </div>
+
+                </li>
+            </ul>
+        </div>
+
+
+
+</div>
+    </div>
+
+<div id="classdocs" class="tabview">
+    <ul class="api-class-tabs">
+        <li class="api-class-tab index"><a href="#index">Index</a></li>
+
+            <li class="api-class-tab methods"><a href="#methods">Methods</a></li>
+    </ul>
+
+    <div>
+        <div id="index" class="api-class-tabpanel index">
+            <h2 class="off-left">Item Index</h2>
+
+                <div class="index-section methods">
+                    <h3>Methods</h3>
+
+                    <ul class="index-list methods extends">
+                            <li class="index-item method private">
+                                <a href="#method_addDependency">addDependency</a>
+
+                            </li>
+                            <li class="index-item method private">
+                                <a href="#method_deregisterFLow">deregisterFLow</a>
+
+                            </li>
+                            <li class="index-item method private">
+                                <a href="#method_emitMessage">emitMessage</a>
+
+                            </li>
+                            <li class="index-item method private">
+                                <a href="#method_loadLinks">loadLinks</a>
+
+                            </li>
+                            <li class="index-item method">
+                                <a href="#method_onMessage">onMessage</a>
+
+                            </li>
+                            <li class="index-item method">
+                                <a href="#method_require">require</a>
+
+                            </li>
+                            <li class="index-item method private">
+                                <a href="#method_start">start</a>
+
+                            </li>
+                            <li class="index-item method private">
+                                <a href="#method_stop">stop</a>
+
+                            </li>
+                            <li class="index-item method">
+                                <a href="#method_toString">toString</a>
+
+                            </li>
+                            <li class="index-item method">
+                                <a href="#method_updateEnv">updateEnv</a>
+
+                            </li>
+                    </ul>
+                </div>
+
+
+
+        </div>
+
+            <div id="methods" class="api-class-tabpanel">
+                <h2 class="off-left">Methods</h2>
+
+<div id="method_addDependency" class="method item private">
+    <h3 class="name"><code>addDependency</code></h3>
+
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+                <li class="arg">
+                        <code>url</code>
+                </li>
+                <li class="arg">
+                        <code>name</code>
+                </li>
+            </ul><span class="paren">)</span>
+        </div>
+
+        <span class="returns-inline">
+            <span class="type"><a href="../classes/Module.html" class="crosslink">Module</a></span>
+        </span>
+
+
+        <span class="flag private">private</span>
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/src_module.js.html#l347"><code>src&#x2F;module.js:347</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        <p>Add a dependency to the module's dependency tree</p>
+
+    </div>
+
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+                <li class="param">
+                        <code class="param-name">url</code>
+                        <span class="type">String</span>
+
+
+                    <div class="param-description">
+                        <p>The manifest URL of the dependency</p>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">name</code>
+                        <span class="type">String</span>
+
+
+                    <div class="param-description">
+                        <p>The exposed name of the module.</p>
+
+                    </div>
+
+                </li>
+            </ul>
+        </div>
+
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                        <span class="type"><a href="../classes/Module.html" class="crosslink">Module</a></span>:
+                    <p>The created dependent module.</p>
+
+            </div>
+        </div>
+
+
+</div>
+<div id="method_deregisterFLow" class="method item private">
+    <h3 class="name"><code>deregisterFLow</code></h3>
+
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+                <li class="arg">
+                        <code>flow</code>
+                </li>
+                <li class="arg">
+                        <code>internal</code>
+                </li>
+            </ul><span class="paren">)</span>
+        </div>
+
+        <span class="returns-inline">
+            <span class="type">Boolean</span>
+        </span>
+
+
+        <span class="flag private">private</span>
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/src_module.js.html#l131"><code>src&#x2F;module.js:131</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        <p>Clean up after a flow which is no longer used / needed.</p>
+
+    </div>
+
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+                <li class="param">
+                        <code class="param-name">flow</code>
+                        <span class="type">String</span>
+
+
+                    <div class="param-description">
+                        <p>The flow to remove mappings for.</p>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">internal</code>
+                        <span class="type">Boolean</span>
+
+
+                    <div class="param-description">
+                        <p>If the flow name is the internal identifier.</p>
+
+                    </div>
+
+                </li>
+            </ul>
+        </div>
+
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                        <span class="type">Boolean</span>:
+                    <p>Whether the flow was successfully deregistered.</p>
+
+            </div>
+        </div>
+
+
+</div>
+<div id="method_emitMessage" class="method item private">
+    <h3 class="name"><code>emitMessage</code></h3>
+
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+                <li class="arg">
+                        <code>name</code>
+                </li>
+                <li class="arg">
+                        <code>message</code>
+                </li>
+            </ul><span class="paren">)</span>
+        </div>
+
+
+
+        <span class="flag private">private</span>
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/src_module.js.html#l259"><code>src&#x2F;module.js:259</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        <p>Intercept messages as they arrive from the module,
+mapping them between internal and external flow names.</p>
+
+    </div>
+
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+                <li class="param">
+                        <code class="param-name">name</code>
+                        <span class="type">String</span>
+
+
+                    <div class="param-description">
+                        <p>The destination the module wants to send to.</p>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">message</code>
+                        <span class="type">Object</span>
+
+
+                    <div class="param-description">
+                        <p>The message to send.</p>
+
+                    </div>
+
+                </li>
+            </ul>
+        </div>
+
+
+
+</div>
+<div id="method_loadLinks" class="method item private">
+    <h3 class="name"><code>loadLinks</code></h3>
+
+        <span class="paren">()</span>
+
+
+
+        <span class="flag private">private</span>
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/src_module.js.html#l377"><code>src&#x2F;module.js:377</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        <p>Request the external routes used by this module.</p>
+
+    </div>
+
+
+
+
+</div>
+<div id="method_onMessage" class="method item">
+    <h3 class="name"><code>onMessage</code></h3>
+
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+                <li class="arg">
+                        <code>flow</code>
+                </li>
+                <li class="arg">
+                        <code>message</code>
+                </li>
+            </ul><span class="paren">)</span>
+        </div>
+
+
+
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/src_module.js.html#l37"><code>src&#x2F;module.js:37</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        <p>Receive a message for the Module.</p>
+
+    </div>
+
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+                <li class="param">
+                        <code class="param-name">flow</code>
+                        <span class="type">String</span>
+
+
+                    <div class="param-description">
+                        <p>The origin of the message.</p>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">message</code>
+                        <span class="type">Object</span>
+
+
+                    <div class="param-description">
+                        <p>The message received.</p>
+
+                    </div>
+
+                </li>
+            </ul>
+        </div>
+
+
+
+</div>
+<div id="method_require" class="method item">
+    <h3 class="name"><code>require</code></h3>
+
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+                <li class="arg">
+                        <code>name</code>
+                </li>
+                <li class="arg">
+                        <code>manifest</code>
+                </li>
+            </ul><span class="paren">)</span>
+        </div>
+
+
+
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/src_module.js.html#l330"><code>src&#x2F;module.js:330</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        <p>Create a dynamic dependency on another module.</p>
+
+    </div>
+
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+                <li class="param">
+                        <code class="param-name">name</code>
+                        <span class="type">String</span>
+
+
+                    <div class="param-description">
+                        <p>The name of the dependency.</p>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">manifest</code>
+                        <span class="type">String</span>
+
+
+                    <div class="param-description">
+                        <p>The URL of the dependency to add.</p>
+
+                    </div>
+
+                </li>
+            </ul>
+        </div>
+
+
+
+</div>
+<div id="method_start" class="method item private">
+    <h3 class="name"><code>start</code></h3>
+
+        <span class="paren">()</span>
+
+
+
+        <span class="flag private">private</span>
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/src_module.js.html#l177"><code>src&#x2F;module.js:177</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        <p>Attempt to start the module once the remote freedom context
+exists.</p>
+
+    </div>
+
+
+
+
+</div>
+<div id="method_stop" class="method item private">
+    <h3 class="name"><code>stop</code></h3>
+
+        <span class="paren">()</span>
+
+
+
+        <span class="flag private">private</span>
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/src_module.js.html#l227"><code>src&#x2F;module.js:227</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        <p>Stop the module when it is no longer needed, and tear-down state.</p>
+
+    </div>
+
+
+
+
+</div>
+<div id="method_toString" class="method item">
+    <h3 class="name"><code>toString</code></h3>
+
+        <span class="paren">()</span>
+
+        <span class="returns-inline">
+            <span class="type">String</span>
+        </span>
+
+
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/src_module.js.html#l250"><code>src&#x2F;module.js:250</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        <p>Textual Description of the Port</p>
+
+    </div>
+
+
+        <div class="returns">
+            <h4>Returns:</h4>
+
+            <div class="returns-description">
+                        <span class="type">String</span>:
+                    <p>The description of this Port.</p>
+
+            </div>
+        </div>
+
+
+</div>
+<div id="method_updateEnv" class="method item">
+    <h3 class="name"><code>updateEnv</code></h3>
+
+        <div class="args">
+            <span class="paren">(</span><ul class="args-list inline commas">
+                <li class="arg">
+                        <code>dep</code>
+                </li>
+                <li class="arg">
+                        <code>manifest</code>
+                </li>
+            </ul><span class="paren">)</span>
+        </div>
+
+
+
+
+
+
+
+
+    <div class="meta">
+                <p>
+                Defined in
+        <a href="../files/src_module.js.html#l420"><code>src&#x2F;module.js:420</code></a>
+        </p>
+
+
+
+    </div>
+
+    <div class="description">
+        <p>Update the module environment with information about a dependent manifest.</p>
+
+    </div>
+
+        <div class="params">
+            <h4>Parameters:</h4>
+
+            <ul class="params-list">
+                <li class="param">
+                        <code class="param-name">dep</code>
+                        <span class="type">String</span>
+
+
+                    <div class="param-description">
+                        <p>The dependency</p>
+
+                    </div>
+
+                </li>
+                <li class="param">
+                        <code class="param-name">manifest</code>
+                        <span class="type">Object</span>
+
+
+                    <div class="param-description">
+                        <p>The manifest of the dependency</p>
+
+                    </div>
+
+                </li>
+            </ul>
+        </div>
+
+
+
+</div>
+            </div>
+
+
+
+    </div>
+</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../assets/vendor/prettify/prettify-min.js"></script>
+<script>prettyPrint();</script>
+<script src="../assets/js/yui-prettify.js"></script>
+<script src="../assets/../api.js"></script>
+<script src="../assets/js/api-filter.js"></script>
+<script src="../assets/js/api-list.js"></script>
+<script src="../assets/js/api-search.js"></script>
+<script src="../assets/js/apidocs.js"></script>
+</body>
+</html>
