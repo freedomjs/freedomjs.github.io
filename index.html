@@ -68,7 +68,7 @@
 -->
 <script type="text/javascript" src="dist/freedom/latest/freedom.js"></script>
 <script type="text/javascript">
-  freedom('dist/freedom/latest/demo/connections/manifest.json', { debug: 'debug' }).then(function (instance) {
+  freedom('dist/freedom/latest/demo/connections/connections.json', { debug: 'debug' }).then(function (instance) {
     instance().on("height", function(h) {
       document.getElementById("connections").style.height = h + 'px';
     });
