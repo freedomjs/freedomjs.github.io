@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <title>TicTak ~ freedom.js Demos</title>
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+  <link href='../style.css' rel='stylesheet' type='text/css' />
+  <!-- Include freedom.js -->
+  <script type="text/javascript" src="../../freedom.js"></script>
+
+  <script type="text/javascript">
+    // Load the runtime.
+    var start = function(TicTakToe) {
+      var tictak = new TicTakToe();
+
+      // These events are defined in the 'board' API in freedom-module.json,
+      // and sent in main.js by calling ```dispatchEvent('stats', value);```
+      tictak.on('stats', function(stats) {
+        var win = 0, lose = 0;
+        if (stats) {
+          win = stats.win || 0;
+          lose = stats.lose || 0;
+        }
+        document.getElementById('win').innerText = win;
+        document.getElementById('lose').innerText = lose;
+      });
+
+      tictak.on('update', function (state) {
+        for (var i = 0; i < state.length; i++) {
+          var realid = 'b' + (i + 1);
+          document.getElementById(realid).className = 'c' + state[i];
+          document.getElementById(realid).checked = state[i];
+        }
+      });
+
+      // Add onclick listeners to each tile to run code in the module.
+      var inputs = document.getElementsByTagName('input');
+      for (var i = 0; i < inputs.length; i ++) {
+        inputs[i].addEventListener('click', tictak.move.bind(tictak, i), true);
+      }
+    };
+
+    freedom('freedom-module.json').then(start);
+  </script>
+  <style type='text/css'>
+  #win {color: rgb(100, 200, 100);}
+  #lose {color: rgb(253, 60, 0);}
+  input {
+    width: 100px;
+    height: 100px;
+    float:left;
+    -webkit-appearance: none;
+    border: 1px solid black;
+  }
+  input.c1:checked {
+    background:rgb(100, 200, 100);
+  }
+  input.c2:checked {
+    background: rgb(253, 60, 0);
+  }
+  input:nth-child(3n + 1) {clear:both;}
+  header {
+    font-size: 2em;
+    font-family: helvetica;
+  }
+  h1 {
+    font-size: 1em;
+  }
+  </style>
+</head>
+<body>
+  <header id='logo'>freedom.js</header>
+  <header><span class='triangle'>&#9654;</span> Demos</header>
+  <header><span class='triangle'>&#9654;</span> TicTak</header>
+  <section>
+    <kbd>
+      Win: <span id='win'>..</span> Lose: <span id='lose'>..</span>
+    </kbd>
+  </section>
+  <section>
+    <input type='checkbox' id='b1' />
+    <input type='checkbox' id='b2' />
+    <input type='checkbox' id='b3' />
+    <input type='checkbox' id='b4' />
+    <input type='checkbox' id='b5' />
+    <input type='checkbox' id='b6' />
+    <input type='checkbox' id='b7' />
+    <input type='checkbox' id='b8' />
+    <input type='checkbox' id='b9' />
+  </section>
+</body>
+</html>
+
