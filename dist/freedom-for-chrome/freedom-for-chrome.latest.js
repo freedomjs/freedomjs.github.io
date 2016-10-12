@@ -1,1 +1,1 @@
-freedom-for-chrome.v0.4.27.js
+freedom-for-chrome.v0.4.28.js
